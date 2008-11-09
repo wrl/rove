@@ -1,0 +1,252 @@
+/**
+ * This file is part of rove.
+ * rove is copyright 2007, 2008 william light <visinin@gmail.com>
+ *
+ * rove is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * rove is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with rove.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <sndfile.h>
+#include <stdlib.h>
+
+#include "rove.h"
+#include "rove_file.h"
+#include "rove_jack.h"
+#include "rove_list.h"
+#include "rove_pattern.h"
+
+#define SHIFT 0x01
+#define META  0x02
+
+#define BEATS_IN_PATTERN 8
+
+static uint8_t calculate_monome_pos(sf_count_t length, sf_count_t position, uint8_t rows) {
+	double elapsed;
+	uint8_t x, y;
+	
+	elapsed = position / (double) length;
+	x = lrint(floor(elapsed * (((double) 16) * rows)));
+	y = (x / 16) & 0x0F;
+	
+	return ((x << 4) | y);
+}
+
+static sf_count_t calculate_play_pos(sf_count_t length, uint8_t position_x, uint8_t position_y, uint8_t rows, uint8_t reverse, sf_count_t channels) {
+	double elapsed;
+	uint8_t x;
+	
+	if( reverse )
+		position_x += 1;
+	
+	x = (position_x & 0x0F) + ((position_y) * 16);
+	elapsed = x / (double) (16 * rows);
+	
+	if( reverse )
+		return lrint(ceil(elapsed * length));
+	else
+		return lrint(floor(elapsed * length));
+}
+
+static void blank_file_row(monome_t *monome, rove_file_t *f) {
+	uint8_t row[2] = {0, 0};
+	monome_led_row_16(monome, f->y + (f->monome_pos & 0x0F), row);
+}
+
+static void button_handler(monome_event_t e, void *arg) {
+	static uint8_t mod_keys = 0;
+	
+	rove_state_t *state = arg;
+	monome_t *monome = state->monome;
+
+	rove_file_t *f;
+	rove_pattern_t *p;
+	rove_list_member_t *m;
+
+	switch( e.event_type ) {
+	case MONOME_BUTTON_DOWN:
+		if( e.y < 1 ) {
+			switch( e.x ) {
+			case 15:
+				monome_clear(monome, MONOME_CLEAR_OFF);
+				exit(0);
+				break;
+				
+			case 13:
+				mod_keys |= SHIFT;
+				break;
+				
+			case 14:
+				mod_keys |= META;
+				break;
+
+			case 12:
+				if( rove_list_is_empty(state->patterns) ) {
+					p = rove_pattern_new();
+					p->status = PATTERN_STATUS_RECORDING;
+					p->delay_frames = (lrint(1 / state->beat_multiplier) * BEATS_IN_PATTERN) * state->snap_delay;
+					rove_list_push(state->patterns, TAIL, p);
+					state->pattern_rec = state->patterns->tail->prev;
+
+					monome_led_on(monome, e.x, 0);
+				} else {
+					if( (state->pattern_rec != NULL) ) {
+						p = state->pattern_rec->data;
+					
+						if( rove_list_is_empty(p->steps) ) {
+							m = state->pattern_rec;
+							state->pattern_rec = NULL;
+
+							rove_pattern_free(m->data);
+							rove_list_remove(state->patterns, m);
+						
+							monome_led_off(monome, e.x, 0);
+							return;
+						}
+					
+						p->status = PATTERN_STATUS_INACTIVE;
+						state->pattern_rec = NULL;
+					}
+
+					m = state->patterns->tail->prev;
+					p = m->data;
+				
+					if( mod_keys & SHIFT ) {
+						p->status = PATTERN_STATUS_INACTIVE;
+
+						while( !rove_list_is_empty(p->steps) )
+							free(rove_list_pop(p->steps, HEAD));
+						
+						rove_pattern_free(m->data);
+						rove_list_remove(state->patterns, m);
+						
+						monome_led_off(monome, e.x, 0);
+						return;
+					}
+					
+					if( p->status == PATTERN_STATUS_INACTIVE ) {
+						p->status = PATTERN_STATUS_ACTIVATE;
+						monome_led_on(monome, e.x, 0);
+					} else {
+						p->status = PATTERN_STATUS_INACTIVE;
+						monome_led_off(monome, e.x, 0);
+					}
+				}
+			
+				return;
+				
+				break;
+				
+			default:
+				if( e.x > (state->group_count - 1) )
+					return;
+				
+				if( !(f = state->groups[e.x].active_loop) )
+					return;
+				
+				if( !rove_file_is_active(f) )
+					return;
+				
+				if( state->pattern_rec )
+					rove_pattern_append_step(state->pattern_rec->data, CMD_GROUP_DEACTIVATE, f, 0);
+				
+				f->state = FILE_STATE_DEACTIVATE;
+			}
+		} else {
+			rove_list_foreach(state->files, m, f) {
+				if( e.y < f->y || e.y > ( f->y + f->row_span - 1) )
+					continue;
+		
+				f->new_offset = calculate_play_pos(f->file_length, e.x, (e.y - f->y),
+												   f->row_span, (f->play_direction == FILE_PLAY_DIRECTION_REVERSE), f->channels);
+				
+				if( state->pattern_rec )
+					rove_pattern_append_step(state->pattern_rec->data, CMD_LOOP_SEEK, f, f->new_offset);
+				
+				if( !rove_file_is_active(f) ) {
+					f->force_monome_update = 1;
+					f->state = FILE_STATE_ACTIVATE;
+				
+					f->play_offset = f->new_offset;
+					f->new_offset  = -1;
+				} else {
+					f->state = FILE_STATE_RESEEK;
+				}
+			}
+		}
+		
+		break;
+		
+	case MONOME_BUTTON_UP:
+		if( e.y < 1 ) {
+			switch( e.x ) {
+			case 13:
+				mod_keys &= ~SHIFT;
+				break;
+				
+			case 14:
+				mod_keys &= ~META;
+				break;
+			}
+		} else {
+		}
+		
+		break;
+	}
+}
+
+void rove_monome_blank_file_row(rove_state_t *state, rove_file_t *f) {
+	blank_file_row(state->monome, f);
+}
+
+void rove_monome_display_file(rove_state_t *state, rove_file_t *f) {
+	monome_t *monome = state->monome;
+	uint8_t row[2], pos;
+	uint16_t r;
+	
+	pos = calculate_monome_pos(f->file_length * f->channels, rove_file_get_play_pos(f), f->row_span);
+	
+	if( pos != f->monome_pos_old || f->force_monome_update ) {
+		if( f->force_monome_update ) {
+			monome_led_on(monome, f->group->idx, 0);
+			f->force_monome_update = 0;
+		}
+
+		if( (pos & 0x0F) != (f->monome_pos_old & 0x0F) ) {
+			row[0] = row[1] = 0;
+			monome_led_row_16(monome, f->y + (f->monome_pos_old & 0x0F), row);
+		}
+		
+		f->monome_pos_old = pos;
+	
+		r      = 1 << ( pos >> 4 );
+		row[0] = r & 0x00FF;
+		row[1] = r >> 8;
+		monome_led_row_16(monome, f->y + (pos & 0x0F), row);
+	}
+
+	f->monome_pos = pos;
+}
+
+int rove_monome_init(rove_state_t *state) {
+	monome_t *monome;
+	
+	if( !(monome = monome_open("/dev/ttyUSB0")) )
+		return -1;
+	
+	monome_register_handler(monome, MONOME_BUTTON_DOWN, button_handler, state);
+	monome_register_handler(monome, MONOME_BUTTON_UP, button_handler, state);
+	monome_clear(monome, MONOME_CLEAR_OFF);
+	
+	state->monome = monome;
+	return 0;
+}
