@@ -1,0 +1,5 @@
+# ignore compiled object files
+*.o
+
+# ignore the compiled execuatable
+rove
