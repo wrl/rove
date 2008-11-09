@@ -1,10 +1,10 @@
 rove v0.1a:
   
-    what is it?
-        rove is a sample-cutter in the spirit of (and blatantly imitating) mlr.
-        it is written in C and designed primarily to run on the linux platform,
-        though, due to similarities between the platforms, it has been compiled
-        and run successfully on mac os X.
+	what is it?
+		rove is a sample-cutter in the spirit of (and blatantly imitating) mlr.
+		it is written in C and designed primarily to run on the linux platform,
+		though, due to similarities between the platforms, it has been compiled
+		and run successfully on mac os X.
 		
 		please keep in mind that rove is alpha-quality software at best!
 		there's still much to be done to make it useful even in a basic setting,
@@ -12,15 +12,15 @@ rove v0.1a:
 		it will work for you, though i've yet to have a problem.
 		
 		rove has, thus far, been tested on a 32-bit linux system, a 64-bit linux
-		system, and a mac os x system.  after installing the dependencies,
+		system, and a mac os x system.	after installing the dependencies,
 		it required no modification to function correctly.
 		
 		so, basically, i can't guarantee it'll work for you.  but it probably will.
 		if it doesn't, holler at me.
 		
-    how do i install it?
-        the dependency list is short, but, depending on your architecture,
-        installation may prove to be a bit different than what you're used to.
+	how do i install it?
+		the dependency list is short, but, depending on your architecture,
+		installation may prove to be a bit different than what you're used to.
 		
 		regardless of the platform, you'll need:
 			- libmonome
@@ -44,7 +44,7 @@ rove v0.1a:
 		additionally, i don't have any mac computers on which i can test.
 		
 	okay, i've got that stuff installed, now what?
-		just run "make" from the top-level rove directory.  rove should	build quickly
+		just run "make" from the top-level rove directory.	rove should	build quickly
 		and uneventfully.  after that, just do a "sudo make install" to install the
 		rove executable system-wide.
 		
@@ -52,9 +52,9 @@ rove v0.1a:
 		or on the monome forums.  i'll see what i can do.
 		  
 	how do i use it?
-		currently, rove has no GUI of any sort.  all of the configuration is done
+		currently, rove has no GUI of any sort.	 all of the configuration is done
 		through text files in an arcane file format i've designed out of laziness.
-		loosely, these can be thought of as session files.  here's an example:
+		loosely, these can be thought of as session files.	here's an example:
 		
 			:87.68:2:.25
 			1:1:drums.wav
@@ -84,7 +84,7 @@ rove v0.1a:
 		 |    mute   |   those   | rec / tog | rec / tog |           |           |
 		 +-----------+ - - - - - +-----------+-----------+-----------+-----------+
 
-		at the moment, it's designed to mimic mlr.  the top row is the control row, with the
+		at the moment, it's designed to mimic mlr.	the top row is the control row, with the
 		first [number of groups in session] buttons turning off their respective group.
 		activate a group by pressing a button associated with one of the loops, which means
 		anything below the first row starting with the second.
@@ -105,7 +105,7 @@ rove v0.1a:
 	
 	how do i get in contact with you?
 		my email address is visinin@gmail.com, and i'd love to hear from you.  questions,
-		comments, encouragement, anything.  it's a great feeling hearing from people.
+		comments, encouragement, anything.	it's a great feeling hearing from people.
 		
 		please don't mind the messiness of the code or the general lack of polish presently.
 		i figure that getting software into peoples' hands is the best way to find rough edges
