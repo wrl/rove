@@ -23,45 +23,9 @@
 
 #include <math.h>
 
-#include <lo/lo.h>
-#include <jack/jack.h>
-#include <sndfile.h>
-#include <pthread.h>
-
+#include "rove_types.h"
 #include "rove_file.h"
 #include "rove_list.h"
 #include "rove_pattern.h"
-
-typedef struct {
-	lo_server_thread *st;
-	lo_address *outgoing;
-} rove_monome_t;
-
-typedef struct rove_state {
-	rove_monome_t *monome;
-	jack_client_t *client;
-	
-	uint8_t group_count;
-	rove_group_t *groups;
-	
-	rove_list_t *files;
-	rove_list_t *patterns;
-	rove_list_member_t *pattern_rec;
-
-	uint8_t staged_loops;
-	rove_list_t *active;
-	rove_list_t *staging;
-	
-	pthread_mutex_t monome_mutex;
-	pthread_cond_t monome_display_notification;
-
-	uint8_t active_loops;
-
-	double bpm;
-	double beat_multiplier;
-
-	jack_nframes_t snap_delay;
-	jack_nframes_t frames;
-} rove_state_t;
 
 #endif

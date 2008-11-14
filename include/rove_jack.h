@@ -19,7 +19,6 @@
 #ifndef _ROVE_JACK_H
 #define _ROVE_JACK_H
 
-#include <jack/jack.h>
 #include "rove.h"
 
 void rove_transport_start(rove_state_t *state);
