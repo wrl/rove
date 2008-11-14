@@ -170,7 +170,7 @@ static int process(jack_nframes_t nframes, void *arg) {
 	return 0;
 }
 
-static void shutdown(void *arg) {
+static void jack_shutdown(void *arg) {
 	exit(0);
 }
 
@@ -219,7 +219,7 @@ int rove_jack_init(rove_state_t *state) {
 	}
 
 	jack_set_process_callback(state->client, process, state);
-	jack_on_shutdown(state->client, shutdown, 0);
+	jack_on_shutdown(state->client, jack_shutdown, 0);
 
 	outport_l = jack_port_register(state->client, "left", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
 	outport_r = jack_port_register(state->client, "right", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
