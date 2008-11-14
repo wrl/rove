@@ -19,16 +19,73 @@
 #include <sndfile.h>
 #include <stdlib.h>
 
+#include <lo/lo.h>
+
 #include "rove.h"
 #include "rove_file.h"
 #include "rove_jack.h"
 #include "rove_list.h"
 #include "rove_pattern.h"
 
+#define BUTTON_DOWN     1
+#define BUTTON_UP       0
+
+#define CLEAR_OFF       0
+
+#define OSC_PREFIX      "rove"
+#define OSC_HOST_PORT   "8080"
+#define OSC_LISTEN_PORT "8000"
+
 #define SHIFT 0x01
 #define META  0x02
 
 #define BEATS_IN_PATTERN 8
+
+/**
+ * (mostly) emulate libmonome functions in liblo
+ */
+
+void monome_led_row_16(rove_monome_t *monome, uint8_t row, uint8_t *row_data) {
+	char *buf;
+	
+	asprintf(&buf, "/%s/led_row", OSC_PREFIX);
+	lo_send_from(monome->outgoing, lo_server_thread_get_server(monome->st), LO_TT_IMMEDIATE, buf, "iii", row, row_data[0], row_data[1]);
+	free(buf);
+
+	return;
+}
+
+void monome_clear(rove_monome_t *monome, uint8_t mode) {
+	char *buf;
+	
+	asprintf(&buf, "/%s/clear", OSC_PREFIX);
+	lo_send_from(monome->outgoing, lo_server_thread_get_server(monome->st), LO_TT_IMMEDIATE, buf, "i", mode);
+	free(buf);
+}
+
+void monome_led_on(rove_monome_t *monome, uint8_t x, uint8_t y) {
+	char *buf;
+	
+	asprintf(&buf, "/%s/led", OSC_PREFIX);
+	lo_send_from(monome->outgoing, lo_server_thread_get_server(monome->st), LO_TT_IMMEDIATE, buf, "iii", x, y, 1);
+	free(buf);
+}
+
+void monome_led_off(rove_monome_t *monome, uint8_t x, uint8_t y) {
+	char *buf;
+	
+	asprintf(&buf, "/%s/led", OSC_PREFIX);
+	lo_send_from(monome->outgoing, lo_server_thread_get_server(monome->st), LO_TT_IMMEDIATE, buf, "iii", x, y, 0);
+	free(buf);
+}
+
+/**
+ */
+
+static void lo_error(int num, const char *error_msg, const char *path) {
+	printf("rove_monome: liblo server error %d in %s: %s\n", num, path, error_msg);
+	fflush(stdout);
+}
 
 static uint8_t calculate_monome_pos(sf_count_t length, sf_count_t position, uint8_t rows) {
 	double elapsed;
@@ -57,27 +114,33 @@ static sf_count_t calculate_play_pos(sf_count_t length, uint8_t position_x, uint
 		return lrint(floor(elapsed * length));
 }
 
-static void blank_file_row(monome_t *monome, rove_file_t *f) {
+static void blank_file_row(rove_monome_t *monome, rove_file_t *f) {
 	uint8_t row[2] = {0, 0};
 	monome_led_row_16(monome, f->y + (f->monome_pos & 0x0F), row);
 }
 
-static void button_handler(monome_event_t e, void *arg) {
+static int button_handler(const char *path, const char *types, lo_arg **argv, int argc, lo_message data, void *user_data) {
 	static uint8_t mod_keys = 0;
-	
-	rove_state_t *state = arg;
-	monome_t *monome = state->monome;
 
+	rove_state_t *state = user_data;
+	rove_monome_t *monome = state->monome;
+
+	int event_x, event_y, event_type;
+	
 	rove_file_t *f;
 	rove_pattern_t *p;
 	rove_list_member_t *m;
 
-	switch( e.event_type ) {
-	case MONOME_BUTTON_DOWN:
-		if( e.y < 1 ) {
-			switch( e.x ) {
+	event_x    = argv[0]->i;
+	event_y    = argv[1]->i;
+	event_type = argv[2]->i;
+
+	switch( event_type ) {
+	case BUTTON_DOWN:
+		if( event_y < 1 ) {
+			switch( event_x ) {
 			case 15:
-				monome_clear(monome, MONOME_CLEAR_OFF);
+				monome_clear(monome, CLEAR_OFF);
 				exit(0);
 				break;
 				
@@ -97,7 +160,7 @@ static void button_handler(monome_event_t e, void *arg) {
 					rove_list_push(state->patterns, TAIL, p);
 					state->pattern_rec = state->patterns->tail->prev;
 
-					monome_led_on(monome, e.x, 0);
+					monome_led_on(monome, event_x, 0);
 				} else {
 					if( (state->pattern_rec != NULL) ) {
 						p = state->pattern_rec->data;
@@ -109,8 +172,8 @@ static void button_handler(monome_event_t e, void *arg) {
 							rove_pattern_free(m->data);
 							rove_list_remove(state->patterns, m);
 						
-							monome_led_off(monome, e.x, 0);
-							return;
+							monome_led_off(monome, event_x, 0);
+							return 0;
 						}
 					
 						p->status = PATTERN_STATUS_INACTIVE;
@@ -129,32 +192,32 @@ static void button_handler(monome_event_t e, void *arg) {
 						rove_pattern_free(m->data);
 						rove_list_remove(state->patterns, m);
 						
-						monome_led_off(monome, e.x, 0);
-						return;
+						monome_led_off(monome, event_x, 0);
+						return 0;
 					}
 					
 					if( p->status == PATTERN_STATUS_INACTIVE ) {
 						p->status = PATTERN_STATUS_ACTIVATE;
-						monome_led_on(monome, e.x, 0);
+						monome_led_on(monome, event_x, 0);
 					} else {
 						p->status = PATTERN_STATUS_INACTIVE;
-						monome_led_off(monome, e.x, 0);
+						monome_led_off(monome, event_x, 0);
 					}
 				}
 			
-				return;
+				return 0;
 				
 				break;
 				
 			default:
-				if( e.x > (state->group_count - 1) )
-					return;
+				if( event_x > (state->group_count - 1) )
+					return -1;
 				
-				if( !(f = state->groups[e.x].active_loop) )
-					return;
+				if( !(f = state->groups[event_x].active_loop) )
+					return -1;
 				
 				if( !rove_file_is_active(f) )
-					return;
+					return -1;
 				
 				if( state->pattern_rec )
 					rove_pattern_append_step(state->pattern_rec->data, CMD_GROUP_DEACTIVATE, f, 0);
@@ -163,10 +226,10 @@ static void button_handler(monome_event_t e, void *arg) {
 			}
 		} else {
 			rove_list_foreach(state->files, m, f) {
-				if( e.y < f->y || e.y > ( f->y + f->row_span - 1) )
+				if( event_y < f->y || event_y > ( f->y + f->row_span - 1) )
 					continue;
 		
-				f->new_offset = calculate_play_pos(f->file_length, e.x, (e.y - f->y),
+				f->new_offset = calculate_play_pos(f->file_length, event_x, (event_y - f->y),
 												   f->row_span, (f->play_direction == FILE_PLAY_DIRECTION_REVERSE), f->channels);
 				
 				if( state->pattern_rec )
@@ -186,9 +249,9 @@ static void button_handler(monome_event_t e, void *arg) {
 		
 		break;
 		
-	case MONOME_BUTTON_UP:
-		if( e.y < 1 ) {
-			switch( e.x ) {
+	case BUTTON_UP:
+		if( event_y < 1 ) {
+			switch( event_x ) {
 			case 13:
 				mod_keys &= ~SHIFT;
 				break;
@@ -202,6 +265,8 @@ static void button_handler(monome_event_t e, void *arg) {
 		
 		break;
 	}
+
+	return 0;
 }
 
 void rove_monome_blank_file_row(rove_state_t *state, rove_file_t *f) {
@@ -209,7 +274,7 @@ void rove_monome_blank_file_row(rove_state_t *state, rove_file_t *f) {
 }
 
 void rove_monome_display_file(rove_state_t *state, rove_file_t *f) {
-	monome_t *monome = state->monome;
+	rove_monome_t *monome = state->monome;
 	uint8_t row[2], pos;
 	uint16_t r;
 	
@@ -237,16 +302,25 @@ void rove_monome_display_file(rove_state_t *state, rove_file_t *f) {
 	f->monome_pos = pos;
 }
 
+void rove_monome_run_thread(rove_state_t *state) {
+	lo_server_thread_start(state->monome->st);
+}
+
 int rove_monome_init(rove_state_t *state) {
-	monome_t *monome;
+	rove_monome_t *monome = calloc(sizeof(rove_monome_t), 1);
+	char *buf;
 	
-	if( !(monome = monome_open("/dev/ttyUSB0")) )
+	if( !(monome->st = lo_server_thread_new(OSC_LISTEN_PORT, lo_error)) ) {
+		free(monome);
 		return -1;
+	}
+
+	asprintf(&buf, "/%s/press", OSC_PREFIX);
+	lo_server_thread_add_method(monome->st, buf, "iii", button_handler, state);
+	free(buf);
 	
-	monome_register_handler(monome, MONOME_BUTTON_DOWN, button_handler, state);
-	monome_register_handler(monome, MONOME_BUTTON_UP, button_handler, state);
-	monome_clear(monome, MONOME_CLEAR_OFF);
-	
+	monome->outgoing = lo_address_new(NULL, OSC_HOST_PORT);
+
 	state->monome = monome;
 	return 0;
 }

@@ -1,5 +1,5 @@
 CFLAGS  += -I. -I../include -I/usr/include
-LDFLAGS += -lmonome -ljack -lsndfile
+LDFLAGS += -ljack -lsndfile -llo
 TARGETS = rove
 
 OBJS  = rove.o

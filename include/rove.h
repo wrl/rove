@@ -23,17 +23,22 @@
 
 #include <math.h>
 
+#include <lo/lo.h>
 #include <jack/jack.h>
 #include <sndfile.h>
-#include <monome.h>
 #include <pthread.h>
 
 #include "rove_file.h"
 #include "rove_list.h"
 #include "rove_pattern.h"
 
+typedef struct {
+	lo_server_thread *st;
+	lo_address *outgoing;
+} rove_monome_t;
+
 typedef struct rove_state {
-	monome_t *monome;
+	rove_monome_t *monome;
 	jack_client_t *client;
 	
 	uint8_t group_count;

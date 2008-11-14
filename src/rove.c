@@ -145,14 +145,6 @@ static void usage() {
 		   "\trove <foo.rove>\n\n");
 }
 
-static void *run_monome_thread(void *arg) {
-	rove_state_t *state = (rove_state_t *) arg;
-	
-	monome_main_loop(state->monome);
-	
-	return NULL;
-}
-
 static void main_loop(rove_state_t *state) {
 	rove_list_member_t *m;
 	rove_file_t *f;
@@ -188,7 +180,6 @@ void rove_recalculate_bpm_variables(rove_state_t *state) {
 
 int main(int argc, char **argv) {
 	rove_state_t state;
-	pthread_t monome_thread;
 	
 	memset(&state, 0, sizeof(rove_state_t));
 	
@@ -236,8 +227,7 @@ int main(int argc, char **argv) {
 	if( rove_jack_activate(&state) )
 		return 1;
 	
-	pthread_create(&monome_thread, NULL, run_monome_thread, (void *) &state);
-
+	rove_monome_run_thread(&state);
 	main_loop(&state);
 
 	return 0;

@@ -23,20 +23,19 @@ rove v0.1a:
 		installation may prove to be a bit different than what you're used to.
 		
 		regardless of the platform, you'll need:
-			- libmonome
+			- liblo
 			- JACK (http://www.jackaudio.org/)
 			- libsndfile
 			- libsamplerate
 		
-		if you're on linux, you might already have the latter 3 installed. if not,
-		use your system's package manager to install both the main packages and the
+		if you're on linux, you might already have these installed. if not, use
+		your system's package manager to install both the main packages and the
 		"-dev" packages for them.
 		
-		if you're a mac user, this may be a bit trickier.  you can grab JACK from
-		http://jackosx.com/, and libsndfile and libsamplerate from
-		http://mega-nerd.com/libsndfile/ and http://mega-nerd.com/SRC/
-		respectively.  read the README and INSTALL files that come along
-		with those projects.
+		if you're a mac user, this may be a bit trickier.  you can grab liblo from
+		http://liblo.sf.net/, JACK from	http://jackosx.com/, and libsndfile from
+		http://mega-nerd.com/libsndfile/.  read the README and INSTALL files that
+		come along with those projects.
 		
 		if you're familiar with maintaining software on os X, please get in contact
 		with me!  i'd love to be able to distribute a proper package of rove,
