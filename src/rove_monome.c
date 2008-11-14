@@ -109,9 +109,9 @@ static sf_count_t calculate_play_pos(sf_count_t length, uint8_t position_x, uint
 	elapsed = x / (double) (16 * rows);
 	
 	if( reverse )
-		return lrint(ceil(elapsed * length));
-	else
 		return lrint(floor(elapsed * length));
+	else
+		return lrint(ceil(elapsed * length));
 }
 
 static void blank_file_row(rove_monome_t *monome, rove_file_t *f) {
