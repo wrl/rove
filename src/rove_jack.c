@@ -146,7 +146,7 @@ static int process(jack_nframes_t nframes, void *arg) {
 				if( !state->frames ) {
 					p = state->pattern_rec->data;
 					if( !rove_list_is_empty(p->steps) ) {
-						((rove_pattern_step_t *) p->steps->tail->prev->data)->delay += state->snap_delay;
+						((rove_pattern_step_t *) p->steps->tail->prev->data)->delay += (state->snap_delay) ? state->snap_delay : 1;
 					
 						if( p->delay_frames ) {
 							if( (p->delay_frames -= state->snap_delay) <= 0 ) {
