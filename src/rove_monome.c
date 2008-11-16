@@ -233,27 +233,15 @@ static int button_handler(const char *path, const char *types, lo_arg **argv, in
 	switch( event_type ) {
 	case BUTTON_DOWN:
 		if( event_y < 1 ) {
-			switch( event_x ) {
-			case 15:
-				monome_clear(monome, CLEAR_OFF);
-				exit(0);
-				break;
-				
-			case 13:
-				mod_keys |= SHIFT;
-				break;
-				
-			case 14:
-				mod_keys |= META;
-				break;
-
-			default:
-				callback = &monome->callbacks[event_x];
-				
-				if( callback->cb )
-					callback->arg = callback->cb(state, event_x, event_y, mod_keys, callback->arg);
-
-				break;
+			callback = &monome->callbacks[event_x];
+			
+			if( callback->cb ) {
+				callback->arg = callback->cb(state, event_x, event_y, mod_keys, callback->arg);
+			} else {
+				if( event_x == state->group_count + 2 )
+					mod_keys |= SHIFT;
+				else if( event_x == state->group_count + 3 )
+					mod_keys |= META;
 			}
 		} else {
 			rove_list_foreach(state->files, m, f) {
@@ -282,16 +270,10 @@ static int button_handler(const char *path, const char *types, lo_arg **argv, in
 		
 	case BUTTON_UP:
 		if( event_y < 1 ) {
-			switch( event_x ) {
-			case 13:
+			if( event_x == state->group_count + 3 )
 				mod_keys &= ~SHIFT;
-				break;
-				
-			case 14:
+			else if( event_x == state->group_count + 4 )
 				mod_keys &= ~META;
-				break;
-			}
-		} else {
 		}
 		
 		break;
