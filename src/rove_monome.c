@@ -104,10 +104,12 @@ static sf_count_t calculate_play_pos(sf_count_t length, uint8_t position_x, uint
 	double elapsed;
 	uint8_t x;
 	
+	position_x &= 0x0F;
+
 	if( reverse )
 		position_x += 1;
 	
-	x = (position_x & 0x0F) + ((position_y) * 16);
+	x = position_x + ((position_y) * 16);
 	elapsed = x / (double) (16 * rows);
 	
 	if( reverse )
