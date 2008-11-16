@@ -121,6 +121,24 @@ static void blank_file_row(rove_monome_t *monome, rove_file_t *f) {
 	monome_led_row_16(monome, f->y + (f->monome_pos & 0x0F), row);
 }
 
+static void *pattern_post_record(rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, rove_list_member_t *m) {
+	rove_pattern_t *p = m->data;
+
+	state->pattern_rec = NULL;
+			
+	if( rove_list_is_empty(p->steps) ) {
+		p->status = PATTERN_STATUS_INACTIVE;
+
+		rove_list_remove(state->patterns, m);
+		rove_pattern_free(p);
+				
+		monome_led_off(monome, p->idx + state->group_count, y);
+		return NULL;
+	}
+	
+	return m;
+}
+
 static void *pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void *arg) {
 	rove_monome_t *monome = state->monome;
 
@@ -130,10 +148,12 @@ static void *pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t
 	if( !m ) {
 		if( state->pattern_rec ) {
 			p = state->pattern_rec->data;
-			p->status = PATTERN_STATUS_ACTIVATE;
+			if( (monome->callbacks[p->idx + state->group_count].arg = pattern_post_record(state, monome, x, y, state->pattern_rec)) )
+				p->status = PATTERN_STATUS_ACTIVATE;
 		}
 		
 		p = rove_pattern_new();
+		p->idx = x - state->group_count;
 		p->status = PATTERN_STATUS_RECORDING;
 		p->delay_frames = (lrint(1 / state->beat_multiplier) * BEATS_IN_PATTERN) * state->snap_delay;
 		
@@ -146,7 +166,7 @@ static void *pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t
 		
 		if( mod_keys & SHIFT ) {
 			p->status = PATTERN_STATUS_INACTIVE;
-			
+
 			while( !rove_list_is_empty(p->steps) )
 				free(rove_list_pop(p->steps, HEAD));
 			
@@ -163,18 +183,9 @@ static void *pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t
 					   "      this shouldn't happen.  visinin fucked up, sorry :(\n");
 				return NULL;
 			}
-
-			state->pattern_rec = NULL;
 			
-			if( rove_list_is_empty(p->steps) ) {
-				p->status = PATTERN_STATUS_INACTIVE;
-
-				rove_list_remove(state->patterns, m);
-				rove_pattern_free(p);
-				
-				monome_led_off(monome, x, y);
+			if( !pattern_post_record(state, monome, x, y, m) )
 				return NULL;
-			}
 			
 			/* fall through */
 
