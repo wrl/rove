@@ -144,6 +144,8 @@ typedef struct rove_pattern_step {
 } rove_pattern_step_t;
 
 typedef struct rove_pattern {
+	uint8_t idx;
+
 	rove_list_t *steps;
 	rove_list_member_t *current_step;
 	
@@ -165,6 +167,7 @@ typedef struct rove_state {
 	rove_list_t *files;
 	rove_list_t *patterns;
 	rove_list_member_t *pattern_rec;
+	uint8_t pattern_lengths[2];
 
 	uint8_t staged_loops;
 	rove_list_t *active;

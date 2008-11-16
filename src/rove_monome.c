@@ -155,7 +155,7 @@ static void *pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t
 		p = rove_pattern_new();
 		p->idx = x - state->group_count;
 		p->status = PATTERN_STATUS_RECORDING;
-		p->delay_frames = (lrint(1 / state->beat_multiplier) * BEATS_IN_PATTERN) * state->snap_delay;
+		p->delay_frames = (lrint(1 / state->beat_multiplier) * state->pattern_lengths[p->idx]) * state->snap_delay;
 		
 		m = rove_list_push(state->patterns, TAIL, p);
 		state->pattern_rec = m;

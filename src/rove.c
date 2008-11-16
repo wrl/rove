@@ -50,6 +50,9 @@ static int initialize_groups(rove_state_t *state) {
 	return 0;
 }
 
+/**
+ * this is a mess and i should probably either rewrite it or use an external library
+ */
 static int parse_conf_file(const char *path, rove_state_t *state) {
 	char line[MAX_LENGTH], sndpath[MAX_LENGTH], *offset;
 	uint8_t y = 1, span, group, rev;
@@ -73,7 +76,15 @@ static int parse_conf_file(const char *path, rove_state_t *state) {
 			state->group_count = atoi(++offset);
 			
 			if( !(offset = strstr(offset, ":")) )
-				state->beat_multiplier = 1;
+				return 1;
+			state->pattern_lengths[0] = atoi(++offset);
+			
+			if( !(offset = strstr(offset, ":")) )
+				return 1;
+			state->pattern_lengths[1] = atoi(++offset);
+			
+			if( !(offset = strstr(offset, ":")) )
+				state->beat_multiplier = 0;
 			else
 				state->beat_multiplier = strtod(++offset, NULL);
 
@@ -84,13 +95,16 @@ static int parse_conf_file(const char *path, rove_state_t *state) {
 				return 1;
 			
 			if( !(group = atoi(line)) )
-				continue; /* no group specified */
+				return 1;
 			
 			if( group > state->group_count )
-				continue;
+				return 1;
 			
-			offset = strstr(line, ":") + 1;
-			len   -= offset - line;
+			if( !(offset = strstr(line, ":")) )
+				return 1;
+			
+			offset += 1;
+			len    -= offset - line;
 			
 			if( *offset == 'r' ) {
 				rev = 1;
@@ -99,10 +113,13 @@ static int parse_conf_file(const char *path, rove_state_t *state) {
 				rev = 0;
 			
 			if( !(span = atoi(offset)) )
-				continue; /* span of 0 or no span specified */
+				return 1;
 			
-			offset = strstr(offset, ":") + 1;
-			len   -= offset - line - 2;
+			if( !(offset = strstr(offset, ":")) )
+				return 1;
+			
+			offset += 1;
+			len    -= offset - line - 2;
 			
 			strncpy(sndpath, offset, MAX_LENGTH - 1);
 			sndpath[len] = 0;
@@ -110,7 +127,7 @@ static int parse_conf_file(const char *path, rove_state_t *state) {
 			if( sndpath[len - 1] == '\n' )
 				sndpath[len - 1] = 0;
 			
-			if( y + span > 16 ) {
+			if( y + span > 15 ) {
 				printf("\n\t(you tried to load more, but you're out of room!)\n");
 				break;
 			}
@@ -177,7 +194,7 @@ static void main_loop(rove_state_t *state) {
 }
 
 void rove_recalculate_bpm_variables(rove_state_t *state) {
-	state->snap_delay = lrintf(((60 / state->bpm) * state->beat_multiplier) * ((double) jack_get_sample_rate(state->client)));
+	state->snap_delay = lrint(((60 / state->bpm) * state->beat_multiplier) * ((double) jack_get_sample_rate(state->client)));
 }
 
 int main(int argc, char **argv) {
@@ -185,8 +202,7 @@ int main(int argc, char **argv) {
 	
 	memset(&state, 0, sizeof(rove_state_t));
 	
-	printf("rove is copyright 2008 william light <visinin@gmail.com>\n"
-		   "released under the GPL because all the cool kids are doing it.\n\n");
+	printf("hey, welcome to rove!\n");
 	
 	if( argc < 2 ) {
 		usage();
@@ -212,8 +228,6 @@ int main(int argc, char **argv) {
 		printf("error parsing session file :(\n");
 		return 1;
 	}
-	
-	printf("\n");
 	
 	if( rove_list_is_empty(state.files) ) {
 		fprintf(stderr, "\t(none, evidently.  get some and come play!)\n\n");
