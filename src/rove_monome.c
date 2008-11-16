@@ -270,9 +270,9 @@ static int button_handler(const char *path, const char *types, lo_arg **argv, in
 		
 	case BUTTON_UP:
 		if( event_y < 1 ) {
-			if( event_x == state->group_count + 3 )
+			if( event_x == state->group_count + 2 )
 				mod_keys &= ~SHIFT;
-			else if( event_x == state->group_count + 4 )
+			else if( event_x == state->group_count + 3 )
 				mod_keys &= ~META;
 		}
 		
@@ -346,6 +346,8 @@ int rove_monome_init(rove_state_t *state) {
 		monome->callbacks[i].arg = NULL;
 	}
 	
+	monome_clear(monome, CLEAR_OFF);
+
 	state->monome = monome;
 	return 0;
 }
