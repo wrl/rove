@@ -55,15 +55,15 @@ rove v0.1a:
 		through text files in an arcane file format i've designed out of laziness.
 		loosely, these can be thought of as session files.	here's an example:
 		
-			:87.68:2:.25
+			:87.68:2:8:8:.25
 			1:1:drums.wav
 			2:1:piano.wav
 			2:r1:piano.wav
 			
-		what?
+	what?
 		okay, this might make more sense:
 		
-			: BPM : number of groups : fraction of 1 beat (quarter note) to quantize to
+			: BPM : number of groups : pattern 1 length (in beats) : pattern 2 length : fraction of 1 beat (quarter note) to quantize to
 			group number : (reverse?) number of rows to span : filename relative to session file
 			group number : (reverse?) number of rows to span : filename relative to session file
 			...
@@ -72,10 +72,10 @@ rove v0.1a:
 		adding an "r" before the "number of rows to span" indicates that the loop should be
 		played in reverse.
 
-		so the above file has a BPM of 87.68, has 2 groups, and quantizes to 16th notes.
-		there are three files loaded, drums.wav on group 1 spanning 1 row, and then piano.wav
-		loaded in twice, both on group two and both spanning one row, but the lower one is
-		playing backwards.
+		so the above file has a BPM of 87.68, has 2 groups, quantizes to 16th notes, and both
+		patterns recorders are set to be eight beats long.  there are three files loaded,
+		drums.wav on group 1 spanning 1 row, and then piano.wav loaded in twice, both on
+		group two and both spanning one row, but the lower one is playing backwards.
 	
 	what do i press?
 		 +-----------+ - - - - - +-----------+-----------+-----------+-----------+
