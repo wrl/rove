@@ -167,8 +167,10 @@ static void *pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t
 			state->pattern_rec = NULL;
 			
 			if( rove_list_is_empty(p->steps) ) {
-				rove_pattern_free(p);
+				p->status = PATTERN_STATUS_INACTIVE;
+
 				rove_list_remove(state->patterns, m);
+				rove_pattern_free(p);
 				
 				monome_led_off(monome, x, y);
 				return NULL;
@@ -176,12 +178,12 @@ static void *pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t
 			
 			/* fall through */
 
+		case PATTERN_STATUS_ACTIVATE:
 		case PATTERN_STATUS_INACTIVE:
 			p->status = PATTERN_STATUS_ACTIVATE;
 			monome_led_on(monome, x, y);
 			break;
 			
-		case PATTERN_STATUS_ACTIVATE:
 		case PATTERN_STATUS_ACTIVE:
 			p->status = PATTERN_STATUS_INACTIVE;
 			monome_led_off(monome, x, y);
