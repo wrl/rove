@@ -40,7 +40,7 @@ void rove_list_free(rove_list_t *list) {
 	free(list);
 }
 
-void rove_list_push(rove_list_t *list, rove_list_global_location_t l, void *data) {
+rove_list_member_t *rove_list_push(rove_list_t *list, rove_list_global_location_t l, void *data) {
 	rove_list_member_t *m = calloc(1, sizeof(rove_list_member_t));
 
 	m->data = data;
@@ -58,9 +58,11 @@ void rove_list_push(rove_list_t *list, rove_list_global_location_t l, void *data
 		list->tail->prev->next = m;
 		list->tail->prev = m;
 	}
+	
+	return m;
 }
 
-void rove_list_insert(void *data, rove_list_local_location_t l, rove_list_member_t *rel) {
+rove_list_member_t *rove_list_insert(void *data, rove_list_local_location_t l, rove_list_member_t *rel) {
 	rove_list_member_t *m = calloc(1, sizeof(rove_list_member_t));
 	
 	m->data = data;
@@ -78,6 +80,8 @@ void rove_list_insert(void *data, rove_list_local_location_t l, rove_list_member
 		rel->prev->next = rel;
 		rel->prev = rel;
 	}
+	
+	return m;
 }
 
 void *rove_list_pop(rove_list_t *list, rove_list_global_location_t l) {

@@ -105,9 +105,19 @@ typedef struct rove_list {
  * rove_monome
  */
 
+struct rove_state;
+typedef void *(*rove_monome_callback_function_t)(struct rove_state *, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void *arg);
+
 typedef struct {
+	rove_monome_callback_function_t cb;
+	void *arg;
+} rove_monome_callback_t;
+
+typedef struct rove_monome {
 	lo_server_thread *st;
 	lo_address *outgoing;
+	
+	rove_monome_callback_t *callbacks;
 } rove_monome_t;
 
 /**

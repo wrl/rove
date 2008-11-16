@@ -33,8 +33,10 @@
 static int initialize_groups(rove_state_t *state) {
 	int i;
 	
-	/* 16 rows on the 256, leave two for controls */
-	if( !state->group_count || state->group_count > 14 )
+	/**
+	 * leave room for the four control buttons on the top row
+	 */
+	if( !state->group_count || state->group_count > 10 )
 		return 1;
 	
 	if( state->groups )
@@ -191,9 +193,6 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 	
-	if( rove_monome_init(&state) )
-		return 1;
-
 	if( rove_jack_init(&state) )
 		return 1;
 	
@@ -224,6 +223,9 @@ int main(int argc, char **argv) {
 	rove_recalculate_bpm_variables(&state);
 	state.frames = state.snap_delay;
 	
+	if( rove_monome_init(&state) )
+		return 1;
+
 	if( rove_jack_activate(&state) )
 		return 1;
 	

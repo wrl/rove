@@ -143,16 +143,13 @@ static int process(jack_nframes_t nframes, void *arg) {
 				break;
 				
 			case PATTERN_STATUS_RECORDING:
-				if( !state->frames ) {
-					p = state->pattern_rec->data;
-					if( !rove_list_is_empty(p->steps) ) {
-						((rove_pattern_step_t *) p->steps->tail->prev->data)->delay += (state->snap_delay) ? state->snap_delay : 1;
+				if( !state->frames && !rove_list_is_empty(p->steps) ) {
+					((rove_pattern_step_t *) p->steps->tail->prev->data)->delay += (state->snap_delay) ? state->snap_delay : 1;
 					
-						if( p->delay_frames ) {
-							if( (p->delay_frames -= state->snap_delay) <= 0 ) {
-								p->status = PATTERN_STATUS_ACTIVATE;
-								state->pattern_rec = NULL;
-							}
+					if( p->delay_frames ) {
+						if( (p->delay_frames -= state->snap_delay) <= 0 ) {
+							p->status = PATTERN_STATUS_ACTIVATE;
+							state->pattern_rec = NULL;
 						}
 					}
 				}
