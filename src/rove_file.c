@@ -16,7 +16,6 @@
  * along with rove.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <samplerate.h>
 #include <sndfile.h>
 #include <string.h>
 #include <stdlib.h>

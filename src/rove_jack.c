@@ -17,7 +17,6 @@
  */
 
 #include <pthread.h>
-#include <samplerate.h>
 #include <sndfile.h>
 #include <stdlib.h>
 #include <string.h>

@@ -26,7 +26,6 @@ rove v0.1a:
 			- liblo
 			- JACK (http://www.jackaudio.org/)
 			- libsndfile
-			- libsamplerate
 		
 		if you're on linux, you might already have these installed. if not, use
 		your system's package manager to install both the main packages and the
