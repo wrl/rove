@@ -36,7 +36,7 @@ static int initialize_groups(rove_state_t *state) {
 	/**
 	 * leave room for the four control buttons on the top row
 	 */
-	if( !state->group_count || state->group_count > 10 )
+	if( !state->group_count || state->group_count > 12 )
 		return 1;
 	
 	if( state->groups )
