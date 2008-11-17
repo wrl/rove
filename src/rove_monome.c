@@ -167,6 +167,9 @@ static void *pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t
 		p = m->data;
 		
 		if( mod_keys & SHIFT ) {
+			if( state->pattern_rec == m )
+				state->pattern_rec = NULL;
+			
 			p->status = PATTERN_STATUS_INACTIVE;
 
 			while( !rove_list_is_empty(p->steps) )
