@@ -57,7 +57,7 @@ rove v0.1a:
 	how do i use it?
 		currently, rove has no GUI of any sort.	 all of the configuration is done
 		through text files in an arcane file format i've designed out of laziness.
-		loosely, these can be thought of as session files.	here's an example:
+		loosely, these can be thought of as session files.  here's an example:
 		
 			:87.68:2:8:8:.25
 			1:1:drums.wav
@@ -82,6 +82,7 @@ rove v0.1a:
 		group two and both spanning one row, but the lower one is playing backwards.
 	
 		after you've created your session file, run rove with "rove <sessionfile.rv>".
+		you'll need to have monomeserial running with your prefix set to "/rove".
 		
 	what do i press?
 		 +-----------+ - - - - - +-----------+-----------+-----------+-----------+
@@ -89,7 +90,7 @@ rove v0.1a:
 		 |    mute   |   those   | rec / tog | rec / tog |           |           |
 		 +-----------+ - - - - - +-----------+-----------+-----------+-----------+
 
-		at the moment, it's designed to mimic mlr.	the top row is the control row, with the
+		at the moment, it's designed to mimic mlr.  the top row is the control row, with the
 		first [number of groups in session] buttons turning off their respective group.
 		activate a group by pressing a button associated with one of the loops, which means
 		anything below the first row starting with the second.
@@ -110,7 +111,7 @@ rove v0.1a:
 	
 	how do i get in contact with you?
 		my email address is visinin@gmail.com, and i'd love to hear from you.  questions,
-		comments, encouragement, anything.	it's a great feeling hearing from people.
+		comments, encouragement, anything.  it's a great feeling hearing from people.
 		
 		please don't mind the messiness of the code or the general lack of polish presently.
 		i figure that getting software into peoples' hands is the best way to find rough edges
