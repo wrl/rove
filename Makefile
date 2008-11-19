@@ -3,6 +3,10 @@ SHELL = /bin/sh
 export PROJECT = rove
 export VERSION = 0.1a
 
+ifeq ($(MAKECMDGOALS),256)
+CFLAGS += -DMONOME_COLS=16
+endif
+
 export CC = gcc
 export LD = gcc
 export CFLAGS  += -ggdb -D_GNU_SOURCE -Wall -Werror
@@ -22,6 +26,8 @@ export PKGCONFIGDIR = $(LIBDIR)/pkgconfig
 
 all:
 	cd src; $(MAKE)
+
+256: all
 
 clean:
 	cd src; $(MAKE) clean

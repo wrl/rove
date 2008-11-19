@@ -42,9 +42,14 @@ rove v0.1a:
 		additionally, i don't have any mac computers on which i can test.
 		
 	okay, i've got that stuff installed, now what?
-		just run "make" from the top-level rove directory.	rove should	build quickly
-		and uneventfully.  after that, just do a "sudo make install" to install the
-		rove executable system-wide.
+		if you want to build rove to run on a monome with 8 columns (40h, 64, 128
+		in some orientations), just run "make" from the top-level rove directory.
+
+		if you have a monome with 16 columns (256, 128 in the other orientations),
+		run "make 256" from the top-level directory.
+		
+		in either case, rove should build quickly and uneventfully.  after that,
+		just do a "sudo make install" to install the rove executable system-wide.
 		
 		if there are any errors in the build process, let me know either via email
 		or on the monome forums.  i'll see what i can do.

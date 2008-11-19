@@ -27,7 +27,9 @@
 #include "rove_list.h"
 #include "rove_pattern.h"
 
-#define MONOME_COLS     16
+#ifndef MONOME_COLS
+#define MONOME_COLS     8
+#endif
 
 #define BUTTON_DOWN     1
 #define BUTTON_UP       0
@@ -46,6 +48,16 @@
 /**
  * (mostly) emulate libmonome functions in liblo
  */
+
+void monome_led_row_8(rove_monome_t *monome, uint8_t row, uint8_t *row_data) {
+	char *buf;
+	
+	asprintf(&buf, "/%s/led_row", OSC_PREFIX);
+	lo_send_from(monome->outgoing, lo_server_thread_get_server(monome->st), LO_TT_IMMEDIATE, buf, "ii", row, row_data[0]);
+	free(buf);
+
+	return;
+}
 
 void monome_led_row_16(rove_monome_t *monome, uint8_t row, uint8_t *row_data) {
 	char *buf;
@@ -94,9 +106,10 @@ static uint8_t calculate_monome_pos(sf_count_t length, sf_count_t position, uint
 	uint8_t x, y;
 	
 	elapsed = position / (double) length;
-	x = lrint(floor(elapsed * (((double) 16) * rows)));
-	y = (x / 16) & 0x0F;
-	
+	x  = lrint(floor(elapsed * (((double) MONOME_COLS) * rows)));
+	y  = (x / MONOME_COLS) & 0x0F;
+	x %= MONOME_COLS;
+
 	return ((x << 4) | y);
 }
 
@@ -109,8 +122,8 @@ static sf_count_t calculate_play_pos(sf_count_t length, uint8_t position_x, uint
 	if( reverse )
 		position_x += 1;
 	
-	x = position_x + ((position_y) * 16);
-	elapsed = x / (double) (16 * rows);
+	x = position_x + ((position_y) * MONOME_COLS);
+	elapsed = x / (double) (MONOME_COLS * rows);
 	
 	if( reverse )
 		return lrint(floor(elapsed * length));
@@ -120,7 +133,12 @@ static sf_count_t calculate_play_pos(sf_count_t length, uint8_t position_x, uint
 
 static void blank_file_row(rove_monome_t *monome, rove_file_t *f) {
 	uint8_t row[2] = {0, 0};
+
+#if MONOME_COLS <= 8
+	monome_led_row_8(monome, f->y + (f->monome_pos & 0x0F), row);
+#else
 	monome_led_row_16(monome, f->y + (f->monome_pos & 0x0F), row);
+#endif
 }
 
 static void *pattern_post_record(rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, rove_list_member_t *m) {
@@ -249,7 +267,8 @@ static int button_handler(const char *path, const char *types, lo_arg **argv, in
 	switch( event_type ) {
 	case BUTTON_DOWN:
 		if( event_y < 1 ) {
-			callback = &monome->callbacks[event_x];
+			if( !(callback = &monome->callbacks[event_x]) )
+				return -1;
 			
 			if( callback->cb ) {
 				callback->arg = callback->cb(state, event_x, event_y, mod_keys, callback->arg);
@@ -317,15 +336,26 @@ void rove_monome_display_file(rove_state_t *state, rove_file_t *f) {
 
 		if( (pos & 0x0F) != (f->monome_pos_old & 0x0F) ) {
 			row[0] = row[1] = 0;
+
+#if MONOME_COLS <= 8
+			monome_led_row_8(monome, f->y + (f->monome_pos_old & 0x0F), row);
+#else
 			monome_led_row_16(monome, f->y + (f->monome_pos_old & 0x0F), row);
+#endif
 		}
 		
 		f->monome_pos_old = pos;
 	
-		r      = 1 << ( pos >> 4 );
+		r      = 1 << (pos >> 4);
 		row[0] = r & 0x00FF;
 		row[1] = r >> 8;
+
+
+#if MONOME_COLS <= 8
+		monome_led_row_8(monome, f->y + (pos & 0x0F), row);
+#else
 		monome_led_row_16(monome, f->y + (pos & 0x0F), row);
+#endif
 	}
 
 	f->monome_pos = pos;
