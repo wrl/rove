@@ -43,8 +43,6 @@
 #define SHIFT 0x01
 #define META  0x02
 
-#define BEATS_IN_PATTERN 8
-
 /**
  * (mostly) emulate libmonome functions in liblo
  */
