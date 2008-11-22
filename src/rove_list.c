@@ -21,10 +21,21 @@
 #include "rove_list.h"
 
 rove_list_t *rove_list_new() {
-	rove_list_t *list = calloc(1, sizeof(rove_list_t));
+	rove_list_t *list;
 	
-	list->head = calloc(1, sizeof(rove_list_member_t));
-	list->tail = calloc(1, sizeof(rove_list_member_t));
+	if( !(list = calloc(1, sizeof(rove_list_t))) )
+		return NULL;
+
+	if( !(list->head = calloc(1, sizeof(rove_list_member_t))) ) {
+		free(list);
+		return NULL;
+	}
+	
+	if( !(list->tail = calloc(1, sizeof(rove_list_member_t))) ) {
+		free(list->head);
+		free(list);
+		return NULL;
+	}
 	
 	list->head->prev = NULL;
 	list->head->next = list->tail;
@@ -42,7 +53,10 @@ void rove_list_free(rove_list_t *list) {
 
 rove_list_member_t *rove_list_push(rove_list_t *list, rove_list_global_location_t l, void *data) {
 	rove_list_member_t *m = calloc(1, sizeof(rove_list_member_t));
-
+	
+	if( !m )
+		return NULL;
+	
 	m->data = data;
 	
 	if( l == HEAD ) {
@@ -64,6 +78,9 @@ rove_list_member_t *rove_list_push(rove_list_t *list, rove_list_global_location_
 
 rove_list_member_t *rove_list_insert(void *data, rove_list_local_location_t l, rove_list_member_t *rel) {
 	rove_list_member_t *m = calloc(1, sizeof(rove_list_member_t));
+	
+	if( !m )
+		return NULL;
 	
 	m->data = data;
 	
