@@ -118,6 +118,8 @@ typedef struct rove_monome {
 	lo_address *outgoing;
 	
 	rove_monome_callback_t *callbacks;
+	char *osc_prefix;
+	uint8_t cols;
 } rove_monome_t;
 
 /**

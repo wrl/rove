@@ -29,10 +29,11 @@ void monome_clear(rove_monome_t *monome, uint8_t mode);
 void monome_led_on(rove_monome_t *monome, uint8_t x, uint8_t y);
 void monome_led_off(rove_monome_t *monome, uint8_t x, uint8_t y);
 
-void rove_monome_run_thread(rove_state_t *state);
+void rove_monome_run_thread(rove_monome_t *monome);
+void rove_monome_stop_thread(rove_monome_t *monome);
 
 void rove_monome_blank_file_row(rove_state_t *state, rove_file_t *f);
 void rove_monome_display_file(rove_state_t *state, rove_file_t *f);
-int  rove_monome_init(rove_state_t *state);
+int  rove_monome_init(rove_state_t *state, const char *osc_prefix, const char *osc_host_port, const char *osc_listen_port);
 
 #endif

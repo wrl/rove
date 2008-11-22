@@ -16,10 +16,11 @@
  * along with rove.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <sndfile.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <lo/lo.h>
+#include <sndfile.h>
 
 #include "rove.h"
 #include "rove_file.h"
@@ -36,10 +37,6 @@
 
 #define CLEAR_OFF       0
 
-#define OSC_PREFIX      "rove"
-#define OSC_HOST_PORT   "8080"
-#define OSC_LISTEN_PORT "8000"
-
 #define SHIFT 0x01
 #define META  0x02
 
@@ -50,7 +47,7 @@
 void monome_led_row_8(rove_monome_t *monome, uint8_t row, uint8_t *row_data) {
 	char *buf;
 	
-	asprintf(&buf, "/%s/led_row", OSC_PREFIX);
+	asprintf(&buf, "/%s/led_row", monome->osc_prefix);
 	lo_send_from(monome->outgoing, lo_server_thread_get_server(monome->st), LO_TT_IMMEDIATE, buf, "ii", row, row_data[0]);
 	free(buf);
 
@@ -60,7 +57,7 @@ void monome_led_row_8(rove_monome_t *monome, uint8_t row, uint8_t *row_data) {
 void monome_led_row_16(rove_monome_t *monome, uint8_t row, uint8_t *row_data) {
 	char *buf;
 	
-	asprintf(&buf, "/%s/led_row", OSC_PREFIX);
+	asprintf(&buf, "/%s/led_row", monome->osc_prefix);
 	lo_send_from(monome->outgoing, lo_server_thread_get_server(monome->st), LO_TT_IMMEDIATE, buf, "iii", row, row_data[0], row_data[1]);
 	free(buf);
 
@@ -70,7 +67,7 @@ void monome_led_row_16(rove_monome_t *monome, uint8_t row, uint8_t *row_data) {
 void monome_clear(rove_monome_t *monome, uint8_t mode) {
 	char *buf;
 	
-	asprintf(&buf, "/%s/clear", OSC_PREFIX);
+	asprintf(&buf, "/%s/clear", monome->osc_prefix);
 	lo_send_from(monome->outgoing, lo_server_thread_get_server(monome->st), LO_TT_IMMEDIATE, buf, "i", mode);
 	free(buf);
 }
@@ -78,7 +75,7 @@ void monome_clear(rove_monome_t *monome, uint8_t mode) {
 void monome_led_on(rove_monome_t *monome, uint8_t x, uint8_t y) {
 	char *buf;
 	
-	asprintf(&buf, "/%s/led", OSC_PREFIX);
+	asprintf(&buf, "/%s/led", monome->osc_prefix);
 	lo_send_from(monome->outgoing, lo_server_thread_get_server(monome->st), LO_TT_IMMEDIATE, buf, "iii", x, y, 1);
 	free(buf);
 }
@@ -86,7 +83,7 @@ void monome_led_on(rove_monome_t *monome, uint8_t x, uint8_t y) {
 void monome_led_off(rove_monome_t *monome, uint8_t x, uint8_t y) {
 	char *buf;
 	
-	asprintf(&buf, "/%s/led", OSC_PREFIX);
+	asprintf(&buf, "/%s/led", monome->osc_prefix);
 	lo_send_from(monome->outgoing, lo_server_thread_get_server(monome->st), LO_TT_IMMEDIATE, buf, "iii", x, y, 0);
 	free(buf);
 }
@@ -359,26 +356,40 @@ void rove_monome_display_file(rove_state_t *state, rove_file_t *f) {
 	f->monome_pos = pos;
 }
 
-void rove_monome_run_thread(rove_state_t *state) {
-	lo_server_thread_start(state->monome->st);
+void rove_monome_run_thread(rove_monome_t *monome) {
+	lo_server_thread_start(monome->st);
 }
 
-int rove_monome_init(rove_state_t *state) {
+void rove_monome_stop_thread(rove_monome_t *monome) {
+	lo_server_thread_stop(monome->st);
+}
+
+void rove_monome_free(rove_monome_t *monome) {
+	lo_server_thread_free(monome->st);
+	lo_address_free(monome->outgoing);
+	free(monome->callbacks);
+	free(monome->osc_prefix);
+	
+	free(monome);
+}
+
+int rove_monome_init(rove_state_t *state, const char *osc_prefix, const char *osc_host_port, const char *osc_listen_port) {
 	rove_monome_t *monome = calloc(sizeof(rove_monome_t), 1);
 	char *buf;
 	int i;
 	
-	if( !(monome->st = lo_server_thread_new(OSC_LISTEN_PORT, lo_error)) ) {
+	if( !(monome->st = lo_server_thread_new(osc_listen_port, lo_error)) ) {
 		free(monome);
 		return -1;
 	}
 
-	asprintf(&buf, "/%s/press", OSC_PREFIX);
+	asprintf(&buf, "/%s/press", osc_prefix);
 	lo_server_thread_add_method(monome->st, buf, "iii", button_handler, state);
 	free(buf);
 	
-	monome->outgoing  = lo_address_new(NULL, OSC_HOST_PORT);
-	monome->callbacks = calloc(sizeof(rove_monome_callback_t), MONOME_COLS);
+	monome->outgoing   = lo_address_new(NULL, osc_host_port);
+	monome->callbacks  = calloc(sizeof(rove_monome_callback_t), MONOME_COLS);
+	monome->osc_prefix = strdup(osc_prefix);
 	
 	for( i = 0; i < state->group_count; i++ ) {
 		monome->callbacks[i].cb  = group_off_handler;

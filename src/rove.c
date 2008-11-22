@@ -16,6 +16,7 @@
  * along with rove.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <getopt.h>
 #include <stdio.h>
 #include <libgen.h>
 #include <stdlib.h>
@@ -28,7 +29,14 @@
 #include "rove_jack.h"
 #include "rove_monome.h"
 
+#define DEFAULT_OSC_PREFIX      "rove"
+#define DEFAULT_OSC_HOST_PORT   "8080"
+#define DEFAULT_OSC_LISTEN_PORT "8000"
+
 #define MAX_LENGTH 1024
+
+/* 48 is ASCII '0', 57 is ASCII '9'. tests one character. */
+#define is_numeric(c) ((48 <= c) && (c <= 57))
 
 static int initialize_groups(rove_state_t *state) {
 	int i;
@@ -160,8 +168,10 @@ static int parse_conf_file(const char *path, rove_state_t *state) {
 }
 
 static void usage() {
-	printf("use rove by passing it the location of your session/conf file.\n"
-		   "\trove <foo.rove>\n\n");
+	printf("Usage: rove [OPTION]... session_file.rv\n"
+		   "  -p, --osc-prefix=PREFIX\n"
+		   "  -h, --osc-host-port=PORT\n"
+		   "  -l, --osc-listen-port=PORT\n");
 }
 
 static void main_loop(rove_state_t *state) {
@@ -198,16 +208,74 @@ void rove_recalculate_bpm_variables(rove_state_t *state) {
 }
 
 int main(int argc, char **argv) {
+	char *osc_prefix, *osc_host_port, *osc_listen_port, *session_file, c;
 	rove_state_t state;
+	int i;
+	
+	struct option arguments[] = {
+		{"osc-prefix", 		required_argument, 0, 'p'},
+		{"osc-host-port", 	required_argument, 0, 'h'},
+		{"osc-listen-port",	required_argument, 0, 'l'},
+		{0, 0, 0, 0}
+	};
 	
 	memset(&state, 0, sizeof(rove_state_t));
 	
-	printf("hey, welcome to rove!\n");
+	session_file    = NULL;
+	osc_prefix      = DEFAULT_OSC_PREFIX;
+	osc_host_port   = DEFAULT_OSC_HOST_PORT;
+	osc_listen_port = DEFAULT_OSC_LISTEN_PORT;
 	
-	if( argc < 2 ) {
+	opterr = 0;
+	
+	while( (c = getopt_long(argc, argv, "p:h:l:", arguments, &i)) > 0 ) {
+		switch( c ) {
+		case 'p':
+			osc_prefix = optarg;
+			
+			if( *osc_prefix == '/' ) /* remove the leading slash if there is one */
+				osc_prefix++;
+			
+			break;
+			
+		case 'h':
+			osc_host_port = optarg;
+			
+			do {
+				if( !is_numeric(*optarg) ) {
+					usage();
+					printf("\nerror: \"%s\" is not a valid host port.\n\n", osc_host_port);
+					return 1;
+				}
+			} while( *++optarg );
+
+			break;
+			
+		case 'l':
+			osc_listen_port = optarg;
+
+			do {
+				if( !is_numeric(*optarg) ) {
+					usage();
+					printf("\nerror: \"%s\" is not a valid listen port.\n\n", osc_listen_port);
+					return 1;
+				}
+			} while( *++optarg );
+
+
+			break;
+		}
+	}
+	
+	if( optind == argc ) {
 		usage();
+		printf("\nerror: you did not specify a session file!\n\n");
 		return 1;
 	}
+	
+	session_file = argv[optind];
+	
+	printf("\nhey, welcome to rove!\n\n");
 	
 	if( rove_jack_init(&state) )
 		return 1;
@@ -224,7 +292,7 @@ int main(int argc, char **argv) {
 	printf("you've got the following loops loaded:\n"
 		   "\t[rows]\t[file]\n");
 	
-	if( parse_conf_file(argv[1], &state) ) {
+	if( parse_conf_file(session_file, &state) ) {
 		printf("error parsing session file :(\n");
 		return 1;
 	}
@@ -237,13 +305,13 @@ int main(int argc, char **argv) {
 	rove_recalculate_bpm_variables(&state);
 	state.frames = state.snap_delay;
 	
-	if( rove_monome_init(&state) )
+	if( rove_monome_init(&state, osc_prefix, osc_host_port, osc_listen_port) )
 		return 1;
 
 	if( rove_jack_activate(&state) )
 		return 1;
 	
-	rove_monome_run_thread(&state);
+	rove_monome_run_thread(state.monome);
 	main_loop(&state);
 
 	return 0;
