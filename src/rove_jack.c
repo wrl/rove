@@ -32,7 +32,7 @@
 static jack_port_t *outport_l;
 static jack_port_t *outport_r;
 
-#define SRATE_ROUND 100
+#define on_quantize_boundary() (!state->frames)
 
 static int process(jack_nframes_t nframes, void *arg) {
 	rove_state_t *state = arg;
@@ -40,12 +40,16 @@ static int process(jack_nframes_t nframes, void *arg) {
 	jack_default_audio_sample_t *out_l = jack_port_get_buffer(outport_l, nframes);
 	jack_default_audio_sample_t *out_r = jack_port_get_buffer(outport_r, nframes);
 	
+	int j, group_count;
 	sf_count_t i, o;
 	
-	rove_file_t *f;
-	rove_pattern_t *p;
-	rove_list_member_t *m;
 	rove_pattern_step_t *s;
+	rove_list_member_t *m;
+	rove_pattern_t *p;
+	rove_group_t *g;
+	rove_file_t *f;
+	
+	group_count = state->group_count;
 	
 	for( i = 0; i < nframes; i++ )
 		out_l[i] = out_r[i] = 0;
@@ -54,34 +58,26 @@ static int process(jack_nframes_t nframes, void *arg) {
 		if( state->snap_delay > 0 )
 			if( ++state->frames >= state->snap_delay )
 				state->frames = 0;
-
-		rove_list_foreach(state->files, m, f) {
-			o = rove_file_get_play_pos(f);
+		
+		for( j = 0; j < group_count; j++ ) {
+			g = &state->groups[j];
+			f = g->active_loop;
 			
-			switch( f->state ) {
-			case FILE_STATE_DEACTIVATE:
-			case FILE_STATE_INACTIVE:
-				continue;
-				
-			case FILE_STATE_ACTIVATE:
-				if( !state->frames )
-					rove_file_activate(f);
-				else
-					continue;
-				
-				break;
-
-			case FILE_STATE_RESEEK:
-				if( !state->frames ) {
-					rove_file_reseek(f, state->frames);
-					o = rove_file_get_play_pos(f);
+			if( on_quantize_boundary() ) 
+				if( g->staged_loop ) {
+					rove_file_activate(g->staged_loop);
+					g->staged_loop = NULL;
+					f = g->active_loop;
 				}
-
-				break;
-				
-			case FILE_STATE_ACTIVE:
-				break;
-			}
+			
+			if( !f )
+				continue;
+			
+			if( on_quantize_boundary() )
+				if( f->state == FILE_STATE_RESEEK )
+					rove_file_reseek(f, 0);
+			
+			o = rove_file_get_play_pos(f);
 			
 			if( f->channels == 1 ) {
 				out_l[i] += f->file_data[o]   * f->volume;
@@ -97,7 +93,7 @@ static int process(jack_nframes_t nframes, void *arg) {
 		rove_list_foreach(state->patterns, m, p) {
 			switch( p->status ) {
 			case PATTERN_STATUS_ACTIVATE:
-				if( !state->frames ) {
+				if( on_quantize_boundary() ) {
 					p->status = PATTERN_STATUS_ACTIVE;
 					p->current_step = p->steps->tail->prev;
 					p->delay_frames = ((rove_pattern_step_t *) p->current_step->data)->delay;
@@ -142,7 +138,7 @@ static int process(jack_nframes_t nframes, void *arg) {
 				break;
 				
 			case PATTERN_STATUS_RECORDING:
-				if( !state->frames && !rove_list_is_empty(p->steps) ) {
+				if( on_quantize_boundary() && !rove_list_is_empty(p->steps) ) {
 					((rove_pattern_step_t *) p->steps->tail->prev->data)->delay += (state->snap_delay) ? state->snap_delay : 1;
 					
 					if( p->delay_frames ) {

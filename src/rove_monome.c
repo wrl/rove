@@ -288,6 +288,7 @@ static int button_handler(const char *path, const char *types, lo_arg **argv, in
 				
 				if( !rove_file_is_active(f) ) {
 					f->force_monome_update = 1;
+					f->group->staged_loop  = f;
 					f->state = FILE_STATE_ACTIVATE;
 				
 					f->play_offset = f->new_offset;

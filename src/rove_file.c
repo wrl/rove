@@ -100,6 +100,9 @@ void rove_file_activate(rove_file_t *f) {
 }
 
 void rove_file_deactivate(rove_file_t *f) {
+	if( f->group->active_loop == f )
+		f->group->active_loop = NULL;
+	
 	f->state = FILE_STATE_INACTIVE;
 }
 

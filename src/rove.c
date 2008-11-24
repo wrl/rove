@@ -183,11 +183,11 @@ static void main_loop(rove_state_t *state) {
 		rove_list_foreach(state->files, m, f) {
 			switch( f->state ) {
 			case FILE_STATE_DEACTIVATE:
-				rove_file_deactivate(f);
-				rove_monome_blank_file_row(state, f);
-				
 				if( f->group->active_loop == f )
 					monome_led_off(state->monome, f->group->idx, 0);
+				
+				rove_file_deactivate(f);
+				rove_monome_blank_file_row(state, f);
 				
 			case FILE_STATE_INACTIVE:
 				continue;
