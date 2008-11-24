@@ -28,10 +28,6 @@
 #include "rove_list.h"
 #include "rove_pattern.h"
 
-#ifndef MONOME_COLS
-#define MONOME_COLS     8
-#endif
-
 #define BUTTON_DOWN     1
 #define BUTTON_UP       0
 
@@ -39,6 +35,13 @@
 
 #define SHIFT 0x01
 #define META  0x02
+
+#define monome_led_row(m, y, r) do {			\
+		if( m->cols <= 8 )						\
+			monome_led_row_8(m, y, r);			\
+		else									\
+			monome_led_row_16(m, y, r);			\
+	} while(0);
 
 /**
  * (mostly) emulate libmonome functions in liblo
@@ -96,19 +99,19 @@ static void lo_error(int num, const char *error_msg, const char *path) {
 	fflush(stdout);
 }
 
-static uint8_t calculate_monome_pos(sf_count_t length, sf_count_t position, uint8_t rows) {
+static uint8_t calculate_monome_pos(sf_count_t length, sf_count_t position, uint8_t rows, uint8_t cols) {
 	double elapsed;
 	uint8_t x, y;
 	
 	elapsed = position / (double) length;
-	x  = lrint(floor(elapsed * (((double) MONOME_COLS) * rows)));
-	y  = (x / MONOME_COLS) & 0x0F;
-	x %= MONOME_COLS;
+	x  = lrint(floor(elapsed * (((double) cols) * rows)));
+	y  = (x / cols) & 0x0F;
+	x %= cols;
 
 	return ((x << 4) | y);
 }
 
-static sf_count_t calculate_play_pos(sf_count_t length, uint8_t position_x, uint8_t position_y, uint8_t rows, uint8_t reverse, sf_count_t channels) {
+static sf_count_t calculate_play_pos(sf_count_t length, uint8_t position_x, uint8_t position_y, uint8_t reverse, uint8_t rows, uint8_t cols) {
 	double elapsed;
 	uint8_t x;
 	
@@ -117,8 +120,8 @@ static sf_count_t calculate_play_pos(sf_count_t length, uint8_t position_x, uint
 	if( reverse )
 		position_x += 1;
 	
-	x = position_x + ((position_y) * MONOME_COLS);
-	elapsed = x / (double) (MONOME_COLS * rows);
+	x = position_x + ((position_y) * cols);
+	elapsed = x / (double) (cols * rows);
 	
 	if( reverse )
 		return lrint(floor(elapsed * length));
@@ -129,11 +132,7 @@ static sf_count_t calculate_play_pos(sf_count_t length, uint8_t position_x, uint
 static void blank_file_row(rove_monome_t *monome, rove_file_t *f) {
 	uint8_t row[2] = {0, 0};
 
-#if MONOME_COLS <= 8
-	monome_led_row_8(monome, f->y + (f->monome_pos & 0x0F), row);
-#else
-	monome_led_row_16(monome, f->y + (f->monome_pos & 0x0F), row);
-#endif
+	monome_led_row(monome, f->y + (f->monome_pos & 0x0F), row);
 }
 
 static void *pattern_post_record(rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, rove_list_member_t *m) {
@@ -274,12 +273,15 @@ static int button_handler(const char *path, const char *types, lo_arg **argv, in
 					mod_keys |= META;
 			}
 		} else {
+			if( event_x >= monome->cols )
+				return -1;
+			
 			rove_list_foreach(state->files, m, f) {
 				if( event_y < f->y || event_y > ( f->y + f->row_span - 1) )
 					continue;
 		
 				f->new_offset = calculate_play_pos(f->file_length, event_x, (event_y - f->y),
-												   f->row_span, (f->play_direction == FILE_PLAY_DIRECTION_REVERSE), f->channels);
+												   (f->play_direction == FILE_PLAY_DIRECTION_REVERSE), f->row_span, monome->cols);
 				
 				if( state->pattern_rec )
 					rove_pattern_append_step(state->pattern_rec->data, CMD_LOOP_SEEK, f, f->new_offset);
@@ -321,7 +323,7 @@ void rove_monome_display_file(rove_state_t *state, rove_file_t *f) {
 	uint8_t row[2], pos;
 	uint16_t r;
 	
-	pos = calculate_monome_pos(f->file_length * f->channels, rove_file_get_play_pos(f), f->row_span);
+	pos = calculate_monome_pos(f->file_length * f->channels, rove_file_get_play_pos(f), f->row_span, monome->cols);
 	
 	if( pos != f->monome_pos_old || f->force_monome_update ) {
 		if( f->force_monome_update ) {
@@ -332,11 +334,7 @@ void rove_monome_display_file(rove_state_t *state, rove_file_t *f) {
 		if( (pos & 0x0F) != (f->monome_pos_old & 0x0F) ) {
 			row[0] = row[1] = 0;
 
-#if MONOME_COLS <= 8
-			monome_led_row_8(monome, f->y + (f->monome_pos_old & 0x0F), row);
-#else
-			monome_led_row_16(monome, f->y + (f->monome_pos_old & 0x0F), row);
-#endif
+			monome_led_row(monome, f->y + (f->monome_pos_old & 0x0F), row);
 		}
 		
 		f->monome_pos_old = pos;
@@ -346,11 +344,7 @@ void rove_monome_display_file(rove_state_t *state, rove_file_t *f) {
 		row[1] = r >> 8;
 
 
-#if MONOME_COLS <= 8
-		monome_led_row_8(monome, f->y + (pos & 0x0F), row);
-#else
-		monome_led_row_16(monome, f->y + (pos & 0x0F), row);
-#endif
+		monome_led_row(monome, f->y + (pos & 0x0F), row);
 	}
 
 	f->monome_pos = pos;
@@ -373,7 +367,7 @@ void rove_monome_free(rove_monome_t *monome) {
 	free(monome);
 }
 
-int rove_monome_init(rove_state_t *state, const char *osc_prefix, const char *osc_host_port, const char *osc_listen_port) {
+int rove_monome_init(rove_state_t *state, const char *osc_prefix, const char *osc_host_port, const char *osc_listen_port, const uint8_t cols) {
 	rove_monome_t *monome = calloc(sizeof(rove_monome_t), 1);
 	char *buf;
 	int i;
@@ -388,8 +382,9 @@ int rove_monome_init(rove_state_t *state, const char *osc_prefix, const char *os
 	free(buf);
 	
 	monome->outgoing   = lo_address_new(NULL, osc_host_port);
-	monome->callbacks  = calloc(sizeof(rove_monome_callback_t), MONOME_COLS);
+	monome->callbacks  = calloc(sizeof(rove_monome_callback_t), cols);
 	monome->osc_prefix = strdup(osc_prefix);
+	monome->cols       = cols;
 	
 	for( i = 0; i < state->group_count; i++ ) {
 		monome->callbacks[i].cb  = group_off_handler;

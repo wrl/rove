@@ -27,6 +27,7 @@
 #include "rove.h"
 #include "rove_file.h"
 #include "rove_jack.h"
+#include "rove_list.h"
 #include "rove_monome.h"
 
 #define DEFAULT_OSC_PREFIX      "rove"
@@ -38,24 +39,21 @@
 /* 48 is ASCII '0', 57 is ASCII '9'. tests one character. */
 #define is_numeric(c) ((48 <= c) && (c <= 57))
 
-static int initialize_groups(rove_state_t *state) {
+static rove_group_t *initialize_groups(const int group_count) {
+	rove_group_t *groups;
 	int i;
 	
 	/**
 	 * leave room for the four control buttons on the top row
 	 */
-	if( !state->group_count || state->group_count > 12 )
-		return 1;
-	
-	if( state->groups )
-		free(state->groups);
-	
-	state->groups = calloc(sizeof(rove_group_t), state->group_count);
 
-	for( i = 0; i < state->group_count; i++ )
-		state->groups[i].idx = i;
+	if( !(groups = calloc(sizeof(rove_group_t), group_count)) )
+		return NULL;
+
+	for( i = 0; i < group_count; i++ )
+		groups[i].idx = i;
 	
-	return 0;
+	return groups;
 }
 
 /**
@@ -96,7 +94,7 @@ static int parse_conf_file(const char *path, rove_state_t *state) {
 			else
 				state->beat_multiplier = strtod(++offset, NULL);
 
-			if( initialize_groups(state) )
+			if( !(state->groups = initialize_groups(state->group_count)) )
 				return 1;
 		} else {
 			if( !state->bpm || !state->group_count )
@@ -135,7 +133,7 @@ static int parse_conf_file(const char *path, rove_state_t *state) {
 			if( sndpath[len - 1] == '\n' )
 				sndpath[len - 1] = 0;
 			
-			if( y + span > 15 ) {
+			if( y + span > 16 ) {
 				printf("\n\t(you tried to load more, but you're out of room!)\n");
 				break;
 			}
@@ -169,6 +167,7 @@ static int parse_conf_file(const char *path, rove_state_t *state) {
 
 static void usage() {
 	printf("Usage: rove [OPTION]... session_file.rv\n"
+		   "  -c, --monome-columns=COLUMNS\n"
 		   "  -p, --osc-prefix=PREFIX\n"
 		   "  -h, --osc-host-port=PORT\n"
 		   "  -l, --osc-listen-port=PORT\n");
@@ -210,9 +209,11 @@ void rove_recalculate_bpm_variables(rove_state_t *state) {
 int main(int argc, char **argv) {
 	char *osc_prefix, *osc_host_port, *osc_listen_port, *session_file, c;
 	rove_state_t state;
+	uint8_t cols;
 	int i;
 	
 	struct option arguments[] = {
+		{"monome-columns",	required_argument, 0, 'c'},
 		{"osc-prefix", 		required_argument, 0, 'p'},
 		{"osc-host-port", 	required_argument, 0, 'h'},
 		{"osc-listen-port",	required_argument, 0, 'l'},
@@ -221,6 +222,7 @@ int main(int argc, char **argv) {
 	
 	memset(&state, 0, sizeof(rove_state_t));
 	
+	cols            = 8;
 	session_file    = NULL;
 	osc_prefix      = DEFAULT_OSC_PREFIX;
 	osc_host_port   = DEFAULT_OSC_HOST_PORT;
@@ -228,8 +230,16 @@ int main(int argc, char **argv) {
 	
 	opterr = 0;
 	
-	while( (c = getopt_long(argc, argv, "p:h:l:", arguments, &i)) > 0 ) {
+	while( (c = getopt_long(argc, argv, "c:p:h:l:", arguments, &i)) > 0 ) {
 		switch( c ) {
+		case 'c':
+			cols = atoi(optarg) & 0xF;
+			
+			if( !cols )
+				cols = 8;
+			
+			break;
+			
 		case 'p':
 			osc_prefix = optarg;
 			
@@ -305,7 +315,7 @@ int main(int argc, char **argv) {
 	rove_recalculate_bpm_variables(&state);
 	state.frames = state.snap_delay;
 	
-	if( rove_monome_init(&state, osc_prefix, osc_host_port, osc_listen_port) )
+	if( rove_monome_init(&state, osc_prefix, osc_host_port, osc_listen_port, cols) )
 		return 1;
 
 	if( rove_jack_activate(&state) )

@@ -52,7 +52,7 @@ static int process(jack_nframes_t nframes, void *arg) {
 	
 	for( i = 0; i < nframes; i++ ) {
 		if( state->snap_delay > 0 )
-			if( ++state->frames > state->snap_delay )
+			if( ++state->frames >= state->snap_delay )
 				state->frames = 0;
 
 		rove_list_foreach(state->files, m, f) {

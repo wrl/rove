@@ -43,11 +43,7 @@ typedef enum {
 	FILE_PLAY_DIRECTION_REVERSE
 } rove_file_play_direction_t;
 
-typedef struct rove_group {
-	int idx;
-	struct rove_file *active_loop;
-} rove_group_t;
-
+typedef struct rove_group rove_group_t;
 typedef struct rove_file {
 	rove_file_play_direction_t play_direction;
 	rove_file_state_t state;
@@ -74,6 +70,12 @@ typedef struct rove_file {
 	
 	rove_group_t *group;
 } rove_file_t;
+
+struct rove_group {
+	int idx;
+	rove_file_t *active_loop;
+	rove_file_t *staged_loop;
+};
 
 /**
  * rove_list
