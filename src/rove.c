@@ -233,7 +233,7 @@ int main(int argc, char **argv) {
 	while( (c = getopt_long(argc, argv, "c:p:h:l:", arguments, &i)) > 0 ) {
 		switch( c ) {
 		case 'c':
-			cols = atoi(optarg) & 0xF;
+			cols = ((atoi(optarg) - 1) & 0xF) + 1;
 			
 			if( !cols )
 				cols = 8;
@@ -287,9 +287,6 @@ int main(int argc, char **argv) {
 	
 	printf("\nhey, welcome to rove!\n\n");
 	
-	if( rove_jack_init(&state) )
-		return 1;
-	
 	state.files    = rove_list_new();
 	state.patterns = rove_list_new();
 
@@ -311,6 +308,9 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "\t(none, evidently.  get some and come play!)\n\n");
 		return 1;
 	}
+	
+	if( rove_jack_init(&state) )
+		return 1;
 	
 	rove_recalculate_bpm_variables(&state);
 	state.frames = state.snap_delay;

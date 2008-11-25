@@ -71,10 +71,24 @@ typedef struct rove_file {
 	rove_group_t *group;
 } rove_file_t;
 
+/**
+ * rove_group
+ */
+
 struct rove_group {
 	int idx;
 	rove_file_t *active_loop;
 	rove_file_t *staged_loop;
+	
+	double volume;
+	
+	/* eventually this will be an array of ports so that any arbitrary
+	   number of channels can be output (rove cutting 5.1 audio, yeah!) */
+	jack_port_t *outport_l;
+	jack_port_t *outport_r;
+	
+	jack_default_audio_sample_t *output_buffer_l;
+	jack_default_audio_sample_t *output_buffer_r;
 };
 
 /**
