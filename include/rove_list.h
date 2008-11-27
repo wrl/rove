@@ -32,6 +32,6 @@ rove_list_member_t *rove_list_push(rove_list_t *list, rove_list_global_location_
 rove_list_member_t *rove_list_insert(void *data, rove_list_local_location_t l, rove_list_member_t *rel);
 
 void *rove_list_pop(rove_list_t *list, rove_list_global_location_t l);
-void  rove_list_remove(rove_list_t *list, rove_list_member_t *m);
+void *rove_list_remove(rove_list_t *list, rove_list_member_t *m);
 
 #endif
