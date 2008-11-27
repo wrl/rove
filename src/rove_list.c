@@ -24,13 +24,13 @@ rove_list_t *rove_list_new() {
 	rove_list_t *list;
 	
 	if( !(list = calloc(1, sizeof(rove_list_t))) )
-		goto cleanup_list;
+		goto err_list;
 
 	if( !(list->head = calloc(1, sizeof(rove_list_member_t))) )
-		goto cleanup_list_head;
+		goto err_list_head;
 	
 	if( !(list->tail = calloc(1, sizeof(rove_list_member_t))) )
-		goto cleanup_list_tail;
+		goto err_list_tail;
 	
 	list->head->prev = NULL;
 	list->head->next = list->tail;
@@ -39,11 +39,11 @@ rove_list_t *rove_list_new() {
 	
 	return list;
 
- cleanup_list_tail:
+ err_list_tail:
 	free(list->head);
- cleanup_list_head:
+ err_list_head:
 	free(list);
- cleanup_list:
+ err_list:
 	return NULL;
 }
 
@@ -137,7 +137,7 @@ void *rove_list_remove(rove_list_t *list, rove_list_member_t *m) {
 	void *data = m->data;
 
 	if( !m->next || !m->prev )
-		return;
+		return NULL;
 	
 	m->prev->next = m->next;
 	m->next->prev = m->prev;
