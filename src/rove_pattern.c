@@ -34,13 +34,17 @@ rove_pattern_t *rove_pattern_new() {
 void rove_pattern_free(rove_pattern_t *p) {
 	rove_pattern_step_t *s;
 	rove_list_member_t *m;
-
+	
+	if( !p )
+		return;
+	
 	rove_list_foreach(p->steps, m, s) {
 		rove_list_remove(p->steps, m);
 		free(s);
 	}
 	
 	rove_list_free(p->steps);
+	free(p);
 }
 
 void rove_pattern_append_step(rove_pattern_t *p, rove_pattern_cmd_t cmd, rove_file_t *f, jack_nframes_t arg) {
