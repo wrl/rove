@@ -88,7 +88,7 @@ static int process(jack_nframes_t nframes, void *arg) {
 			if( on_quantize_boundary() )
 				if( f->state == FILE_STATE_RESEEK )
 					rove_file_reseek(f, 0);
-			
+
 			o = rove_file_get_play_pos(f);
 			
 			if( f->channels == 1 ) {

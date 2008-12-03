@@ -64,9 +64,10 @@ typedef struct rove_file {
 	uint8_t y;
 	uint8_t row_span;
 	
-	uint8_t monome_pos;             /* position on the monome is represented as a 1-byte unsigned char*/
+	uint8_t monome_pos;             /* position on the monome is represented as a 1-byte unsigned char */
 	uint8_t monome_pos_old;         /* the upper 4 bits (>> 4) are the X position */
-	uint8_t force_monome_update;    /* and the lower 4 bits (& 0x0F) are the Y position */
+									/* and the lower 4 bits (& 0x0F) are the Y position */
+	uint8_t force_monome_update;    
 	
 	rove_group_t *group;
 } rove_file_t;
@@ -122,19 +123,23 @@ typedef struct rove_list {
  */
 
 struct rove_state;
-typedef void *(*rove_monome_callback_function_t)(struct rove_state *, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void *arg);
+typedef void (*rove_monome_callback_function_t)(struct rove_state *, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void **callback_data);
 
 typedef struct {
 	rove_monome_callback_function_t cb;
-	void *arg;
+	void *cb_data;
 } rove_monome_callback_t;
 
 typedef struct rove_monome {
+	char *osc_prefix;
 	lo_server_thread *st;
 	lo_address *outgoing;
 	
 	rove_monome_callback_t *callbacks;
-	char *osc_prefix;
+	rove_monome_callback_t *controls;
+	
+	uint8_t mod_keys;
+	uint8_t rows;
 	uint8_t cols;
 } rove_monome_t;
 

@@ -143,26 +143,27 @@ static void *pattern_post_record(rove_state_t *state, rove_monome_t *monome, con
 	if( rove_list_is_empty(p->steps) ) {
 		p->status = PATTERN_STATUS_INACTIVE;
 
+		monome_led_off(monome, p->idx + state->group_count, y);
+
 		rove_list_remove(state->patterns, m);
 		rove_pattern_free(p);
 				
-		monome_led_off(monome, p->idx + state->group_count, y);
 		return NULL;
 	}
 	
 	return m;
 }
 
-static void *pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void *arg) {
+static void pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void **callback_data) {
 	rove_monome_t *monome = state->monome;
-
-	rove_list_member_t *m = arg;
+	
+	rove_list_member_t *m = *callback_data;
 	rove_pattern_t *p;
 	
 	if( !m ) {
 		if( state->pattern_rec ) {
 			p = state->pattern_rec->data;
-			if( (monome->callbacks[p->idx + state->group_count].arg = pattern_post_record(state, monome, x, y, state->pattern_rec)) )
+			if( (monome->controls[p->idx + state->group_count].cb_data = pattern_post_record(state, monome, x, y, state->pattern_rec)) )
 				p->status = PATTERN_STATUS_ACTIVATE;
 		}
 		
@@ -173,6 +174,7 @@ static void *pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t
 		
 		m = rove_list_push(state->patterns, TAIL, p);
 		state->pattern_rec = m;
+		*callback_data = m;
 		
 		monome_led_on(monome, x, y);
 	} else {
@@ -190,7 +192,8 @@ static void *pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t
 			rove_pattern_free(m->data);
 			rove_list_remove(state->patterns, m);
 			monome_led_off(monome, x, y);
-			return NULL;
+
+			goto clear_pattern;
 		}
 
 		switch( p->status ) {
@@ -198,11 +201,11 @@ static void *pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t
 			if( state->pattern_rec != m ) {
 				printf("what: pattern is marked as recording but is not the globally-designated recordee\n"
 					   "      this shouldn't happen.  visinin fucked up, sorry :(\n");
-				return NULL;
+				goto clear_pattern;
 			}
 			
-			if( !pattern_post_record(state, monome, x, y, m) )
-				return NULL;
+			if( !pattern_post_record(state, monome, x, y, m) ) 
+				goto clear_pattern;
 			
 			/* fall through */
 
@@ -219,27 +222,38 @@ static void *pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t
 		}
 	}
 	
-	return m;
+	return;
+	
+ clear_pattern:
+	*callback_data = NULL;
+	return;
 }
 
-static void *group_off_handler(rove_state_t *state, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void *arg) {
-	rove_group_t *group = arg;
+static void group_off_handler(rove_state_t *state, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void **callback_data) {
+	rove_group_t *group = *callback_data;
 	rove_file_t *f;
 
 	if( x > (state->group_count - 1) )
-		return arg;
+		return;
 				
 	if( !(f = group->active_loop) )
-		return arg;
+		return;
 				
 	if( !rove_file_is_active(f) )
-		return arg;
+		return;
 				
 	if( state->pattern_rec )
 		rove_pattern_append_step(state->pattern_rec->data, CMD_GROUP_DEACTIVATE, f, 0);
 				
 	f->state = FILE_STATE_DEACTIVATE;
-	return arg;
+}
+
+static void control_row_handler(rove_state_t *state, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void **callback_data) {
+	rove_monome_callback_t *controls = *callback_data, *callback;
+	
+	if( (callback = &controls[x]) )
+		if( callback->cb )
+			callback->cb(state, x, y, mod_keys, &callback->cb_data);
 }
 
 static int button_handler(const char *path, const char *types, lo_arg **argv, int argc, lo_message data, void *user_data) {
@@ -261,11 +275,11 @@ static int button_handler(const char *path, const char *types, lo_arg **argv, in
 	switch( event_type ) {
 	case BUTTON_DOWN:
 		if( event_y < 1 ) {
-			if( !(callback = &monome->callbacks[event_x]) )
+			if( !(callback = &monome->callbacks[event_y]) )
 				return -1;
 			
 			if( callback->cb ) {
-				callback->arg = callback->cb(state, event_x, event_y, mod_keys, callback->arg);
+				callback->cb(state, event_x, event_y, mod_keys, &callback->cb_data);
 			} else {
 				if( event_x == state->group_count + 2 )
 					mod_keys |= SHIFT;
@@ -362,14 +376,17 @@ void rove_monome_stop_thread(rove_monome_t *monome) {
 void rove_monome_free(rove_monome_t *monome) {
 	lo_server_thread_free(monome->st);
 	lo_address_free(monome->outgoing);
+
+	free(monome->callbacks[0].cb_data);
 	free(monome->callbacks);
 	free(monome->osc_prefix);
 	
 	free(monome);
 }
 
-int rove_monome_init(rove_state_t *state, const char *osc_prefix, const char *osc_host_port, const char *osc_listen_port, const uint8_t cols) {
+int rove_monome_init(rove_state_t *state, const char *osc_prefix, const char *osc_host_port, const char *osc_listen_port, const uint8_t cols, const uint8_t rows) {
 	rove_monome_t *monome = calloc(sizeof(rove_monome_t), 1);
+	rove_monome_callback_t *controls;
 	char *buf;
 	int i;
 	
@@ -383,19 +400,27 @@ int rove_monome_init(rove_state_t *state, const char *osc_prefix, const char *os
 	free(buf);
 	
 	monome->outgoing   = lo_address_new(NULL, osc_host_port);
-	monome->callbacks  = calloc(sizeof(rove_monome_callback_t), cols);
+	monome->callbacks  = calloc(sizeof(rove_monome_callback_t), rows);
 	monome->osc_prefix = strdup(osc_prefix);
 	monome->cols       = cols;
+	monome->rows       = rows;
+	monome->mod_keys   = 0;
+	
+	controls = calloc(sizeof(rove_monome_callback_t), cols);
 	
 	for( i = 0; i < state->group_count; i++ ) {
-		monome->callbacks[i].cb  = group_off_handler;
-		monome->callbacks[i].arg = (void *) &state->groups[i];
+		controls[i].cb      = group_off_handler;
+		controls[i].cb_data = (void *) &state->groups[i];
 	}
 	
 	for( ; i < state->group_count + 2; i++ ) {
-		monome->callbacks[i].cb  = pattern_handler;
-		monome->callbacks[i].arg = NULL;
+		controls[i].cb      = pattern_handler;
+		controls[i].cb_data = NULL;
 	}
+	
+	monome->callbacks[0].cb      = control_row_handler;
+	monome->callbacks[0].cb_data = controls;
+	monome->controls             = controls;
 	
 	monome_clear(monome, CLEAR_OFF);
 
