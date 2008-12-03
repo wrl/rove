@@ -36,34 +36,21 @@
 #define SHIFT 0x01
 #define META  0x02
 
-#define monome_led_row(m, y, r) do {			\
-		if( m->cols <= 8 )						\
-			monome_led_row_8(m, y, r);			\
-		else									\
-			monome_led_row_16(m, y, r);			\
-	} while(0);
-
 /**
  * (mostly) emulate libmonome functions in liblo
  */
 
-void monome_led_row_8(rove_monome_t *monome, uint8_t row, uint8_t *row_data) {
+void monome_led_row(rove_monome_t *monome, uint8_t row, uint8_t *row_data) {
 	char *buf;
 	
 	asprintf(&buf, "/%s/led_row", monome->osc_prefix);
-	lo_send_from(monome->outgoing, lo_server_thread_get_server(monome->st), LO_TT_IMMEDIATE, buf, "ii", row, row_data[0]);
+
+	if( monome->cols <= 8 )
+		lo_send_from(monome->outgoing, lo_server_thread_get_server(monome->st), LO_TT_IMMEDIATE, buf, "ii", row, row_data[0]);
+	else
+		lo_send_from(monome->outgoing, lo_server_thread_get_server(monome->st), LO_TT_IMMEDIATE, buf, "iii", row, row_data[0], row_data[1]);
+
 	free(buf);
-
-	return;
-}
-
-void monome_led_row_16(rove_monome_t *monome, uint8_t row, uint8_t *row_data) {
-	char *buf;
-	
-	asprintf(&buf, "/%s/led_row", monome->osc_prefix);
-	lo_send_from(monome->outgoing, lo_server_thread_get_server(monome->st), LO_TT_IMMEDIATE, buf, "iii", row, row_data[0], row_data[1]);
-	free(buf);
-
 	return;
 }
 
