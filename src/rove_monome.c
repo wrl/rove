@@ -220,7 +220,7 @@ static void pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t 
 		p->status = PATTERN_STATUS_ACTIVATE;
 		monome_led_on(monome, x, y);
 		break;
-			
+		
 	case PATTERN_STATUS_ACTIVE:
 		p->status = PATTERN_STATUS_INACTIVE;
 		monome_led_off(monome, x, y);
@@ -255,8 +255,6 @@ static void group_off_handler(rove_state_t *state, const uint8_t x, const uint8_
 }
 
 static int button_handler(const char *path, const char *types, lo_arg **argv, int argc, lo_message data, void *user_data) {
-	static uint8_t mod_keys = 0;
-
 	rove_state_t *state = user_data;
 	rove_monome_t *monome = state->monome;
 	rove_monome_callback_t *callback;
@@ -277,12 +275,12 @@ static int button_handler(const char *path, const char *types, lo_arg **argv, in
 				return -1;
 			
 			if( callback->cb ) {
-				callback->cb(state, event_x, event_y, mod_keys, &callback->data);
+				callback->cb(state, event_x, event_y, monome->mod_keys, &callback->data);
 			} else {
 				if( event_x == state->group_count + 2 )
-					mod_keys |= SHIFT;
+					monome->mod_keys |= SHIFT;
 				else if( event_x == state->group_count + 3 )
-					mod_keys |= META;
+					monome->mod_keys |= META;
 			}
 		} else {
 			if( event_x >= monome->cols )
@@ -316,9 +314,9 @@ static int button_handler(const char *path, const char *types, lo_arg **argv, in
 	case BUTTON_UP:
 		if( event_y < 1 ) {
 			if( event_x == state->group_count + 2 )
-				mod_keys &= ~SHIFT;
+				monome->mod_keys &= ~SHIFT;
 			else if( event_x == state->group_count + 3 )
-				mod_keys &= ~META;
+				monome->mod_keys &= ~META;
 		}
 		
 		break;

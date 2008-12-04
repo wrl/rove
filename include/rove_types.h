@@ -133,6 +133,8 @@ typedef struct {
 } rove_monome_callback_t;
 
 typedef struct rove_monome {
+	uint8_t mod_keys;
+	
 	lo_server_thread *st;
 	lo_address *outgoing;
 	
