@@ -26,7 +26,7 @@
 #include <pthread.h>
 
 /**
- * rove_file
+ * types
  */
 
 typedef enum {
@@ -43,8 +43,49 @@ typedef enum {
 	FILE_PLAY_DIRECTION_REVERSE
 } rove_file_play_direction_t;
 
+typedef enum {
+	HEAD,
+	TAIL
+} rove_list_global_location_t;
+
+typedef enum {
+	BEFORE,
+	AFTER
+} rove_list_local_location_t;
+
+typedef enum {
+	CMD_GROUP_DEACTIVATE,
+	CMD_LOOP_SEEK
+} rove_pattern_cmd_t;
+
+typedef enum {
+	PATTERN_STATUS_RECORDING,
+	PATTERN_STATUS_ACTIVE,
+	PATTERN_STATUS_ACTIVATE,
+	PATTERN_STATUS_INACTIVE
+} rove_pattern_status_t;
+
 typedef struct rove_group rove_group_t;
-typedef struct rove_file {
+typedef struct rove_file rove_file_t;
+
+typedef struct rove_list_member rove_list_member_t;
+typedef struct rove_list rove_list_t;
+
+typedef struct rove_monome_callback rove_monome_callback_t;
+typedef struct rove_monome rove_monome_t;
+
+typedef struct rove_pattern_step rove_pattern_step_t;
+typedef struct rove_pattern rove_pattern_t;
+
+typedef struct rove_state rove_state_t;
+
+typedef void (*rove_monome_callback_function_t)(rove_state_t *, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void **data);
+
+/**
+ * rove_file
+ */
+
+struct rove_file {
 	rove_file_play_direction_t play_direction;
 	rove_file_state_t state;
 	
@@ -53,13 +94,13 @@ typedef struct rove_file {
 	sf_count_t length;
 	sf_count_t play_offset;
 	sf_count_t loop_offset;
+	sf_count_t new_offset;
 	
 	sf_count_t channels;
 	sf_count_t file_length;
 	sf_count_t sample_rate;
+
 	float *file_data;
-	
-	sf_count_t new_offset;
 	
 	uint8_t y;
 	uint8_t row_span;
@@ -70,7 +111,7 @@ typedef struct rove_file {
 	uint8_t force_monome_update;    
 	
 	rove_group_t *group;
-} rove_file_t;
+};
 
 /**
  * rove_group
@@ -96,44 +137,31 @@ struct rove_group {
  * rove_list
  */
 
-typedef enum {
-	HEAD,
-	TAIL
-} rove_list_global_location_t;
-
-typedef enum {
-	BEFORE,
-	AFTER
-} rove_list_local_location_t;
-
-typedef struct rove_list_member {
+struct rove_list_member {
 	void *data;
 	
-	struct rove_list_member *prev;
-	struct rove_list_member *next;
-} rove_list_member_t;
+	rove_list_member_t *prev;
+	rove_list_member_t *next;
+};
 
-typedef struct rove_list {
+struct rove_list {
 	rove_list_member_t *head;
 	rove_list_member_t *tail;
-} rove_list_t;
+};
 
 /**
  * rove_monome
  */
 
-struct rove_state;
-typedef void (*rove_monome_callback_function_t)(struct rove_state *, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void **data);
-
-typedef struct {
+struct rove_monome_callback {
 	uint8_t x;
 	uint8_t y;
 	
 	rove_monome_callback_function_t cb;
 	void *data;
-} rove_monome_callback_t;
+};
 
-typedef struct rove_monome {
+struct rove_monome {
 	char *osc_prefix;
 	lo_server_thread *st;
 	lo_address *outgoing;
@@ -144,32 +172,20 @@ typedef struct rove_monome {
 	uint8_t mod_keys;
 	uint8_t rows;
 	uint8_t cols;
-} rove_monome_t;
+};
 
 /**
  * rove_pattern
  */
 
-typedef enum {
-	CMD_GROUP_DEACTIVATE,
-	CMD_LOOP_SEEK
-} rove_pattern_cmd_t;
-
-typedef enum {
-	PATTERN_STATUS_RECORDING,
-	PATTERN_STATUS_ACTIVE,
-	PATTERN_STATUS_ACTIVATE,
-	PATTERN_STATUS_INACTIVE
-} rove_pattern_status_t;
-
-typedef struct rove_pattern_step {
+struct rove_pattern_step {
 	jack_nframes_t delay;
 	rove_pattern_cmd_t cmd;
 	rove_file_t *file;
 	jack_nframes_t arg;
-} rove_pattern_step_t;
+};
 
-typedef struct rove_pattern {
+struct rove_pattern {
 	rove_list_t *steps;
 	rove_list_member_t *current_step;
 	
@@ -177,13 +193,13 @@ typedef struct rove_pattern {
 	rove_pattern_status_t status;
 	
 	rove_monome_callback_t *bound_button;
-} rove_pattern_t;
+};
 
 /**
  * rove
  */
 
-typedef struct rove_state {
+struct rove_state {
 	rove_monome_t *monome;
 	jack_client_t *client;
 	
@@ -209,6 +225,6 @@ typedef struct rove_state {
 
 	jack_nframes_t snap_delay;
 	jack_nframes_t frames;
-} rove_state_t;
+};
 
 #endif
