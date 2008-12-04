@@ -72,6 +72,7 @@ typedef struct rove_list_member rove_list_member_t;
 typedef struct rove_list rove_list_t;
 
 typedef struct rove_monome_callback rove_monome_callback_t;
+typedef struct rove_monome_position rove_monome_position_t;
 typedef struct rove_monome rove_monome_t;
 
 typedef struct rove_pattern_step rove_pattern_step_t;
@@ -80,6 +81,36 @@ typedef struct rove_pattern rove_pattern_t;
 typedef struct rove_state rove_state_t;
 
 typedef void (*rove_monome_callback_function_t)(rove_state_t *, rove_monome_t *, const uint8_t x, const uint8_t y, const uint8_t event_type, void **data);
+
+/**
+ * rove_monome
+ */
+
+struct rove_monome_position {
+	uint8_t x;
+	uint8_t y;
+};
+
+struct rove_monome_callback {
+	uint8_t x;
+	uint8_t y;
+	
+	rove_monome_callback_function_t cb;
+	void *data;
+};
+
+struct rove_monome {
+	char *osc_prefix;
+	lo_server_thread *st;
+	lo_address *outgoing;
+	
+	rove_monome_callback_t *callbacks;
+	rove_monome_callback_t *controls;
+	
+	uint8_t mod_keys;
+	uint8_t rows;
+	uint8_t cols;
+};
 
 /**
  * rove_file
@@ -105,9 +136,10 @@ struct rove_file {
 	uint8_t y;
 	uint8_t row_span;
 	
-	uint8_t monome_pos;             /* position on the monome is represented as a 1-byte unsigned char */
-	uint8_t monome_pos_old;         /* the upper 4 bits (>> 4) are the X position */
-									/* and the lower 4 bits (& 0x0F) are the Y position */
+	rove_monome_position_t monome_pos;
+	rove_monome_position_t monome_pos_old;
+	rove_monome_position_t monome_pos_held;
+
 	uint8_t force_monome_update;    
 	
 	rove_group_t *group;
@@ -147,31 +179,6 @@ struct rove_list_member {
 struct rove_list {
 	rove_list_member_t *head;
 	rove_list_member_t *tail;
-};
-
-/**
- * rove_monome
- */
-
-struct rove_monome_callback {
-	uint8_t x;
-	uint8_t y;
-	
-	rove_monome_callback_function_t cb;
-	void *data;
-};
-
-struct rove_monome {
-	char *osc_prefix;
-	lo_server_thread *st;
-	lo_address *outgoing;
-	
-	rove_monome_callback_t *callbacks;
-	rove_monome_callback_t *controls;
-	
-	uint8_t mod_keys;
-	uint8_t rows;
-	uint8_t cols;
 };
 
 /**
