@@ -174,13 +174,21 @@ static void usage() {
 }
 
 static void main_loop(rove_state_t *state) {
-	rove_list_member_t *m;
+	int i, group_count;
+	rove_group_t *g;
 	rove_file_t *f;
-
+	
 	while(1) {
 		pthread_cond_wait(&state->monome_display_notification, &state->monome_mutex);
+
+		group_count = state->group_count;
 		
-		rove_list_foreach(state->files, m, f) {
+		for( i = 0; i < group_count; i++ ) {
+			g = &state->groups[i];
+
+			if( !(f = g->active_loop) )
+				continue;
+			
 			switch( f->state ) {
 			case FILE_STATE_DEACTIVATE:
 				if( f->group->active_loop == f )
