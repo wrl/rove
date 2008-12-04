@@ -85,6 +85,9 @@ static int process(jack_nframes_t nframes, void *arg) {
 			if( !f )
 				continue;
 			
+			if( !rove_file_is_active(f) )
+				continue;
+			
 			if( on_quantize_boundary() )
 				if( f->state == FILE_STATE_RESEEK )
 					rove_file_reseek(f, 0);
