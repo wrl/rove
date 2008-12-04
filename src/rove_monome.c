@@ -126,107 +126,132 @@ static void *pattern_post_record(rove_state_t *state, rove_monome_t *monome, con
 	rove_pattern_t *p = m->data;
 
 	state->pattern_rec = NULL;
-			
+	
+	/* deallocate pattern if it contains no steps */
 	if( rove_list_is_empty(p->steps) ) {
+		/* first mark it as inactive so that rove_jack.process() skips over it */
 		p->status = PATTERN_STATUS_INACTIVE;
+
+		if( p->bound_button ) {
+			monome_led_off(monome, p->bound_button->x, p->bound_button->y);
+			p->bound_button->data = NULL;
+		}
 
 		rove_list_remove(state->patterns, m);
 		rove_pattern_free(p);
 				
-		monome_led_off(monome, p->idx + state->group_count, y);
 		return NULL;
 	}
 	
 	return m;
 }
 
-static void *pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void *arg) {
+static void pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void **data) {
 	rove_monome_t *monome = state->monome;
+	int idx;
 
-	rove_list_member_t *m = arg;
+	rove_list_member_t *m = *data;
 	rove_pattern_t *p;
 	
+	/* pattern allocation (i.e. no pattern currently associated with this button) */
 	if( !m ) {
-		if( state->pattern_rec ) {
-			p = state->pattern_rec->data;
-			if( (monome->callbacks[p->idx + state->group_count].arg = pattern_post_record(state, monome, x, y, state->pattern_rec)) )
+		/* if there is a pattern currently being recorded to, finalize it before allocating a new one */
+		if( state->pattern_rec )
+			if( (p = pattern_post_record(state, monome, x, y, state->pattern_rec)) )
 				p->status = PATTERN_STATUS_ACTIVATE;
-		}
+		
+		idx = x - state->group_count;
 		
 		p = rove_pattern_new();
-		p->idx = x - state->group_count;
 		p->status = PATTERN_STATUS_RECORDING;
-		p->delay_frames = (lrint(1 / state->beat_multiplier) * state->pattern_lengths[p->idx]) * state->snap_delay;
+		p->delay_frames = (lrint(1 / state->beat_multiplier) * state->pattern_lengths[idx]) * state->snap_delay;
 		
 		m = rove_list_push(state->patterns, TAIL, p);
 		state->pattern_rec = m;
 		
-		monome_led_on(monome, x, y);
-	} else {
-		p = m->data;
+		/* this is really dirty. */
+		/* perhaps a "self" rove_monome_callback_t passed to the callback would be better? */
+		p->bound_button = &monome->callbacks[x];
 		
-		if( mod_keys & SHIFT ) {
-			if( state->pattern_rec == m )
-				state->pattern_rec = NULL;
-			
-			p->status = PATTERN_STATUS_INACTIVE;
+		monome_led_on(monome, x, y);
 
-			while( !rove_list_is_empty(p->steps) )
-				free(rove_list_pop(p->steps, HEAD));
+		*data = m;
+		return;
+	}
+
+	p = m->data;
+	
+	/* pattern erasure/deletion (pressing in conjunction with shift) */
+	if( mod_keys & SHIFT ) {
+		/* if this pattern is currently set as the global recordee, remove it */
+		if( state->pattern_rec == m )
+			state->pattern_rec = NULL;
 			
-			rove_pattern_free(m->data);
-			rove_list_remove(state->patterns, m);
-			monome_led_off(monome, x, y);
-			return NULL;
+		/* set as inactive so that rock_jack.process() skips over it */
+		p->status = PATTERN_STATUS_INACTIVE;
+
+		/* deallocate all the steps */
+		while( !rove_list_is_empty(p->steps) )
+			free(rove_list_pop(p->steps, HEAD)); /* rove_list_pop() returns the rove_pattern_step_t, free that */
+			
+		rove_pattern_free(m->data);
+		rove_list_remove(state->patterns, m);
+
+		monome_led_off(monome, x, y);
+
+		goto clear_pattern;
+	}
+
+	switch( p->status ) {
+	case PATTERN_STATUS_RECORDING:
+		if( state->pattern_rec != m ) {
+			printf("what: pattern is marked as recording but is not the globally-designated recordee\n"
+				   "      this shouldn't happen.  visinin fucked up, sorry :(\n");
+			goto clear_pattern;
 		}
+			
+		if( !pattern_post_record(state, monome, x, y, m) )
+			goto clear_pattern;
+			
+		/* fall through */
 
-		switch( p->status ) {
-		case PATTERN_STATUS_RECORDING:
-			if( state->pattern_rec != m ) {
-				printf("what: pattern is marked as recording but is not the globally-designated recordee\n"
-					   "      this shouldn't happen.  visinin fucked up, sorry :(\n");
-				return NULL;
-			}
+	case PATTERN_STATUS_ACTIVATE:
+	case PATTERN_STATUS_INACTIVE:
+		p->status = PATTERN_STATUS_ACTIVATE;
+		monome_led_on(monome, x, y);
+		break;
 			
-			if( !pattern_post_record(state, monome, x, y, m) )
-				return NULL;
-			
-			/* fall through */
-
-		case PATTERN_STATUS_ACTIVATE:
-		case PATTERN_STATUS_INACTIVE:
-			p->status = PATTERN_STATUS_ACTIVATE;
-			monome_led_on(monome, x, y);
-			break;
-			
-		case PATTERN_STATUS_ACTIVE:
-			p->status = PATTERN_STATUS_INACTIVE;
-			monome_led_off(monome, x, y);
-			break;
-		}
+	case PATTERN_STATUS_ACTIVE:
+		p->status = PATTERN_STATUS_INACTIVE;
+		monome_led_off(monome, x, y);
+		break;
 	}
 	
-	return m;
+	return;
+	
+ clear_pattern:
+	*data = NULL;
+	return;
 }
 
-static void *group_off_handler(rove_state_t *state, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void *arg) {
-	rove_group_t *group = arg;
+static void group_off_handler(rove_state_t *state, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void **data) {
+	rove_group_t *group = *data;
 	rove_file_t *f;
 
-	if( x > (state->group_count - 1) )
-		return arg;
-				
 	if( !(f = group->active_loop) )
-		return arg;
+		if( !(f = group->staged_loop) )
+			return; /* group is already off (nothing set as the active or staged file) */
 				
 	if( !rove_file_is_active(f) )
-		return arg;
+		return; /* group is already off (active file not playing) */
 				
+	/* if there is a pattern being recorded, record this group off */
 	if( state->pattern_rec )
 		rove_pattern_append_step(state->pattern_rec->data, CMD_GROUP_DEACTIVATE, f, 0);
 				
+	/* stop the active file */
 	f->state = FILE_STATE_DEACTIVATE;
-	return arg;
+	return;
 }
 
 static int button_handler(const char *path, const char *types, lo_arg **argv, int argc, lo_message data, void *user_data) {
@@ -252,7 +277,7 @@ static int button_handler(const char *path, const char *types, lo_arg **argv, in
 				return -1;
 			
 			if( callback->cb ) {
-				callback->arg = callback->cb(state, event_x, event_y, mod_keys, callback->arg);
+				callback->cb(state, event_x, event_y, mod_keys, &callback->data);
 			} else {
 				if( event_x == state->group_count + 2 )
 					mod_keys |= SHIFT;
@@ -375,13 +400,15 @@ int rove_monome_init(rove_state_t *state, const char *osc_prefix, const char *os
 	monome->cols       = cols;
 	
 	for( i = 0; i < state->group_count; i++ ) {
-		monome->callbacks[i].cb  = group_off_handler;
-		monome->callbacks[i].arg = (void *) &state->groups[i];
+		monome->callbacks[i].x    = i;
+		monome->callbacks[i].cb   = group_off_handler;
+		monome->callbacks[i].data = (void *) &state->groups[i];
 	}
 	
 	for( ; i < state->group_count + 2; i++ ) {
-		monome->callbacks[i].cb  = pattern_handler;
-		monome->callbacks[i].arg = NULL;
+		monome->callbacks[i].x    = i;
+		monome->callbacks[i].cb   = pattern_handler;
+		monome->callbacks[i].data = NULL;
 	}
 	
 	monome_clear(monome, CLEAR_OFF);
