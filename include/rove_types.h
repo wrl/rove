@@ -123,11 +123,14 @@ typedef struct rove_list {
  */
 
 struct rove_state;
-typedef void (*rove_monome_callback_function_t)(struct rove_state *, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void **callback_data);
+typedef void (*rove_monome_callback_function_t)(struct rove_state *, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void **data);
 
 typedef struct {
+	uint8_t x;
+	uint8_t y;
+	
 	rove_monome_callback_function_t cb;
-	void *cb_data;
+	void *data;
 } rove_monome_callback_t;
 
 typedef struct rove_monome {
@@ -167,13 +170,13 @@ typedef struct rove_pattern_step {
 } rove_pattern_step_t;
 
 typedef struct rove_pattern {
-	uint8_t idx;
-
 	rove_list_t *steps;
 	rove_list_member_t *current_step;
 	
 	jack_nframes_t delay_frames;
 	rove_pattern_status_t status;
+	
+	rove_monome_callback_t *bound_button;
 } rove_pattern_t;
 
 /**
