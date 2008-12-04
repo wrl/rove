@@ -79,7 +79,7 @@ typedef struct rove_pattern rove_pattern_t;
 
 typedef struct rove_state rove_state_t;
 
-typedef void (*rove_monome_callback_function_t)(rove_state_t *, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void **data);
+typedef void (*rove_monome_callback_function_t)(rove_state_t *, rove_monome_t *, const uint8_t x, const uint8_t y, const uint8_t event_type, void **data);
 
 /**
  * rove_file

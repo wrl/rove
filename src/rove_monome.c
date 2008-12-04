@@ -146,12 +146,13 @@ static void *pattern_post_record(rove_state_t *state, rove_monome_t *monome, con
 	return m;
 }
 
-static void pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void **data) {
-	rove_monome_t *monome = state->monome;
-	int idx;
-
+static void pattern_handler(rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type, void **data) {
 	rove_list_member_t *m = *data;
 	rove_pattern_t *p;
+	int idx;
+
+	if( event_type != BUTTON_DOWN )
+		return;
 	
 	/* pattern allocation (i.e. no pattern currently associated with this button) */
 	if( !m ) {
@@ -183,7 +184,7 @@ static void pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t 
 	p = m->data;
 	
 	/* pattern erasure/deletion (pressing in conjunction with shift) */
-	if( mod_keys & SHIFT ) {
+	if( monome->mod_keys & SHIFT ) {
 		/* if this pattern is currently set as the global recordee, remove it */
 		if( state->pattern_rec == m )
 			state->pattern_rec = NULL;
@@ -235,10 +236,13 @@ static void pattern_handler(rove_state_t *state, const uint8_t x, const uint8_t 
 	return;
 }
 
-static void group_off_handler(rove_state_t *state, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void **data) {
+static void group_off_handler(rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type, void **data) {
 	rove_group_t *group = *data;
 	rove_file_t *f;
 
+	if( event_type != BUTTON_DOWN )
+		return;
+	
 	if( !(f = group->active_loop) )
 		if( !(f = group->staged_loop) )
 			return; /* group is already off (nothing set as the active or staged file) */
@@ -254,20 +258,31 @@ static void group_off_handler(rove_state_t *state, const uint8_t x, const uint8_
 	f->state = FILE_STATE_DEACTIVATE;
 }
 
-static void control_row_handler(rove_state_t *state, const uint8_t x, const uint8_t y, const uint8_t mod_keys, void **data) {
+static void control_row_handler(rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type, void **data) {
 	rove_monome_callback_t *controls = *data, *callback;
-	rove_monome_t *monome = state->monome;
 	
 	if( !(callback = &controls[x]) )
 		return;
 	
-	if( callback->cb ) {
-		callback->cb(state, x, y, mod_keys, &callback->data);
-	} else {
+	if( callback->cb )
+		return callback->cb(state, monome, x, y, event_type, &callback->data);
+	
+	switch( event_type ) {
+	case BUTTON_DOWN:
 		if( x == state->group_count + 2 )
 			monome->mod_keys |= SHIFT;
 		else if( x == state->group_count + 3 )
 			monome->mod_keys |= META;
+		
+		break;
+		
+	case BUTTON_UP:
+		if( x == state->group_count + 2 )
+			monome->mod_keys &= ~SHIFT;
+		else if( x == state->group_count + 3 )
+			monome->mod_keys &= ~META;
+
+		break;
 	}
 }
 
@@ -291,14 +306,10 @@ static int button_handler(const char *path, const char *types, lo_arg **argv, in
 			if( !(callback = &monome->callbacks[event_y]) )
 				return -1;
 			
-			if( callback->cb ) {
-				callback->cb(state, event_x, event_y, monome->mod_keys, &callback->data);
-			} else {
-				if( event_x == state->group_count + 2 )
-					monome->mod_keys |= SHIFT;
-				else if( event_x == state->group_count + 3 )
-					monome->mod_keys |= META;
-			}
+			if( !callback->cb )
+				return -1;
+			
+			callback->cb(state, monome, event_x, event_y, event_type, &callback->data);
 		} else {
 			if( event_x >= monome->cols )
 				return -1;
@@ -329,12 +340,13 @@ static int button_handler(const char *path, const char *types, lo_arg **argv, in
 		break;
 		
 	case BUTTON_UP:
-		if( event_y < 1 ) {
-			if( event_x == state->group_count + 2 )
-				monome->mod_keys &= ~SHIFT;
-			else if( event_x == state->group_count + 3 )
-				monome->mod_keys &= ~META;
-		}
+		if( !(callback = &monome->callbacks[event_y]) )
+			return -1;
+		
+		if( !callback->cb )
+			return -1;
+		
+		callback->cb(state, monome, event_x, event_y, event_type, &callback->data);
 		
 		break;
 	}
