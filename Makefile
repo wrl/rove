@@ -1,16 +1,14 @@
 SHELL = /bin/sh
 
 export PROJECT = rove
-export VERSION = 0.1a
 
-ifeq ($(MAKECMDGOALS),256)
-CFLAGS += -DMONOME_COLS=16
+ifeq ($(wildcard config.mk),config.mk)
+	include config.mk
 endif
 
-export CC = gcc
-export LD = gcc
-export CFLAGS  += -ggdb -D_GNU_SOURCE -Wall -Werror
-export LDFLAGS += -ggdb
+export LD = $(CC)
+export CFLAGS  += -ggdb -D_GNU_SOURCE -Wall -Werror $(LO_CFLAGS) $(JACK_CFLAGS) $(SNDFILE_CFLAGS)
+export LDFLAGS += -ggdb $(LO_LIBS) $(JACK_LIBS) $(SNDFILE_LIBS)
 export INSTALL = install
 
 export PREFIX = /usr
@@ -25,12 +23,36 @@ export PKGCONFIGDIR = $(LIBDIR)/pkgconfig
 .PHONY: all clean install
 
 all:
+ifdef VERSION
+ifneq ($(wildcard rove),rove)
+	echo    "";
+	echo -e "  \033[1mbuilding \033[34mrove\033[0;1m $(VERSION):\033[0m";
+endif
 	cd src; $(MAKE)
+	cp src/rove .
 
-256: all
+	echo    "";
+	echo    "  all finished! :D";
+	echo -e "  run \033[1;34mmake install\033[0m as root to install rove systemwide,";
+	echo -e "  or you can run it from here by typing \033[1;34m./rove\033[0m.";
+	echo    "";
+else
+	echo "";
+	echo "  hey, you're jumping the gun here!"
+	echo "  you'll need to run ./configure first before you can build rove."
+	echo "";
+endif
 
 clean:
+	echo "";
 	cd src; $(MAKE) clean
+	rm -f rove
+	echo "";
 
 install:
+	echo "";
 	cd src; $(MAKE) install
+	echo "";
+
+distclean: clean
+	rm -f config.mk

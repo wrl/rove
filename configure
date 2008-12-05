@@ -5,6 +5,7 @@
 #
 
 ROVE_VERSION="0.2";
+PREFIX="/usr";
 CFLAGS="";
 LDFLAGS="";
 
@@ -30,6 +31,13 @@ SNDFILE_LIBS="-lsndfile";
 #
 # functions
 #
+
+# figure out the right things to pass to echo to supress a newline
+if [ "`echo -n`" = "-n" ]; then
+	n=""; c="\c";
+else
+	n="-n"; c="";
+fi
 
 _echo () {
 	# portable (sysv/bsd) echo -n
@@ -276,100 +284,104 @@ EOF
 }
 
 #
-# initialization
-#
-
-# figure out the right things to pass to echo to supress a newline
-if [ "`echo -n`" = "-n" ]; then
-	n=""; c="\c";
-else
-	n="-n"; c="";
-fi
-
-check_pkgconfig;
-
-#
 # actual script part starts here
 #
 
 mkdir -p .conftests
+check_pkgconfig;
 
 # TODO: command-line parameters (prefix, etc)
 
 echo "";
 att bold;
-echo_n "configuring "; style_package -n "rove"; att; att bold; echo " ${ROVE_VERSION}:";
+echo_n "  configuring "; style_package -n "rove"; att; att bold; echo " ${ROVE_VERSION}:";
 att;
-echo_n "  checking for gcc:             ";
+echo_n "    checking for gcc:             ";
 if check_gcc; then
 	style_success "found gcc $CC_VERSION";
 else
 	style_error "no gcc :(";
 
 	echo   "";
-	echo   "I couldn't find gcc on your system!  you will need it to compile rove.";
-	echo_n "if you're on "; style_distro -n "ubuntu"; echo_n ", make sure to grab the "; style_package "build-essential"; echo " package.";
-	echo   "on mac os X, you'll need to install the Xcode developer tools.";
+	echo   "  I couldn't find gcc on your system!  you will need it to compile rove.";
+	echo_n "  if you're on "; style_distro -n "ubuntu"; echo_n ", make sure to grab the "; style_package -n "build-essential"; echo " package.";
+	echo   "  on mac os X, you'll need to install the Xcode developer tools.";
 	echo   "";
 
 	cleanup;
 	exit -1;
 fi
 
-echo_n "  checking for JACK:            ";
+echo_n "    checking for JACK:            ";
 if check_jack; then
 	style_success "found JACK $JACK_VERSION";
 else
 	style_error "no jack :(";
 	
 	echo   "";
-	echo   "I couldn't find JACK on your system!  you will need it to compile rove.";
-	echo_n "if you're on "; style_distro -n "ubuntu"; echo_n ", make sure you have the "; style_package -n "libjack-dev"; echo_n " and "; style_package -n "jackd"; echo " packages.";
-	echo_n "on "; style_distro -n "other distros"; echo_n ", the package might be called "; style_package -n "jack-audio-connection-kit"; echo ".";
-	echo_n "failing that, grab the source from "; style_link -n "http://jackaudio.org"; echo ".";
+	echo   "  I couldn't find JACK on your system!  you will need it to compile rove.";
+	echo_n "  if you're on "; style_distro -n "ubuntu"; echo_n ", make sure you have the "; style_package -n "libjack-dev"; echo_n " and "; style_package -n "jackd"; echo " packages.";
+	echo_n "  on "; style_distro -n "other distros"; echo_n ", the package might be called "; style_package -n "jack-audio-connection-kit"; echo ".";
+	echo_n "  failing that, grab the source from "; style_link -n "http://jackaudio.org"; echo ".";
 	echo   "";
-	style_distro -n "mac os X"; echo_n " users should head to "; style_link -n "http://jackosx.com/"; echo ".";
+	echo_n "  "; style_distro -n "mac os X"; echo_n " users should head to "; style_link -n "http://jackosx.com/"; echo ".";
 	echo   "";
 	
 	cleanup;
 	exit -1;
 fi
 
-echo_n "  checking for liblo:           ";
+echo_n "    checking for liblo:           ";
 if check_lo; then
 	style_success "found liblo $LO_VERSION";
 else
 	style_error "no liblo :(";
 
 	echo   "";
-	echo   "I couldn't find liblo on your system!  you will need it to compile rove."
-	echo_n "if you're on "; style_distro -n "ubuntu"; echo_n ", make sure you have the "; style_package -n "liblo0-dev "; echo " package installed.";
-	echo_n "users of "; style_distro -n "other distros"; echo_n " and "; style_distro -n "mac os X"; echo_n " should look for a "; style_package -n "liblo"; echo " package, or";
-	echo_n "get the source from the liblo homepage at "; style_link -n "http://liblo.sourceforge.net/"; echo ".";
+	echo   "  I couldn't find liblo on your system!  you will need it to compile rove."
+	echo_n "  if you're on "; style_distro -n "ubuntu"; echo_n ", make sure you have the "; style_package -n "liblo0-dev "; echo " package installed.";
+	echo_n "  users of "; style_distro -n "other distros"; echo_n " and "; style_distro -n "mac os X"; echo_n " should look for a "; style_package -n "liblo"; echo " package, or";
+	echo_n "  get the source from the liblo homepage at "; style_link -n "http://liblo.sourceforge.net/"; echo ".";
 	echo   "";
 	
 	cleanup;
 	exit -1;
 fi
 
-echo_n "  checking for libsndfile:      ";
+echo_n "    checking for libsndfile:      ";
 if check_sndfile; then
 	style_success "found libsndfile $SNDFILE_VERSION";
 else
 	style_error "no libsndfile :(";
-	
 	echo   "";
-	echo   "I couldn't find libsndfile on your system!  you will need it to compile rove."
-	echo_n "if you're on "; style_distro -n "ubuntu"; echo_n ", make sure you have the "; style_package -n "libsndfile1-dev"; echo " package installed.";
-	echo_n "users of "; style_distro -n "other distros"; echo_n " and "; style_distro -n "mac os X"; echo_n " should look for a "; style_package -n "libsndfile"; echo " package, or";
-	echo_n "get the source from the liblo homepage at "; style_link -n "http://mega-nerd.com/libsndfile/"; echo ".";
+	echo   "  I couldn't find libsndfile on your system!  you will need it to compile rove."
+	echo_n "  if you're on "; style_distro -n "ubuntu"; echo_n ", make sure you have the "; style_package -n "libsndfile1-dev"; echo " package installed.";
+	echo_n "  users of "; style_distro -n "other distros"; echo_n " and "; style_distro -n "mac os X"; echo_n " should look for a "; style_package -n "libsndfile"; echo " package, or";
+	echo_n "  get the source from the liblo homepage at "; style_link -n "http://mega-nerd.com/libsndfile/"; echo ".";
 	echo "";
 	exit -1;
 fi
 
-# TODO: write config.mk
+cat <<EOF > config.mk
+export VERSION = $ROVE_VERSION
+export PREFIX  = $PREFIX
+
+export CC      = $CC
+export CFLAGS  = $CFLAGS
+export LDFLAGS = $LDFLAGS
+
+export LO_CFLAGS = $LO_CFLAGS
+export LO_LIBS   = $LO_LIBS
+
+export JACK_CFLAGS = $JACK_CFLAGS
+export JACK_LIBS   = $JACK_LIBS
+
+export SNDFILE_CFLAGS = $SNDFILE_CFLAGS
+export SNDFILE_LIBS   = $SNDFILE_LIBS
+EOF
+
 echo "";
-echo_n "you're all set!  run "; style_package -n "make"; echo_n " to compile rove and then "; style_package -n "make install"; echo " as root to install it system wide.";
+echo_n "  you're all set!  run "; style_package -n "make"; echo " to compile rove.";
 echo "";
 
 cleanup;

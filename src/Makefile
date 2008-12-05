@@ -1,5 +1,4 @@
-CFLAGS  += -I. -I../include -I/usr/include
-LDFLAGS += -ljack -lsndfile -llo
+CFLAGS  += -I../include
 TARGETS = rove
 
 OBJS  = rove.o
@@ -12,19 +11,19 @@ OBJS += rove_pattern.o
 all: $(TARGETS)
 
 clean:
-	echo "  CLEAN   src"
+	echo -e "    \033[1mCLEAN\033[0m   src"
 	rm -f rove $(OBJS)
 
 install: all
-	echo "  INSTALL $(BINDIR)/rove"
+	echo -e "    \033[1mINSTALL\033[0m $(BINDIR)/rove"
 	install rove $(BINDIR)
 
 rove: $(OBJS)
-	echo "  LD      rove"
+	echo -e "    \033[1mLD\033[0m      rove"
 	$(LD) $(LDFLAGS) $^ -o $@
 
 %: %.o
 
 %.o: %.c
-	echo "  CC      src/$@"
+	echo -e "    \033[1mCC\033[0m      src/$@"
 	$(CC) $(CFLAGS) -c $< -o $@
