@@ -9,18 +9,21 @@ CFLAGS="";
 LDFLAGS="";
 
 CC="gcc";
-CC_VERSION=false;
-HAVE_PKGCONFIG=false;
+CC_VERSION=;
+PKGCONFIG_VERSION=;
 
-LIBLO_VERSION=false;
+HAVE_LO=;
+LO_VERSION=;
 LO_CFLAGS="";
 LO_LIBS="-llo -lpthread";
 
-JACK_VERSION=false;
+HAVE_JACK=;
+JACK_VERSION=;
 JACK_CFLAGS="";
 JACK_LIBS="-ljack -lpthread -lrt";
 
-SNDFILE_VERSION=false;
+HAVE_SNDFILE=;
+SNDFILE_VERSION=;
 SNDFILE_CFLAGS="";
 SNDFILE_LIBS="-lsndfile";
 
@@ -82,10 +85,15 @@ att() {
 	echo -ne "m";
 }
 
-style_link    () { att blue bold underline; _echo $*; att; }
 style_package () { att blue bold; _echo $*; att; }
-style_error   () { att red bold; _echo $*; att; }
 style_success () { att green; _echo $*; att; }
+style_distro  () { att cyan; _echo $*; att; }
+style_error   () { att red bold; _echo $*; att; }
+style_link    () { att blue bold underline; _echo $*; att; }
+
+cleanup () {
+	rmdir .conftests
+}
 
 # feature test commands
 
@@ -97,15 +105,24 @@ try_command () {
 	fi
 }
 
-check_gcc () {
-	CMD="$CC -dumpversion";
+check_pkgconfig () {
+	CMD="pkg-config --version";
 	
 	if try_command $CMD; then
+		PKGCONFIG_VERSION=`$CMD`;
+	fi
+}
+
+check_gcc () {
+	CMD="$CC -dumpversion";
+	try_command $CMD;
+	
+	if [ $? -eq 0 ]; then
 		CC_VERSION=`$CMD`;
 		return 0;
 	fi
 
-	CC_VERSION=false;
+	CC_VERSION=;
 	return -1;
 }
 
@@ -122,21 +139,140 @@ int main(int argc, char **argv) {
 EOF
 	
 	CMD="$CC $JACK_CFLAGS $JACK_LIBS .conftests/jack.c -o .conftests/jack"
+	try_command $CMD;
+
+	if [ $? -ne 0 ]; then
+		rm -f .conftests/jack.c;
+		rm -f .conftests/jack;
 	
-	if [ "`try_command $CMD`" ]; then
 		return -1;
 	fi
 	
-	CMD="jackd -V"
+	CMD="./.conftests/jack";
+	try_command $CMD;
+
+	rm -f .conftests/jack.c;
+	rm -f .conftests/jack;
 	
-	if [ "`try_command $CMD`" ]; then
+	if [ $? -ne 0 ]; then
+		return -2;
+	fi
+
+	HAVE_JACK=1;
+	JACK_VERSION="`jackd -V | awk '{print $3}' 2> /dev/null`";
+	
+	if [ $? -ne 0 ]; then
+		JACK_VERSION=;
+	fi
+	
+	return 0;
+}
+
+check_lo () {
+	cat <<EOF > .conftests/lo.c
+#include <lo/lo.h>
+
+int main(int argc, char **argv) {
+	lo_address a = lo_address_new(NULL, NULL);
+	
+	if( !a )
+		return -1;
+	
+	lo_address_free(a);
+	return 0;
+}
+EOF
+
+	CMD="$CC $LO_CFLAGS $LO_LIBS .conftests/lo.c -o .conftests/lo"
+	$CMD;
+	try_command $CMD;
+
+	if [ $? -ne 0 ]; then
+		rm -f .conftests/lo.c;
+		rm -f .conftests/lo;
+	
 		return -1;
 	fi
 	
-	HAVE_JACK=true;
-	JACK_VERSION="`jackd -V | awk '{print $3}'`";
+	CMD="./.conftests/lo";
+	try_command $CMD;
 	
-	return -1;
+	rm -f .conftests/lo.c;
+	rm -f .conftests/lo;
+	
+	if [ $? -ne 0 ]; then
+		return -2;
+	fi
+	
+	HAVE_LO=1;
+	
+	if [ $PKGCONFIG_VERSION ]; then
+		CMD="pkg-config --modversion liblo"
+		try_command $CMD;
+		
+		if [ $? -ne 0 ]; then
+			return 0;
+		fi
+		
+		LO_VERSION=`$CMD`;
+	fi
+
+	return 0;
+}
+
+check_sndfile () {
+	cat <<EOF > .conftests/sndfile.c
+#include <sndfile.h>
+
+int main(int argc, char **argv) {
+	SF_INFO info;
+	
+	info.samplerate = 44100;
+	info.format     = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
+	info.channels   = 1;
+	info.frames     = 0;
+	
+	if( sf_format_check(&info) )
+		return 0;
+	else
+		return -1;
+}
+EOF
+
+	CMD="$CC $SNDFILE_CFLAGS $SNDFILE_LIBS .conftests/sndfile.c -o .conftests/sndfile"
+	try_command $CMD;
+
+	if [ $? -ne 0 ]; then
+		rm -f .conftests/sndfile.c;
+		rm -f .conftests/sndfile;
+	
+		return -1;
+	fi
+	
+	CMD="./.conftests/sndfile";
+	try_command $CMD;
+	
+	rm -f .conftests/sndfile.c;
+	rm -f .conftests/sndfile;
+	
+	if [ $? -ne 0 ]; then
+		return -2;
+	fi
+	
+	HAVE_SNDFILE=1;
+	
+	if [ $PKGCONFIG_VERSION ]; then
+		CMD="pkg-config --modversion sndfile"
+		try_command $CMD;
+		
+		if [ $? -ne 0 ]; then
+			return 0;
+		fi
+		
+		SNDFILE_VERSION=`$CMD`;
+	fi
+
+	return 0;
 }
 
 #
@@ -150,45 +286,91 @@ else
 	n="-n"; c="";
 fi
 
+check_pkgconfig;
+
 #
 # actual script part starts here
 #
 
 mkdir -p .conftests
 
+# TODO: command-line parameters (prefix, etc)
+
 echo "";
 att bold;
-echo_n "configuring "; style_package "rove ${ROVE_VERSION}:";
+echo_n "configuring "; style_package -n "rove"; att; att bold; echo " ${ROVE_VERSION}:";
 att;
-
-echo_n "  checking for gcc:   ";
+echo_n "  checking for gcc:             ";
 if check_gcc; then
 	style_success "found gcc $CC_VERSION";
 else
 	style_error "no gcc :(";
 
 	echo   "";
-	echo   "  I couldn't find gcc on your system!  you will need it to compile rove.";
-	echo_n "  if you're on ubuntu, make sure to grab the "; style_package "build-essential"; echo " package.";
-	echo   "  on mac os X, you'll need to install the Xcode developer tools.";
+	echo   "I couldn't find gcc on your system!  you will need it to compile rove.";
+	echo_n "if you're on "; style_distro -n "ubuntu"; echo_n ", make sure to grab the "; style_package "build-essential"; echo " package.";
+	echo   "on mac os X, you'll need to install the Xcode developer tools.";
 	echo   "";
+
+	cleanup;
 	exit -1;
 fi
 
-echo_n "  checking for JACK:  ";
+echo_n "  checking for JACK:            ";
 if check_jack; then
 	style_success "found JACK $JACK_VERSION";
 else
 	style_error "no jack :(";
 	
 	echo   "";
-	echo   "  I couldn't find JACK on your system!  you will need it to compile rove.";
-	echo_n "  if you're on ubuntu, make sure you have the "; style_package -n "libjack-dev"; echo_n " and "; style_package -n "jackd"; echo " packages.";
-	echo_n "  on other distros, the package might be called "; style_package -n "jack-audio-connection-kit"; echo ".";
-	echo_n "  failing that, grab the source from "; style_link -n "http://jackaudio.org"; echo ".";
+	echo   "I couldn't find JACK on your system!  you will need it to compile rove.";
+	echo_n "if you're on "; style_distro -n "ubuntu"; echo_n ", make sure you have the "; style_package -n "libjack-dev"; echo_n " and "; style_package -n "jackd"; echo " packages.";
+	echo_n "on "; style_distro -n "other distros"; echo_n ", the package might be called "; style_package -n "jack-audio-connection-kit"; echo ".";
+	echo_n "failing that, grab the source from "; style_link -n "http://jackaudio.org"; echo ".";
 	echo   "";
-	echo_n "  mac os X users should head to "; style_link -n "http://jackosx.com/"; echo ".";
+	style_distro -n "mac os X"; echo_n " users should head to "; style_link -n "http://jackosx.com/"; echo ".";
 	echo   "";
+	
+	cleanup;
+	exit -1;
 fi
 
-rm -rf .conftests
+echo_n "  checking for liblo:           ";
+if check_lo; then
+	style_success "found liblo $LO_VERSION";
+else
+	style_error "no liblo :(";
+
+	echo   "";
+	echo   "I couldn't find liblo on your system!  you will need it to compile rove."
+	echo_n "if you're on "; style_distro -n "ubuntu"; echo_n ", make sure you have the "; style_package -n "liblo0-dev "; echo " package installed.";
+	echo_n "users of "; style_distro -n "other distros"; echo_n " and "; style_distro -n "mac os X"; echo_n " should look for a "; style_package -n "liblo"; echo " package, or";
+	echo_n "get the source from the liblo homepage at "; style_link -n "http://liblo.sourceforge.net/"; echo ".";
+	echo   "";
+	
+	cleanup;
+	exit -1;
+fi
+
+echo_n "  checking for libsndfile:      ";
+if check_sndfile; then
+	style_success "found libsndfile $SNDFILE_VERSION";
+else
+	style_error "no libsndfile :(";
+	
+	echo   "";
+	echo   "I couldn't find libsndfile on your system!  you will need it to compile rove."
+	echo_n "if you're on "; style_distro -n "ubuntu"; echo_n ", make sure you have the "; style_package -n "libsndfile1-dev"; echo " package installed.";
+	echo_n "users of "; style_distro -n "other distros"; echo_n " and "; style_distro -n "mac os X"; echo_n " should look for a "; style_package -n "libsndfile"; echo " package, or";
+	echo_n "get the source from the liblo homepage at "; style_link -n "http://mega-nerd.com/libsndfile/"; echo ".";
+	echo "";
+	exit -1;
+fi
+
+# TODO: write config.mk
+echo "";
+echo_n "you're all set!  run "; style_package -n "make"; echo_n " to compile rove and then "; style_package -n "make install"; echo " as root to install it system wide.";
+echo "";
+
+cleanup;
+exit 0;
