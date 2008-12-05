@@ -1,0 +1,194 @@
+#!/bin/sh
+
+#
+# configure script for rove!
+#
+
+ROVE_VERSION="0.2";
+CFLAGS="";
+LDFLAGS="";
+
+CC="gcc";
+CC_VERSION=false;
+HAVE_PKGCONFIG=false;
+
+LIBLO_VERSION=false;
+LO_CFLAGS="";
+LO_LIBS="-llo -lpthread";
+
+JACK_VERSION=false;
+JACK_CFLAGS="";
+JACK_LIBS="-ljack -lpthread -lrt";
+
+SNDFILE_VERSION=false;
+SNDFILE_CFLAGS="";
+SNDFILE_LIBS="-lsndfile";
+
+#
+# functions
+#
+
+_echo () {
+	# portable (sysv/bsd) echo -n
+	if [ $1 = "-n" ]; then
+		shift;
+		echo $n "$*" $c;
+	else
+		echo "$*";
+	fi
+}
+
+echo_n () {
+	_echo -n "$*";
+}
+
+# color and text styles
+
+att() {
+	if [ $# -eq 0 ]; then
+		echo -ne "\033[0m";
+		return 0;
+	fi
+
+	echo -ne "\033["
+	while [ $# -ge 1 ]; do
+		case $1 in
+			bold)      C=1;;
+			underline) C=4;;
+			hidden)    C=8;;
+			
+			black)     C=30;;
+			red)       C=31;;
+			green)     C=32;;
+			yellow)    C=33;;
+			blue)      C=34;;
+			magenta)   C=35;;
+			cyan)      C=36;;
+			white)     C=37;;
+			
+			reset)
+				echo -ne "0m";
+				return 0;
+		esac
+		
+		echo -ne "$C"
+		
+		if [ $# -ge 2 ]; then
+			echo -ne ";";
+		fi
+		
+		shift;
+	done;
+	echo -ne "m";
+}
+
+style_link    () { att blue bold underline; _echo $*; att; }
+style_package () { att blue bold; _echo $*; att; }
+style_error   () { att red bold; _echo $*; att; }
+style_success () { att green; _echo $*; att; }
+
+# feature test commands
+
+try_command () {
+	if $* > /dev/null 2> /dev/null; then
+		return 0;
+	else
+		return -1;
+	fi
+}
+
+check_gcc () {
+	CMD="$CC -dumpversion";
+	
+	if try_command $CMD; then
+		CC_VERSION=`$CMD`;
+		return 0;
+	fi
+
+	CC_VERSION=false;
+	return -1;
+}
+
+check_jack () {
+	cat <<EOF > .conftests/jack.c
+#include <jack/jack.h>
+
+int main(int argc, char **argv) {
+	if( jack_client_name_size() )
+		return 0;
+	else
+		return -1;
+}
+EOF
+	
+	CMD="$CC $JACK_CFLAGS $JACK_LIBS .conftests/jack.c -o .conftests/jack"
+	
+	if [ "`try_command $CMD`" ]; then
+		return -1;
+	fi
+	
+	CMD="jackd -V"
+	
+	if [ "`try_command $CMD`" ]; then
+		return -1;
+	fi
+	
+	HAVE_JACK=true;
+	JACK_VERSION="`jackd -V | awk '{print $3}'`";
+	
+	return -1;
+}
+
+#
+# initialization
+#
+
+# figure out the right things to pass to echo to supress a newline
+if [ "`echo -n`" = "-n" ]; then
+	n=""; c="\c";
+else
+	n="-n"; c="";
+fi
+
+#
+# actual script part starts here
+#
+
+mkdir -p .conftests
+
+echo "";
+att bold;
+echo_n "configuring "; style_package "rove ${ROVE_VERSION}:";
+att;
+
+echo_n "  checking for gcc:   ";
+if check_gcc; then
+	style_success "found gcc $CC_VERSION";
+else
+	style_error "no gcc :(";
+
+	echo   "";
+	echo   "  I couldn't find gcc on your system!  you will need it to compile rove.";
+	echo_n "  if you're on ubuntu, make sure to grab the "; style_package "build-essential"; echo " package.";
+	echo   "  on mac os X, you'll need to install the Xcode developer tools.";
+	echo   "";
+	exit -1;
+fi
+
+echo_n "  checking for JACK:  ";
+if check_jack; then
+	style_success "found JACK $JACK_VERSION";
+else
+	style_error "no jack :(";
+	
+	echo   "";
+	echo   "  I couldn't find JACK on your system!  you will need it to compile rove.";
+	echo_n "  if you're on ubuntu, make sure you have the "; style_package -n "libjack-dev"; echo_n " and "; style_package -n "jackd"; echo " packages.";
+	echo_n "  on other distros, the package might be called "; style_package -n "jack-audio-connection-kit"; echo ".";
+	echo_n "  failing that, grab the source from "; style_link -n "http://jackaudio.org"; echo ".";
+	echo   "";
+	echo_n "  mac os X users should head to "; style_link -n "http://jackosx.com/"; echo ".";
+	echo   "";
+fi
+
+rm -rf .conftests
