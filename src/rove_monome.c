@@ -136,7 +136,7 @@ static void *pattern_post_record(rove_state_t *state, rove_monome_t *monome, con
 		p->status = PATTERN_STATUS_INACTIVE;
 
 		if( p->bound_button ) {
-			monome_led_off(monome, p->bound_button->x, p->bound_button->y);
+			monome_led_off(monome, p->bound_button->pos.x, p->bound_button->pos.y);
 			p->bound_button->data = NULL;
 		}
 
@@ -352,19 +352,19 @@ static void initialize_callbacks(rove_state_t *state, rove_monome_t *monome) {
 	y = 0;
 	
 	for( i = 0; i < state->group_count; i++ ) {
-		controls[i].x    = i;
-		controls[i].y    = y;
+		controls[i].pos.x = i;
+		controls[i].pos.y = y;
 
-		controls[i].cb   = group_off_handler;
-		controls[i].data = (void *) &state->groups[i];
+		controls[i].cb    = group_off_handler;
+		controls[i].data  = (void *) &state->groups[i];
 	}
 	
 	for( ; i < state->group_count + 2; i++ ) {
-		controls[i].x    = i;
-		controls[i].y    = y;
+		controls[i].pos.x = i;
+		controls[i].pos.y = y;
 
-		controls[i].cb   = pattern_handler;
-		controls[i].data = NULL;
+		controls[i].cb    = pattern_handler;
+		controls[i].data  = NULL;
 	}
 	
 	monome->callbacks[y].cb   = control_row_handler;
@@ -378,11 +378,11 @@ static void initialize_callbacks(rove_state_t *state, rove_monome_t *monome) {
 		for( i = y; i < y + row_span; i++ ) {
 			row = &monome->callbacks[i];
 			
-			row->x    = 0;
-			row->y    = i;
+			row->pos.x = 0;
+			row->pos.y = i;
 			
-			row->cb   = file_row_handler;
-			row->data = f;
+			row->cb    = file_row_handler;
+			row->data  = f;
 		}
 	}
 }

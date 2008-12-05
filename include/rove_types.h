@@ -92,8 +92,7 @@ struct rove_monome_position {
 };
 
 struct rove_monome_callback {
-	uint8_t x;
-	uint8_t y;
+	rove_monome_position_t pos;
 	
 	rove_monome_callback_function_t cb;
 	void *data;
