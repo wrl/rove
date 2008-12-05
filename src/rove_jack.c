@@ -20,6 +20,7 @@
 #include <sndfile.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include <jack/jack.h>
 
@@ -88,9 +89,19 @@ static int process(jack_nframes_t nframes, void *arg) {
 			if( !rove_file_is_active(f) )
 				continue;
 			
-			if( on_quantize_boundary() )
-				if( f->state == FILE_STATE_RESEEK )
+			if( on_quantize_boundary() ) 
+				switch( f->state ) {
+				case FILE_STATE_RESEEK:
 					rove_file_reseek(f, 0);
+					break;
+					
+				case FILE_STATE_ENABLE_LOOP:
+					rove_file_enable_loop(f);
+					break;
+					
+				default:
+					break;
+				}
 
 			o = rove_file_get_play_pos(f);
 			

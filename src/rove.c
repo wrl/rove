@@ -192,9 +192,7 @@ static void main_loop(rove_state_t *state) {
 			case FILE_STATE_INACTIVE:
 				continue;
 				
-			case FILE_STATE_ACTIVATE:
-			case FILE_STATE_ACTIVE:
-			case FILE_STATE_RESEEK:
+			default:
 				rove_monome_display_file(state, f);
 				break;
 			}
