@@ -119,12 +119,6 @@ static sf_count_t calculate_play_pos(sf_count_t length, uint8_t x, uint8_t y, ui
 		return lrint(ceil(elapsed * length));
 }
 
-static void blank_file_row(rove_monome_t *monome, rove_file_t *f) {
-	uint8_t row[2] = {0, 0};
-
-	monome_led_row(monome, f->y + f->monome_pos.y, row);
-}
-
 static void *pattern_post_record(rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, rove_list_member_t *m) {
 	rove_pattern_t *p = m->data;
 
@@ -387,8 +381,10 @@ static void initialize_callbacks(rove_state_t *state, rove_monome_t *monome) {
 	}
 }
 
-void rove_monome_blank_file_row(rove_state_t *state, rove_file_t *f) {
-	blank_file_row(state->monome, f);
+void rove_monome_blank_file_row(rove_monome_t *monome, rove_file_t *f) {
+	uint8_t row[2] = {0, 0};
+
+	monome_led_row(monome, f->y + f->monome_pos.y, row);
 }
 
 void rove_monome_display_file(rove_state_t *state, rove_file_t *f) {

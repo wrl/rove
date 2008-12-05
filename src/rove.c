@@ -187,7 +187,7 @@ static void main_loop(rove_state_t *state) {
 					monome_led_off(state->monome, f->group->idx, 0);
 				
 				rove_file_deactivate(f);
-				rove_monome_blank_file_row(state, f);
+				rove_monome_blank_file_row(state->monome, f);
 				
 			case FILE_STATE_INACTIVE:
 				continue;
