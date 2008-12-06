@@ -66,7 +66,6 @@ rove_file_t *rove_file_new_from_path(const char *path) {
 }
 
 sf_count_t rove_file_get_play_pos(rove_file_t *f) {
-	return ((f->loop_offset + (f->play_offset % f->length)) % f->file_length) * f->channels;
 	return f->play_offset * f->channels;
 }
 
@@ -108,27 +107,6 @@ void rove_file_deactivate(rove_file_t *f) {
 }
 
 void rove_file_reseek(rove_file_t *f, sf_count_t seek_offset) {
-	rove_file_disable_loop(f);
-
 	rove_file_set_play_pos(f, f->new_offset + seek_offset);
 	f->state = FILE_STATE_ACTIVE;
-}
-
-void rove_file_enable_loop(rove_file_t *f) {
-	f->loop_offset = f->queued_loop_start;
-					
-	if( f->queued_loop_start < f->queued_loop_end )
-		f->length  = f->queued_loop_end - f->queued_loop_start;
-	else
-		f->length  = f->file_length - (f->queued_loop_start - f->queued_loop_end);
-	
-	rove_file_set_play_pos(f, f->play_offset - f->loop_offset);
-	f->state = FILE_STATE_ACTIVE;
-}
-
-void rove_file_disable_loop(rove_file_t *f) {
-	if( f->length != f->file_length ) {
-		f->loop_offset = 0;
-		f->length = f->file_length;
-	}
 }

@@ -36,7 +36,6 @@ typedef enum {
 	FILE_STATE_ACTIVATE,
 	FILE_STATE_DEACTIVATE,
 	FILE_STATE_RESEEK,
-	FILE_STATE_ENABLE_LOOP
 } rove_file_state_t;
 
 typedef enum {
@@ -124,11 +123,7 @@ struct rove_file {
 	
 	sf_count_t length;
 	sf_count_t play_offset;
-	sf_count_t loop_offset;
 	sf_count_t new_offset;
-	
-	sf_count_t queued_loop_start;
-	sf_count_t queued_loop_end;
 	
 	sf_count_t channels;
 	sf_count_t file_length;
@@ -142,10 +137,6 @@ struct rove_file {
 	rove_monome_position_t monome_pos;
 	rove_monome_position_t monome_pos_old;
 	
-	/* set to 1 when a button is held down (for sublooping) */
-	uint8_t monome_chording;
-	rove_monome_position_t monome_pos_held;
-
 	/* set to 1 if the next run of rove_monome_display_file should
 	   update the row regardless of whether it has changed. */
 	uint8_t force_monome_update;

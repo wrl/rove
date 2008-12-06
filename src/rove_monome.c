@@ -285,7 +285,6 @@ static void control_row_handler(rove_state_t *state, rove_monome_t *monome, cons
 }
 
 void file_row_handler(rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type, void **data) {
-	uint8_t row[2] = {0xFF, 0xFF};
 	rove_file_t *f = *data;
 
 	rove_monome_position_t pos = {x, y - f->y};
@@ -295,33 +294,13 @@ void file_row_handler(rove_state_t *state, rove_monome_t *monome, const uint8_t 
 		if( y < f->y || y > ( f->y + f->row_span - 1) )
 			return;
 		
-		if( f->monome_chording ) {
-			f->queued_loop_start = calculate_play_pos(f->file_length, f->monome_pos_held.x, f->monome_pos_held.y,
-													  FILE_PLAY_DIRECTION_FORWARD, f->row_span, monome->cols);
-			f->queued_loop_end   = calculate_play_pos(f->file_length, pos.x, pos.y,
-													  FILE_PLAY_DIRECTION_FORWARD, f->row_span, monome->cols);
-			f->state = FILE_STATE_ENABLE_LOOP;
-			
-			monome_led_row(monome, y, row);
-			return;
-		}
-		
 		f->new_offset = calculate_play_pos(f->file_length, pos.x, pos.y,
 										   (f->play_direction == FILE_PLAY_DIRECTION_REVERSE), f->row_span, monome->cols);
-		
-		f->monome_chording = 1;
-		MONOME_POS_CPY(&f->monome_pos_held, &pos);
-		
-		if( monome->mod_keys & SHIFT ) {
-			f->loop_offset = f->new_offset;
-			f->length = state->snap_delay / 4;
-		}
 		
 		if( state->pattern_rec )
 			rove_pattern_append_step(state->pattern_rec->data, CMD_LOOP_SEEK, f, f->new_offset);
 		
 		if( !rove_file_is_active(f) ) {
-			rove_file_disable_loop(f);
 			f->force_monome_update = 1;
 			
 			f->group->staged_loop  = f;
@@ -335,9 +314,6 @@ void file_row_handler(rove_state_t *state, rove_monome_t *monome, const uint8_t 
 		break;
 
 	case BUTTON_UP:
-		if( !MONOME_POS_CMP(&pos, &f->monome_pos_held) )
-			f->monome_chording = 0;
-		
 		break;
 	}
 }

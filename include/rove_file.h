@@ -24,7 +24,7 @@
 
 #include "rove_types.h"
 
-#define rove_file_is_active(file) ( file->state == FILE_STATE_ACTIVE || file->state == FILE_STATE_RESEEK || file->state == FILE_STATE_ENABLE_LOOP )
+#define rove_file_is_active(file) ( file->state == FILE_STATE_ACTIVE || file->state == FILE_STATE_RESEEK )
 
 rove_file_t*rove_file_new_from_path(const char *path);
 void rove_file_free(rove_file_t*f);
@@ -36,7 +36,5 @@ void rove_file_set_play_pos(rove_file_t *f, sf_count_t pos);
 void rove_file_activate(rove_file_t *f);
 void rove_file_deactivate(rove_file_t *f);
 void rove_file_reseek(rove_file_t *f, sf_count_t seek_offset);
-void rove_file_enable_loop(rove_file_t *f);
-void rove_file_disable_loop(rove_file_t *f);
 
 #endif

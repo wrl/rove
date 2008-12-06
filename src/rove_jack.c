@@ -95,10 +95,6 @@ static int process(jack_nframes_t nframes, void *arg) {
 					rove_file_reseek(f, 0);
 					break;
 					
-				case FILE_STATE_ENABLE_LOOP:
-					rove_file_enable_loop(f);
-					break;
-					
 				default:
 					break;
 				}
