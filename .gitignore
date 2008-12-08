@@ -1,0 +1,5 @@
+# ignore the compiled executable
+rove
+
+# ignore the makefile configuration
+config.mk

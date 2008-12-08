@@ -7,11 +7,10 @@ ifeq ($(wildcard config.mk),config.mk)
 endif
 
 export LD = $(CC)
-export CFLAGS  += -ggdb -D_GNU_SOURCE -Wall -Werror $(LO_CFLAGS) $(JACK_CFLAGS) $(SNDFILE_CFLAGS)
-export LDFLAGS += -ggdb $(LO_LIBS) $(JACK_LIBS) $(SNDFILE_LIBS)
+export CFLAGS  += -ggdb -D_GNU_SOURCE -Wall -Werror
+export LDFLAGS += -ggdb
 export INSTALL = install
 
-export PREFIX = /usr
 export BINDIR = $(PREFIX)/bin
 export LIBDIR = $(PREFIX)/lib
 export INCDIR = $(PREFIX)/include
@@ -32,9 +31,9 @@ endif
 	cp src/rove .
 
 	echo    "";
-	echo    "  all finished! :D";
+	echo    "  build finished!";
 	echo -e "  run \033[1;34mmake install\033[0m as root to install rove systemwide,";
-	echo -e "  or you can run it from here by typing \033[1;34m./rove\033[0m.";
+	echo -e "  or, run it from here by typing \033[1;34m./rove\033[0m.";
 	echo    "";
 else
 	echo "";

@@ -1,4 +1,5 @@
-CFLAGS  += -I../include
+CFLAGS  += -I../include $(LO_CFLAGS) $(JACK_CFLAGS) $(SNDFILE_CFLAGS)
+LDFLAGS += $(LO_LIBS) $(JACK_LIBS) $(SNDFILE_LIBS)
 TARGETS = rove
 
 OBJS  = rove.o
@@ -19,7 +20,7 @@ install: all
 	install rove $(BINDIR)
 
 rove: $(OBJS)
-	echo -e "    \033[1mLD\033[0m      rove"
+	echo -e "    \033[1mLD\033[0m      src/rove"
 	$(LD) $(LDFLAGS) $^ -o $@
 
 %: %.o
