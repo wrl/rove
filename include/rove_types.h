@@ -65,6 +65,12 @@ typedef enum {
 	PATTERN_STATUS_INACTIVE
 } rove_pattern_status_t;
 
+typedef enum {
+	INT,
+	STRING,
+	BOOL
+} rove_config_var_type_t;
+
 typedef struct rove_group rove_group_t;
 typedef struct rove_file rove_file_t;
 
@@ -80,7 +86,40 @@ typedef struct rove_pattern rove_pattern_t;
 
 typedef struct rove_state rove_state_t;
 
+typedef struct rove_config_pair rove_config_pair_t;
+typedef struct rove_config_section rove_config_section_t;
+typedef struct rove_config_var rove_config_var_t;
+
+
 typedef void (*rove_monome_callback_function_t)(rove_state_t *, rove_monome_t *, const uint8_t x, const uint8_t y, const uint8_t event_type, void **data);
+typedef void (*rove_config_section_callback_t)(const rove_config_section_t *, rove_state_t *);
+
+/**
+ * rove_config
+ */
+
+struct rove_config_var {
+	char *key;
+	void *dest;
+	
+	rove_config_var_type_t type;
+};
+
+struct rove_config_pair {
+	char *key;
+	char *value;
+	
+	int klen;
+	int vlen;
+};
+
+struct rove_config_section {
+	char *block;
+	rove_config_var_t *vars;
+	rove_config_section_callback_t section_callback;
+
+	rove_list_t *pairs;
+};
 
 /**
  * rove_monome

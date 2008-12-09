@@ -23,11 +23,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <glob.h>
 
 #include "rove.h"
 #include "rove_file.h"
 #include "rove_jack.h"
 #include "rove_list.h"
+#include "rove_config.h"
 #include "rove_monome.h"
 
 #define DEFAULT_OSC_PREFIX      "rove"
@@ -200,12 +202,27 @@ static void main_loop(rove_state_t *state) {
 	}
 }
 
-void rove_recalculate_bpm_variables(rove_state_t *state) {
+static char *user_config_path() {
+	char *home, *path, *conf;
+	
+	conf = "/.rove.conf";
+	
+	if( !(home = getenv("HOME")) )
+		return NULL;
+	
+	if( home[strlen(home) - 1] == '/' )
+		conf++;
+
+	asprintf(&path, "%s%s", home, conf);
+	return path;
+}
+
+static void rove_recalculate_bpm_variables(rove_state_t *state) {
 	state->snap_delay = lrint(((60 / state->bpm) * state->beat_multiplier) * ((double) jack_get_sample_rate(state->client)));
 }
 
 int main(int argc, char **argv) {
-	char *osc_prefix, *osc_host_port, *osc_listen_port, *session_file, c;
+	char *osc_prefix, *osc_host_port, *osc_listen_port, *session_file, *conf_file, c;
 	rove_state_t state;
 	uint8_t cols;
 	int i;
@@ -218,13 +235,31 @@ int main(int argc, char **argv) {
 		{0, 0, 0, 0}
 	};
 	
+	rove_config_var_t monome_vars[] = {
+		{"columns", &cols, INT},
+		{NULL}
+	};
+	
+	rove_config_var_t osc_vars[] = {
+		{"prefix", &osc_prefix, STRING},
+		{"host-port", &osc_host_port, STRING},
+		{"listen-port", &osc_listen_port, STRING},
+		{NULL}
+	};
+	
+	rove_config_section_t config_sections[] = {
+		{"monome", monome_vars},
+		{"osc", osc_vars},
+		{NULL}
+	};
+	
 	memset(&state, 0, sizeof(rove_state_t));
 	
 	cols            = 8;
 	session_file    = NULL;
-	osc_prefix      = DEFAULT_OSC_PREFIX;
-	osc_host_port   = DEFAULT_OSC_HOST_PORT;
-	osc_listen_port = DEFAULT_OSC_LISTEN_PORT;
+	osc_prefix      = strdup(DEFAULT_OSC_PREFIX);
+	osc_host_port   = strdup(DEFAULT_OSC_HOST_PORT);
+	osc_listen_port = strdup(DEFAULT_OSC_LISTEN_PORT);
 	
 	opterr = 0;
 	
@@ -239,16 +274,14 @@ int main(int argc, char **argv) {
 			break;
 			
 		case 'p':
-			osc_prefix = optarg;
+			if( *optarg == '/' ) /* remove the leading slash if there is one */
+				optarg++;
 			
-			if( *osc_prefix == '/' ) /* remove the leading slash if there is one */
-				osc_prefix++;
+			osc_prefix = strdup(optarg);
 			
 			break;
 			
 		case 'h':
-			osc_host_port = optarg;
-			
 			do {
 				if( !is_numeric(*optarg) ) {
 					usage();
@@ -257,11 +290,10 @@ int main(int argc, char **argv) {
 				}
 			} while( *++optarg );
 
+			osc_host_port = strdup(optarg);
 			break;
 			
 		case 'l':
-			osc_listen_port = optarg;
-
 			do {
 				if( !is_numeric(*optarg) ) {
 					usage();
@@ -270,7 +302,7 @@ int main(int argc, char **argv) {
 				}
 			} while( *++optarg );
 
-
+			osc_listen_port = strdup(optarg);
 			break;
 		}
 	}
@@ -296,6 +328,18 @@ int main(int argc, char **argv) {
 
 	printf("you've got the following loops loaded:\n"
 		   "\t[rows]\t[file]\n");
+	
+	if( (conf_file = user_config_path()) ) {
+		rove_load_config(&state, user_config_path(), config_sections);
+		free(conf_file);
+	}
+
+	printf("cols: %d\n", cols);
+	printf("osc_prefix: %s\n", osc_prefix);
+	printf("osc_host_port: %s\n", osc_host_port);
+	printf("osc_listen_port: %s\n", osc_listen_port);
+
+	return 1;
 	
 	if( parse_conf_file(session_file, &state) ) {
 		printf("error parsing session file :(\n");

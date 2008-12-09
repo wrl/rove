@@ -6,6 +6,7 @@ OBJS  = rove.o
 OBJS += rove_file.o
 OBJS += rove_jack.o
 OBJS += rove_list.o
+OBJS += rove_config.o
 OBJS += rove_monome.o
 OBJS += rove_pattern.o
 
