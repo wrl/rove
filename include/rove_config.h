@@ -18,4 +18,4 @@
 
 #include "rove_types.h"
 
-int rove_load_config(rove_state_t *state, const char *path, rove_config_section_t *sections);
+int rove_load_config(const char *path, const rove_config_section_t *sections);

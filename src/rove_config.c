@@ -38,7 +38,7 @@ typedef enum {
 	BLOCK
 } parse_mode_t;
 
-static void generic_section_callback(const rove_config_section_t *section, rove_state_t *state) {
+static void generic_section_callback(const rove_config_section_t *section) {
 	rove_config_pair_t *p;
 	rove_config_var_t *v;
 	int i;
@@ -80,20 +80,20 @@ static void generic_section_callback(const rove_config_section_t *section, rove_
 	rove_list_free(section->pairs);
 }
 
-static void close_block(const rove_config_section_t *s, rove_config_pair_t *p, rove_state_t *state) {
+static void close_block(const rove_config_section_t *s, rove_config_pair_t *p) {
 	if( p )
 		rove_list_push(s->pairs, HEAD, p);
 
 	if( s ) {
 		if( s->section_callback )
-			s->section_callback(s, state);
+			s->section_callback(s);
 		else
-			generic_section_callback(s, state);
+			generic_section_callback(s);
 	}
 }
 
 
-static int config_parse(rove_state_t *state, const char *path, const rove_config_section_t *sections) {
+static int config_parse(const char *path, const rove_config_section_t *sections) {
 	char buf[BUFLEN + 1], vbuf[BUFLEN + 1], c;
 	const rove_config_section_t *s = NULL;
 	int fd, len, vlen, i, j, lines;
@@ -182,7 +182,7 @@ static int config_parse(rove_state_t *state, const char *path, const rove_config
 			
 			switch( m ) {
 			case BLOCK:
-				close_block(s, p, state);
+				close_block(s, p);
 				
 				s = NULL;
 				p = NULL;
@@ -254,15 +254,15 @@ static int config_parse(rove_state_t *state, const char *path, const rove_config
 		}
 	}
 	
-	close_block(s, p, state);
+	close_block(s, p);
 	return 0;
 }
 
-int rove_load_config(rove_state_t *state, const char *path, rove_config_section_t *sections) {
+int rove_load_config(const char *path, rove_config_section_t *sections) {
 	int i;
 	
 	for( i = 0; sections[i].block; i++ )
 		sections[i].pairs = rove_list_new();
 	
-	return config_parse(state, path, sections);
+	return config_parse(path, sections);
 }
