@@ -217,24 +217,10 @@ static char *user_config_path() {
 	return path;
 }
 
-static void rove_recalculate_bpm_variables(rove_state_t *state) {
-	state->snap_delay = lrint(((60 / state->bpm) * state->beat_multiplier) * ((double) jack_get_sample_rate(state->client)));
-}
+static int load_user_conf(int *c, char **op, char **ohp, char **olp) {
+	char *osc_prefix, *osc_host_port, *osc_listen_port, *conf;
+	int cols;
 
-int main(int argc, char **argv) {
-	char *osc_prefix, *osc_host_port, *osc_listen_port, *session_file, *conf_file, c;
-	rove_state_t state;
-	uint8_t cols;
-	int i;
-	
-	struct option arguments[] = {
-		{"monome-columns",	required_argument, 0, 'c'},
-		{"osc-prefix", 		required_argument, 0, 'p'},
-		{"osc-host-port", 	required_argument, 0, 'h'},
-		{"osc-listen-port",	required_argument, 0, 'l'},
-		{0, 0, 0, 0}
-	};
-	
 	rove_config_var_t monome_vars[] = {
 		{"columns", &cols, INT},
 		{NULL}
@@ -253,13 +239,93 @@ int main(int argc, char **argv) {
 		{NULL}
 	};
 	
+	cols            = 0;
+	osc_prefix      = NULL;
+	osc_host_port   = NULL;
+	osc_listen_port = NULL;
+
+	if( !(conf = user_config_path()) )
+		return 0;
+	
+	rove_load_config(conf, config_sections);
+	free(conf);
+	
+	if( cols ) {
+		cols = ((cols - 1) & 0xF) + 1;
+		*c = cols;
+	}
+	
+	if( osc_prefix ) {
+		if( *osc_prefix == '/' ) {
+			conf = strdup(osc_prefix + 1);
+			free(osc_prefix);
+			osc_prefix = conf;
+		}
+		
+		if( *op )
+			free(*op);
+		*op = osc_prefix;
+	}
+	
+	if( osc_host_port ) {
+		conf = osc_host_port;
+		do {
+			if( !is_numeric(*conf) ) {
+				usage();
+				printf("\nrove_config: \"%s\" is not a valid host port."
+					   "\n             please check your conf file!\n", osc_host_port);
+				return 1;
+			}
+		} while( *++conf );
+		
+		if( *ohp )
+			free(*ohp);
+		*ohp = osc_host_port;
+	}
+	
+	if( osc_listen_port ) {
+		conf = osc_listen_port;
+		do {
+			if( !is_numeric(*conf) ) {
+				usage();
+				printf("\nrove_config: \"%s\" is not a valid listen port."
+					   "\n             please check your conf file!\n", osc_listen_port);
+				return 1;
+			}
+		} while( *++conf );
+		
+		if( *olp )
+			free(*olp);
+		*olp = osc_listen_port;
+	}
+
+	return 0;
+}
+
+static void rove_recalculate_bpm_variables(rove_state_t *state) {
+	state->snap_delay = lrint(((60 / state->bpm) * state->beat_multiplier) * ((double) jack_get_sample_rate(state->client)));
+}
+
+int main(int argc, char **argv) {
+	char *osc_prefix, *osc_host_port, *osc_listen_port, *session_file, c;
+	rove_state_t state;
+	int cols, i;
+	
+	struct option arguments[] = {
+		{"monome-columns",	required_argument, 0, 'c'},
+		{"osc-prefix", 		required_argument, 0, 'p'},
+		{"osc-host-port", 	required_argument, 0, 'h'},
+		{"osc-listen-port",	required_argument, 0, 'l'},
+		{0, 0, 0, 0}
+	};
+	
 	memset(&state, 0, sizeof(rove_state_t));
 	
 	cols            = 8;
 	session_file    = NULL;
-	osc_prefix      = strdup(DEFAULT_OSC_PREFIX);
-	osc_host_port   = strdup(DEFAULT_OSC_HOST_PORT);
-	osc_listen_port = strdup(DEFAULT_OSC_LISTEN_PORT);
+	osc_prefix      = NULL;
+	osc_host_port   = NULL;
+	osc_listen_port = NULL;
 	
 	opterr = 0;
 	
@@ -282,6 +348,8 @@ int main(int argc, char **argv) {
 			break;
 			
 		case 'h':
+			osc_host_port = strdup(optarg);
+
 			do {
 				if( !is_numeric(*optarg) ) {
 					usage();
@@ -290,10 +358,11 @@ int main(int argc, char **argv) {
 				}
 			} while( *++optarg );
 
-			osc_host_port = strdup(optarg);
 			break;
 			
 		case 'l':
+			osc_listen_port = strdup(optarg);
+
 			do {
 				if( !is_numeric(*optarg) ) {
 					usage();
@@ -302,7 +371,6 @@ int main(int argc, char **argv) {
 				}
 			} while( *++optarg );
 
-			osc_listen_port = strdup(optarg);
 			break;
 		}
 	}
@@ -314,7 +382,7 @@ int main(int argc, char **argv) {
 	}
 	
 	session_file = argv[optind];
-	
+
 	printf("\nhey, welcome to rove!\n\n");
 	
 	state.files    = rove_list_new();
@@ -329,18 +397,9 @@ int main(int argc, char **argv) {
 	printf("you've got the following loops loaded:\n"
 		   "\t[rows]\t[file]\n");
 	
-	if( (conf_file = user_config_path()) ) {
-		rove_load_config(&state, user_config_path(), config_sections);
-		free(conf_file);
-	}
-
-	printf("cols: %d\n", cols);
-	printf("osc_prefix: %s\n", osc_prefix);
-	printf("osc_host_port: %s\n", osc_host_port);
-	printf("osc_listen_port: %s\n", osc_listen_port);
-
-	return 1;
-	
+	if( load_user_conf(&cols, &osc_prefix, &osc_host_port, &osc_listen_port) )
+		return 1;
+		
 	if( parse_conf_file(session_file, &state) ) {
 		printf("error parsing session file :(\n");
 		return 1;
@@ -357,9 +416,22 @@ int main(int argc, char **argv) {
 	rove_recalculate_bpm_variables(&state);
 	state.frames = state.snap_delay;
 	
-	if( rove_monome_init(&state, osc_prefix, osc_host_port, osc_listen_port, cols) )
+	if( rove_monome_init(&state,
+						 (osc_prefix) ? osc_prefix : DEFAULT_OSC_PREFIX,
+						 (osc_host_port) ? osc_host_port : DEFAULT_OSC_HOST_PORT,
+						 (osc_listen_port) ? osc_listen_port : DEFAULT_OSC_LISTEN_PORT,
+						 cols) )
 		return 1;
+	
+	if( osc_prefix )
+		free(osc_prefix);
 
+	if( osc_host_port )
+		free(osc_host_port);
+	
+	if( osc_listen_port )
+		free(osc_listen_port);
+	
 	if( rove_jack_activate(&state) )
 		return 1;
 	
