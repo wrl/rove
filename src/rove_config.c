@@ -40,7 +40,7 @@ typedef enum {
 
 static void generic_section_callback(const rove_config_section_t *section) {
 	rove_config_pair_t *p;
-	rove_config_var_t *v;
+	const rove_config_var_t *v;
 	int i;
 	
 	if( !section->vars )
@@ -49,8 +49,9 @@ static void generic_section_callback(const rove_config_section_t *section) {
 	while( (p = rove_list_pop(section->pairs, HEAD)) ) {
 		for( i = 0; section->vars[i].key; i++ ) {
 			v = &section->vars[i];
-
+			
 			if( !strncmp(p->key, v->key, p->klen) ) {
+				printf("%s: '%s'\n", v->key, p->value);
 				switch( v->type ) {
 				case STRING:
 					if( p->value )
@@ -59,7 +60,17 @@ static void generic_section_callback(const rove_config_section_t *section) {
 					
 				case INT:
 					if( p->value )
-						*((int *) v->dest) = atoi(p->value);
+						*((int *) v->dest) = (int) strtol(p->value, NULL, 10);
+					break;
+					
+				case LONG:
+					if( p->value )
+						*((long int *) v->dest) = strtol(p->value, NULL, 10);
+					break;
+					
+				case DOUBLE:
+					if( p->value )
+						*((double *) v->dest) = strtod(p->value, NULL);
 					break;
 					
 				case BOOL:
@@ -86,7 +97,7 @@ static void close_block(const rove_config_section_t *s, rove_config_pair_t *p) {
 
 	if( s ) {
 		if( s->section_callback )
-			s->section_callback(s);
+			s->section_callback(s, s->cb_arg);
 		else
 			generic_section_callback(s);
 	}

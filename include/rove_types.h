@@ -67,7 +67,9 @@ typedef enum {
 
 typedef enum {
 	INT,
+	LONG,
 	STRING,
+	DOUBLE,
 	BOOL
 } rove_config_var_type_t;
 
@@ -92,14 +94,14 @@ typedef struct rove_config_var rove_config_var_t;
 
 
 typedef void (*rove_monome_callback_function_t)(rove_state_t *, rove_monome_t *, const uint8_t x, const uint8_t y, const uint8_t event_type, void **data);
-typedef void (*rove_config_section_callback_t)(const rove_config_section_t *);
+typedef void (*rove_config_section_callback_t)(const rove_config_section_t *, void *arg);
 
 /**
  * rove_config
  */
 
 struct rove_config_var {
-	char *key;
+	const char *key;
 	void *dest;
 	
 	rove_config_var_type_t type;
@@ -115,8 +117,9 @@ struct rove_config_pair {
 
 struct rove_config_section {
 	char *block;
-	rove_config_var_t *vars;
+	const rove_config_var_t *vars;
 	rove_config_section_callback_t section_callback;
+	void *cb_arg;
 
 	rove_list_t *pairs;
 };
