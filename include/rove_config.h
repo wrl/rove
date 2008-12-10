@@ -18,4 +18,6 @@
 
 #include "rove_types.h"
 
-int rove_load_config(const char *path, const rove_config_section_t *sections);
+int rove_load_config(const char *path, const rove_config_section_t *sections, int cd);
+void rove_config_generic_section_callback(const rove_config_section_t *section);
+int rove_config_getvar(const rove_config_section_t *section, rove_config_pair_t **current_pair);

@@ -16,6 +16,7 @@
  * along with rove.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <libgen.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,7 +39,41 @@ typedef enum {
 	BLOCK
 } parse_mode_t;
 
-static void generic_section_callback(const rove_config_section_t *section) {
+int rove_config_getvar(const rove_config_section_t *section, rove_config_pair_t **current_pair) {
+	const rove_config_var_t *v;
+	rove_config_pair_t *p;
+	int i;
+	
+	if( *current_pair ) {
+		p = *current_pair;
+		
+		if( p->var->type != STRING )
+			free(p->value);
+		free(p->key);
+		free(p);
+	}
+	
+	while( (p = rove_list_pop(section->pairs, HEAD)) ) {
+		for( i = 0; section->vars[i].key; i++ ) {
+			v = &section->vars[i];
+			
+			if( !strncmp(p->key, v->key, p->klen) ) {
+				p->var = v;
+				*current_pair = p;
+
+				return v->val;
+			}
+		}
+		
+		free(p->value);
+		free(p->key);
+		free(p);
+	}
+	
+	return 0;
+}
+
+void rove_config_generic_section_callback(const rove_config_section_t *section) {
 	rove_config_pair_t *p;
 	const rove_config_var_t *v;
 	int i;
@@ -49,9 +84,9 @@ static void generic_section_callback(const rove_config_section_t *section) {
 	while( (p = rove_list_pop(section->pairs, HEAD)) ) {
 		for( i = 0; section->vars[i].key; i++ ) {
 			v = &section->vars[i];
+			p->var = v;
 			
 			if( !strncmp(p->key, v->key, p->klen) ) {
-				printf("%s: '%s'\n", v->key, p->value);
 				switch( v->type ) {
 				case STRING:
 					if( p->value )
@@ -99,20 +134,24 @@ static void close_block(const rove_config_section_t *s, rove_config_pair_t *p) {
 		if( s->section_callback )
 			s->section_callback(s, s->cb_arg);
 		else
-			generic_section_callback(s);
+			if( s->vars ) 
+				rove_config_generic_section_callback(s);
 	}
 }
 
 
-static int config_parse(const char *path, const rove_config_section_t *sections) {
+static int config_parse(const char *path, rove_config_section_t *sections, int cd) {
 	char buf[BUFLEN + 1], vbuf[BUFLEN + 1], c;
-	const rove_config_section_t *s = NULL;
+	rove_config_section_t *s = NULL;
 	int fd, len, vlen, i, j, lines;
 	rove_config_pair_t *p = NULL;
 	parse_mode_t m = KEY;
 	
 	if( (fd = open(path, O_RDONLY)) < 0 )
 		return 1;
+	
+	if( cd ) 
+		chdir(dirname((char *) path));
 	
 	vlen = 0;
 	lines = 1;
@@ -199,8 +238,10 @@ static int config_parse(const char *path, const rove_config_section_t *sections)
 				p = NULL;
 				
 				for( j = 0; sections[j].block; j++ )
-					if( !strncmp(vbuf, sections[j].block, vlen) )
+					if( !strncmp(vbuf, sections[j].block, vlen) ) {
 						s = &sections[j];
+						s->start_line = lines;
+					}
 				
 				m = COMMENT;
 				break;
@@ -269,11 +310,11 @@ static int config_parse(const char *path, const rove_config_section_t *sections)
 	return 0;
 }
 
-int rove_load_config(const char *path, rove_config_section_t *sections) {
+int rove_load_config(const char *path, rove_config_section_t *sections, int cd) {
 	int i;
 	
 	for( i = 0; sections[i].block; i++ )
 		sections[i].pairs = rove_list_new();
 	
-	return config_parse(path, sections);
+	return config_parse(path, sections, cd);
 }

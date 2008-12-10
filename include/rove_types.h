@@ -103,14 +103,15 @@ typedef void (*rove_config_section_callback_t)(const rove_config_section_t *, vo
 struct rove_config_var {
 	const char *key;
 	void *dest;
-	
 	rove_config_var_type_t type;
+	int val;
 };
 
 struct rove_config_pair {
 	char *key;
 	char *value;
 	
+	const rove_config_var_t *var;
 	int klen;
 	int vlen;
 };
@@ -121,6 +122,7 @@ struct rove_config_section {
 	rove_config_section_callback_t section_callback;
 	void *cb_arg;
 
+	int start_line;
 	rove_list_t *pairs;
 };
 
