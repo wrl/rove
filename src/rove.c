@@ -58,115 +58,6 @@ static rove_group_t *initialize_groups(const int group_count) {
 	return groups;
 }
 
-/**
- * this is a mess and i should probably either rewrite it or use an external library
- */
-static int parse_conf_file(const char *path, rove_state_t *state) {
-	char line[MAX_LENGTH], sndpath[MAX_LENGTH], *offset;
-	uint8_t y = 1, span, group, rev;
-	rove_file_t *cur;
-	uint16_t len;
-	FILE *conf;
-	
-	if( !(conf = fopen(path, "r")) )
-		return 1;
-	
-	chdir(dirname((char *) path));
-	
-	while( fgets(line, MAX_LENGTH, conf) ) {
-		len = strlen(line);
-		
-		if( line[0] == ':' ) {
-			if( state->bpm || !(offset = strstr(line + 1, ":")) )
-				return 1;
-			
-			state->bpm = strtod(line + 1, &offset);
-			state->group_count = atoi(++offset);
-			
-			if( !(offset = strstr(offset, ":")) )
-				return 1;
-			state->pattern_lengths[0] = atoi(++offset);
-			
-			if( !(offset = strstr(offset, ":")) )
-				return 1;
-			state->pattern_lengths[1] = atoi(++offset);
-			
-			if( !(offset = strstr(offset, ":")) )
-				state->beat_multiplier = 0;
-			else
-				state->beat_multiplier = strtod(++offset, NULL);
-
-			if( !(state->groups = initialize_groups(state->group_count)) )
-				return 1;
-		} else {
-			if( !state->bpm || !state->group_count )
-				return 1;
-			
-			if( !(group = atoi(line)) )
-				return 1;
-			
-			if( group > state->group_count )
-				return 1;
-			
-			if( !(offset = strstr(line, ":")) )
-				return 1;
-			
-			offset += 1;
-			len    -= offset - line;
-			
-			if( *offset == 'r' ) {
-				rev = 1;
-				offset++;
-			} else
-				rev = 0;
-			
-			if( !(span = atoi(offset)) )
-				return 1;
-			
-			if( !(offset = strstr(offset, ":")) )
-				return 1;
-			
-			offset += 1;
-			len    -= offset - line - 2;
-			
-			strncpy(sndpath, offset, MAX_LENGTH - 1);
-			sndpath[len] = 0;
-			
-			if( sndpath[len - 1] == '\n' )
-				sndpath[len - 1] = 0;
-			
-			if( y + span > 16 ) {
-				printf("\n\t(you tried to load more, but you're out of room!)\n");
-				break;
-			}
-			
-			/**
-			 * now that we've parsed out the relevant information, allocate and initialize a rove_file_t.
-			 */
-			
-			if( !(cur = rove_file_new_from_path(sndpath)) )
-				continue;
-			
-			cur->y = y;
-			cur->row_span = span;
-			cur->group = &state->groups[group - 1];
-			cur->play_direction = ( rev ) ? FILE_PLAY_DIRECTION_REVERSE : FILE_PLAY_DIRECTION_FORWARD;
-			
-			rove_list_push(state->files, TAIL, cur);
-			
-			printf("\t%d - %d\t%s\n", y, y + span - 1, sndpath);
-				   
-			y += span;
-			
-			cur  = NULL;
-		}
-	}
-	
-	fclose(conf);
-	
-	return 0;
-}
-
 static void usage() {
 	printf("Usage: rove [OPTION]... session_file.rv\n"
 		   "  -c, --monome-columns=COLUMNS\n"
@@ -217,25 +108,132 @@ static char *user_config_path() {
 	return path;
 }
 
+static void file_block_parse(const rove_config_section_t *section, void *arg) {
+	rove_state_t *state = arg;
+	static int y = 1;
+
+	int group, rows, reverse, *v;
+	rove_file_t *f;
+	char *path;
+	
+	rove_config_pair_t *pair = NULL;
+	int c;
+	
+	path    = NULL;
+	group   = 0;
+	rows    = 1;
+	reverse = 0;
+	
+	while( (c = rove_config_getvar(section, &pair)) ) {
+		switch( c ) {
+		case 'p':
+			path = pair->value;
+			continue;
+			
+		case 'v':
+			reverse = 1;
+			continue;
+
+		case 'g':
+			v = &group;
+			break;
+			
+		case 'r':
+			v = &rows;
+			break;
+		}
+		
+		*v = (int) strtol(pair->value, NULL, 10);
+	}
+	
+	if( !path ) {
+		printf("no file path specified in file section starting at line %d\n", section->start_line);
+		return;
+	}
+	
+	if( !group ) {
+		printf("no group specified in file section starting at line %d\n", section->start_line);
+		goto out;
+	}
+	
+	if( !(f = rove_file_new_from_path(path)) )
+		goto out;
+	
+	if( group > state->group_count )
+		group = state->group_count;
+	
+	f->y = y;
+	f->row_span = rows;
+	f->group = &state->groups[group - 1];
+	f->play_direction = ( reverse ) ? FILE_PLAY_DIRECTION_REVERSE : FILE_PLAY_DIRECTION_FORWARD;
+	
+	rove_list_push(state->files, TAIL, f);
+	printf("\t%d - %d\t%s\n", y, y + rows - 1, path);
+	
+	y += rows;
+	
+ out:
+	free(path);
+	return;
+}
+
+static void session_block_parse(const rove_config_section_t *section, void *arg) {
+	rove_state_t *state = arg;
+
+	rove_config_generic_section_callback(section);
+	state->groups = initialize_groups(state->group_count);
+
+}
+
+static int load_session_file(const char *path, rove_state_t *state) {
+	rove_config_var_t file_vars[] = {
+		{"path",    NULL, STRING, 'p'},
+		{"groups",  NULL,    INT, 'g'},
+		{"rows",    NULL,    INT, 'r'},
+		{"reverse", NULL,   BOOL, 'v'},
+		{NULL}
+	};
+	
+	rove_config_var_t session_vars[] = {
+		{"quantize", &state->beat_multiplier, DOUBLE, 'q'},
+		{"bpm",      &state->bpm,             DOUBLE, 'b'},
+		{"groups",   &state->group_count,        INT, 'g'},
+		{"pattern1", &state->pattern_lengths[0], INT, '1'},
+		{"pattern2", &state->pattern_lengths[1], INT, '2'},
+		{NULL}
+	};
+	
+	rove_config_section_t config_sections[] = {
+		{"session", session_vars, session_block_parse, state},
+		{"file",    file_vars   , file_block_parse,    state},
+		{NULL}
+	};
+	
+	if( rove_load_config(path, config_sections, 1) )
+		return 0;
+	
+	return 0;
+}
+
 static int load_user_conf(int *c, char **op, char **ohp, char **olp) {
 	char *osc_prefix, *osc_host_port, *osc_listen_port, *conf;
 	int cols;
 
 	rove_config_var_t monome_vars[] = {
-		{"columns", &cols, INT},
+		{"columns", &cols, INT, 'c'},
 		{NULL}
 	};
 	
 	rove_config_var_t osc_vars[] = {
-		{"prefix", &osc_prefix, STRING},
-		{"host-port", &osc_host_port, STRING},
-		{"listen-port", &osc_listen_port, STRING},
+		{"prefix",      &osc_prefix,      STRING, 'p'},
+		{"host-port",   &osc_host_port,   STRING, 'h'},
+		{"listen-port", &osc_listen_port, STRING, 'h'},
 		{NULL}
 	};
 	
 	rove_config_section_t config_sections[] = {
 		{"monome", monome_vars},
-		{"osc", osc_vars},
+		{"osc",    osc_vars},
 		{NULL}
 	};
 	
@@ -247,7 +245,9 @@ static int load_user_conf(int *c, char **op, char **ohp, char **olp) {
 	if( !(conf = user_config_path()) )
 		return 0;
 	
-	rove_load_config(conf, config_sections);
+	if( rove_load_config(conf, config_sections, 0) )
+		return 0;
+	
 	free(conf);
 	
 	if( cols ) {
@@ -400,7 +400,7 @@ int main(int argc, char **argv) {
 	if( load_user_conf(&cols, &osc_prefix, &osc_host_port, &osc_listen_port) )
 		return 1;
 		
-	if( parse_conf_file(session_file, &state) ) {
+	if( load_session_file(session_file, &state) ) {
 		printf("error parsing session file :(\n");
 		return 1;
 	}
