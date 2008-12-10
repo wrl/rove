@@ -1,4 +1,4 @@
-rove v0.1a:
+rove v0.2:
   
 	what is it?
 		rove is a sample-cutter in the spirit of (and blatantly imitating) mlr.
@@ -59,7 +59,7 @@ rove v0.1a:
 		through text files in a fairly standard-looking configuration file format
 		that's basically a windows INI file.  a session file looks like this:
 		
-			[session]
+			[session]           # comments start with a pound symbol and span a line!
 			bpm      = 87.68    # beats per minute
 			quantize = .25      # fraction of a quarter note to quantize to
 			groups   = 2        # number of groups
