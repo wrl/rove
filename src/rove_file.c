@@ -65,10 +65,6 @@ rove_file_t *rove_file_new_from_path(const char *path) {
 	return f;
 }
 
-sf_count_t rove_file_get_play_pos(rove_file_t *f) {
-	return f->play_offset * f->channels;
-}
-
 void rove_file_set_play_pos(rove_file_t *f, sf_count_t p) {
 	if( p >= f->file_length )
 	   p -= f->file_length * (abs(p) / f->file_length);
@@ -82,9 +78,9 @@ void rove_file_set_play_pos(rove_file_t *f, sf_count_t p) {
 
 void rove_file_inc_play_pos(rove_file_t *f, sf_count_t delta) {
 	if( f->play_direction == FILE_PLAY_DIRECTION_REVERSE )
-		delta = 0 - delta;
-	
-	rove_file_set_play_pos(f, f->play_offset + delta);
+		rove_file_set_play_pos(f, f->play_offset - delta);
+	else
+		rove_file_set_play_pos(f, f->play_offset + delta);
 }
 
 void rove_file_activate(rove_file_t *f) {

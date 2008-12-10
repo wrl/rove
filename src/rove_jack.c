@@ -41,8 +41,6 @@ static jack_port_t *outport_r;
 #define MAX(a, b) ((a > b) ? a : b)
 #define MIN(a, b) ((a < b) ? a : b)
 
-#define YEAH 1
-#if YEAH
 static int process(jack_nframes_t nframes, void *arg) {
 	rove_state_t *state = arg;
 	
@@ -55,9 +53,9 @@ static int process(jack_nframes_t nframes, void *arg) {
 	int j, group_count;
 	sf_count_t i, prev_i, o;
 	
-	/* rove_pattern_step_t *s;
+	rove_pattern_step_t *s;
 	rove_list_member_t *m;
-	rove_pattern_t *p; */
+	rove_pattern_t *p;
 	rove_group_t *g;
 	rove_file_t *f;
 	
@@ -126,7 +124,69 @@ static int process(jack_nframes_t nframes, void *arg) {
 				switch( f->state ) {
 				case FILE_STATE_RESEEK:
 					rove_file_reseek(f, 0);
-					rove_file_inc_play_pos(f, 0);
+					break;
+					
+				default:
+					break;
+				}
+			}
+			
+			rove_list_foreach(state->patterns, m, p) {
+				switch( p->status ) {
+				case PATTERN_STATUS_ACTIVATE:
+					p->status = PATTERN_STATUS_ACTIVE;
+					p->current_step = p->steps->tail->prev;
+					p->delay_steps = ((rove_pattern_step_t *) p->current_step->data)->delay;
+					
+				case PATTERN_STATUS_ACTIVE:
+					s = p->current_step->data;
+					
+					if( p->delay_steps >= s->delay ) {
+						p->current_step = p->current_step->next;
+						
+						if( !p->current_step->next )
+							p->current_step = p->steps->head->next;
+						
+						p->delay_steps = 0;
+						s = p->current_step->data;
+						
+						switch( s->cmd ) {
+						case CMD_GROUP_DEACTIVATE:
+							s->file->state = FILE_STATE_DEACTIVATE;
+							break;
+							
+						case CMD_LOOP_SEEK:
+							if( !rove_file_is_active(s->file) ) {
+								s->file->play_offset = s->arg;
+								s->file->new_offset  = -1;
+								
+								s->file->force_monome_update = 1;
+								rove_file_activate(s->file);
+							} else {
+								s->file->new_offset = s->arg;
+								rove_file_reseek(s->file, 0);
+							}
+							
+							break;
+						}
+					}
+					
+					p->delay_steps++;
+					
+					break;
+					
+				case PATTERN_STATUS_RECORDING:
+					if( !rove_list_is_empty(p->steps) ) {
+						((rove_pattern_step_t *) p->steps->tail->prev->data)->delay++;
+						
+						if( p->delay_steps ) {
+							if( --p->delay_steps <= 0 ) {
+								p->status = PATTERN_STATUS_ACTIVATE;
+								state->pattern_rec = NULL;
+							}
+						}
+					}
+					
 					break;
 					
 				default:
@@ -136,7 +196,6 @@ static int process(jack_nframes_t nframes, void *arg) {
 		}
 		
 		prev_i = nframes_left;
-		pthread_cond_broadcast(&state->monome_display_notification);
 	} while( (nframes -= nframes_left) > 0 );
 	
 	out_l = jack_port_get_buffer(outport_l, n);
@@ -149,162 +208,6 @@ static int process(jack_nframes_t nframes, void *arg) {
 	
 	return 0;
 }
-#else
-static int process(jack_nframes_t nframes, void *arg) {
-	rove_state_t *state = arg;
-	
-	jack_default_audio_sample_t *out_l;
-	jack_default_audio_sample_t *out_r;
-	jack_default_audio_sample_t *in_l;
-	jack_default_audio_sample_t *in_r;
-	
-	int j, group_count;
-	sf_count_t i, o;
-	
-	rove_pattern_step_t *s;
-	rove_list_member_t *m;
-	rove_pattern_t *p;
-	rove_group_t *g;
-	rove_file_t *f;
-	
-	group_count = state->group_count;
-	
-	for( i = 0; i < group_count; i++ ) {
-		g = &state->groups[i];
-
-		g->output_buffer_l = out_l = jack_port_get_buffer(g->outport_l, nframes);
-		g->output_buffer_r = out_r = jack_port_get_buffer(g->outport_r, nframes);
-
-		for( j = 0; j < nframes; j++ )
-			out_l[j] = out_r[j] = 0;
-	}
-	
-	
-	for( i = 0; i < nframes; i++ ) {
-		if( state->snap_delay > 0 )
-			if( ++state->frames >= state->snap_delay - 1 )
-				state->frames = 0;
-		
-		for( j = 0; j < group_count; j++ ) {
-			g = &state->groups[j];
-			f = g->active_loop;
-			
-			if( on_quantize_boundary() ) 
-				if( g->staged_loop ) {
-					rove_file_activate(g->staged_loop);
-					g->staged_loop = NULL;
-					f = g->active_loop;
-				}
-			
-			if( !f )
-				continue;
-			
-			if( !rove_file_is_active(f) )
-				continue;
-			
-			if( on_quantize_boundary() ) 
-				switch( f->state ) {
-				case FILE_STATE_RESEEK:
-					rove_file_reseek(f, 0);
-					break;
-					
-				default:
-					break;
-				}
-
-			o = rove_file_get_play_pos(f);
-			
-			if( f->channels == 1 ) {
-				g->output_buffer_l[i] += f->file_data[o]   * f->volume;
-				g->output_buffer_r[i] += f->file_data[o]   * f->volume;
-			} else {
-				g->output_buffer_l[i] += f->file_data[o]   * f->volume;
-				g->output_buffer_r[i] += f->file_data[++o] * f->volume;
-			}
-			
-			rove_file_inc_play_pos(f, 1);
-		}
-		
-		rove_list_foreach(state->patterns, m, p) {
-			switch( p->status ) {
-			case PATTERN_STATUS_ACTIVATE:
-				if( on_quantize_boundary() ) {
-					p->status = PATTERN_STATUS_ACTIVE;
-					p->current_step = p->steps->tail->prev;
-					p->delay_frames = ((rove_pattern_step_t *) p->current_step->data)->delay;
-				} else
-					break;
-				
-			case PATTERN_STATUS_ACTIVE:
-				s = p->current_step->data;
-				
-				if( p->delay_frames >= s->delay ) {
-					p->current_step = p->current_step->next;
-
-					if( !p->current_step->next )
-						p->current_step = p->steps->head->next;
-					
-					p->delay_frames = 0;
-					s = p->current_step->data;
-					
-					switch( s->cmd ) {
-					case CMD_GROUP_DEACTIVATE:
-						s->file->state = FILE_STATE_DEACTIVATE;
-						break;
-
-					case CMD_LOOP_SEEK:
-						if( !rove_file_is_active(s->file) ) {
-							s->file->play_offset = s->arg;
-							s->file->new_offset  = -1;
-							
-							s->file->force_monome_update = 1;
-							rove_file_activate(s->file);
-						} else {
-							s->file->new_offset = s->arg;
-							rove_file_reseek(s->file, 0);
-						}
-
-						break;
-					}
-				}
-				
-				p->delay_frames++;
-				
-				break;
-				
-			case PATTERN_STATUS_RECORDING:
-				if( on_quantize_boundary() && !rove_list_is_empty(p->steps) ) {
-					((rove_pattern_step_t *) p->steps->tail->prev->data)->delay += (state->snap_delay) ? state->snap_delay : 1;
-					
-					if( p->delay_frames ) {
-						if( (p->delay_frames -= state->snap_delay) <= 0 ) {
-							p->status = PATTERN_STATUS_ACTIVATE;
-							state->pattern_rec = NULL;
-						}
-					}
-				}
-
-				break;
-
-			default:
-				break;
-			}
-		}		
-
-		pthread_cond_broadcast(&state->monome_display_notification);
-	}
-	
-	out_l = jack_port_get_buffer(outport_l, nframes);
-	out_r = jack_port_get_buffer(outport_r, nframes);
-	in_l = jack_port_get_buffer(group_mix_inport_l, nframes);
-	in_r = jack_port_get_buffer(group_mix_inport_r, nframes);
-	
-	memcpy(out_l, in_l, sizeof(jack_default_audio_sample_t) * nframes);
-	memcpy(out_r, in_r, sizeof(jack_default_audio_sample_t) * nframes);
-	
-	return 0;
-}
-#endif
 
 static void jack_shutdown(void *arg) {
 	exit(0);

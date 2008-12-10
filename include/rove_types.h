@@ -231,7 +231,7 @@ struct rove_list {
  */
 
 struct rove_pattern_step {
-	jack_nframes_t delay;
+	int delay;
 	rove_pattern_cmd_t cmd;
 	rove_file_t *file;
 	jack_nframes_t arg;
@@ -241,7 +241,7 @@ struct rove_pattern {
 	rove_list_t *steps;
 	rove_list_member_t *current_step;
 	
-	jack_nframes_t delay_frames;
+	int delay_steps;
 	rove_pattern_status_t status;
 	
 	rove_monome_callback_t *bound_button;

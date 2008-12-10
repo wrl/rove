@@ -163,7 +163,7 @@ static void pattern_handler(rove_state_t *state, rove_monome_t *monome, const ui
 		
 		p = rove_pattern_new();
 		p->status = PATTERN_STATUS_RECORDING;
-		p->delay_frames = (lrint(1 / state->beat_multiplier) * state->pattern_lengths[idx]) * state->snap_delay;
+		p->delay_steps = (lrint(1 / state->beat_multiplier) * state->pattern_lengths[idx]);
 		
 		m = rove_list_push(state->patterns, TAIL, p);
 		state->pattern_rec = m;
