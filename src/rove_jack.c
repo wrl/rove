@@ -165,7 +165,7 @@ static int process(jack_nframes_t nframes, void *arg) {
 				case PATTERN_STATUS_ACTIVE:
 					s = p->current_step->data;
 					
-					if( p->delay_steps >= s->delay ) {
+					while( p->delay_steps >= s->delay ) {
 						p->current_step = p->current_step->next;
 						
 						if( !p->current_step->next )
