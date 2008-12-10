@@ -80,7 +80,7 @@ rove_file_t *rove_file_new_from_path(const char *path) {
 	f->file_data   = calloc(sizeof(float), info.frames * info.channels);
 	
 #ifdef HAVE_SRC
-	f->src         = src_callback_new(rove_file_src_callback, SRC_LINEAR, info.channels, &err, f);
+	f->src         = src_callback_new(rove_file_src_callback, SRC_SINC_FASTEST, info.channels, &err, f);
 #endif
 	
 	if( sf_readf_float(snd, f->file_data, f->length) != f->length )
