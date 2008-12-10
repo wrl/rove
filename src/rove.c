@@ -111,9 +111,9 @@ static char *user_config_path() {
 
 static void file_section_callback(const rove_config_section_t *section, void *arg) {
 	rove_state_t *state = arg;
-	static int y = 1;
+	static unsigned int y = 1;
 
-	int group, rows, cols, reverse, *v;
+	unsigned int group, rows, cols, reverse, *v;
 	rove_file_t *f;
 	char *path;
 	
@@ -123,6 +123,7 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 	path    = NULL;
 	group   = 0;
 	rows    = 1;
+	cols    = 0;
 	reverse = 0;
 	
 	while( (c = rove_config_getvar(section, &pair)) ) {
@@ -169,6 +170,7 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 	
 	f->y = y;
 	f->row_span = rows;
+	f->columns  = (cols) ? ((cols - 1) & 0xF) + 1 : 0;
 	f->group = &state->groups[group - 1];
 	f->play_direction = ( reverse ) ? FILE_PLAY_DIRECTION_REVERSE : FILE_PLAY_DIRECTION_FORWARD;
 	

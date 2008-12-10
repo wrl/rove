@@ -286,6 +286,7 @@ static void control_row_handler(rove_state_t *state, rove_monome_t *monome, cons
 
 void file_row_handler(rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type, void **data) {
 	rove_file_t *f = *data;
+	unsigned int cols;
 
 	rove_monome_position_t pos = {x, y - f->y};
 	
@@ -294,8 +295,12 @@ void file_row_handler(rove_state_t *state, rove_monome_t *monome, const uint8_t 
 		if( y < f->y || y > ( f->y + f->row_span - 1) )
 			return;
 		
+		cols = (f->columns) ? f->columns : monome->cols;
+		if( x > cols - 1 )
+			return;
+
 		f->new_offset = calculate_play_pos(f->file_length, pos.x, pos.y,
-										   (f->play_direction == FILE_PLAY_DIRECTION_REVERSE), f->row_span, monome->cols);
+										   (f->play_direction == FILE_PLAY_DIRECTION_REVERSE), f->row_span, cols);
 		
 		if( state->pattern_rec )
 			rove_pattern_append_step(state->pattern_rec->data, CMD_LOOP_SEEK, f, f->new_offset);
@@ -399,7 +404,7 @@ void rove_monome_display_file(rove_state_t *state, rove_file_t *f) {
 	uint8_t row[2];
 	uint16_t r;
 	
-	calculate_monome_pos(f->file_length * f->channels, rove_file_get_play_pos(f), f->row_span, monome->cols, &pos);
+	calculate_monome_pos(f->file_length * f->channels, rove_file_get_play_pos(f), f->row_span, (f->columns) ? f->columns : monome->cols, &pos);
 	
 	if( MONOME_POS_CMP(&pos, &f->monome_pos_old) || f->force_monome_update ) {
 		if( f->force_monome_update ) {

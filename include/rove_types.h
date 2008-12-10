@@ -185,6 +185,8 @@ struct rove_file {
 	   update the row regardless of whether it has changed. */
 	uint8_t force_monome_update;
 	
+	unsigned int columns;
+	
 	rove_group_t *group;
 };
 
