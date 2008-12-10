@@ -51,8 +51,11 @@ void rove_pattern_append_step(rove_pattern_t *p, rove_pattern_cmd_t cmd, rove_fi
 	rove_pattern_step_t *s = p->steps->tail->prev->data;
 	
 	if( s ) {
-		if( s->file == f && !s->delay )
+		if( s->file == f && !s->delay ) {
+			s->arg = arg;
+			s->cmd = cmd;
 			return;
+		}
 	}
 	
 	s        = calloc(sizeof(rove_pattern_step_t), 1);
