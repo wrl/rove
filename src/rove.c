@@ -193,7 +193,7 @@ static void session_section_callback(const rove_config_section_t *section, void 
 }
 
 static int load_session_file(const char *path, rove_state_t *state, int *c) {
-	int cols;
+	unsigned int cols = 0;
 
 	rove_config_var_t file_vars[] = {
 		{"path",    NULL, STRING, 'p'},
@@ -345,10 +345,6 @@ int main(int argc, char **argv) {
 		switch( c ) {
 		case 'c':
 			cols = ((atoi(optarg) - 1) & 0xF) + 1;
-			
-			if( !cols )
-				cols = 8;
-			
 			break;
 			
 		case 'p':
