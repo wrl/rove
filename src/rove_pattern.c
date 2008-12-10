@@ -48,8 +48,14 @@ void rove_pattern_free(rove_pattern_t *p) {
 }
 
 void rove_pattern_append_step(rove_pattern_t *p, rove_pattern_cmd_t cmd, rove_file_t *f, jack_nframes_t arg) {
-	rove_pattern_step_t *s = calloc(sizeof(rove_pattern_step_t), 1);
+	rove_pattern_step_t *s = p->steps->tail->prev->data;
 	
+	if( s ) {
+		if( s->file == f && !s->delay )
+			return;
+	}
+	
+	s        = calloc(sizeof(rove_pattern_step_t), 1);
 	s->delay = 0;
 	s->file  = f;
 	s->arg   = arg;
