@@ -40,6 +40,11 @@ SNDFILE_VERSION=;
 SNDFILE_CFLAGS="";
 SNDFILE_LIBS="-lsndfile";
 
+HAVE_SRC=;
+SRC_VERSION=;
+SRC_CFLAGS="-DHAVE_SRC";
+SRC_LIBS="-lsamplerate";
+
 #
 # functions
 #
@@ -121,8 +126,35 @@ try_command () {
 	if $* > /dev/null 2> /dev/null; then
 		return 0;
 	else
-		return -1;
+		return 1;
 	fi
+}
+
+compile_and_run() {
+	FILE=$1
+	shift;
+	
+	CMD="$CC $* .conftests/$FILE.c -o .conftests/$FILE"
+	try_command $CMD;
+	
+	if [ $? -ne 0 ]; then
+		rm -f .conftests/$FILE.c;
+		rm -f .conftests/$FILE;
+	
+		return 1;
+	fi
+	
+	CMD="./.conftests/$1";
+	try_command $CMD;
+	
+	rm -f .conftests/$FILE.c;
+	rm -f .conftests/$FILE;
+	
+	if [ $? -ne 0 ]; then
+		return 2;
+	fi
+	
+	return 0;
 }
 
 check_pkgconfig () {
@@ -143,7 +175,7 @@ check_gcc () {
 	fi
 
 	CC_VERSION=;
-	return -1;
+	return 1;
 }
 
 check_jack () {
@@ -154,28 +186,15 @@ int main(int argc, char **argv) {
 	if( jack_client_name_size() )
 		return 0;
 	else
-		return -1;
+		return 1;
 }
 EOF
 	
-	CMD="$CC $JACK_CFLAGS $JACK_LIBS .conftests/jack.c -o .conftests/jack"
-	try_command $CMD;
-
-	if [ $? -ne 0 ]; then
-		rm -f .conftests/jack.c;
-		rm -f .conftests/jack;
+	compile_and_run jack $JACK_CFLAGS $JACK_LIBS;
+	RET=$?;
 	
-		return -1;
-	fi
-	
-	CMD="./.conftests/jack";
-	try_command $CMD;
-
-	rm -f .conftests/jack.c;
-	rm -f .conftests/jack;
-	
-	if [ $? -ne 0 ]; then
-		return -2;
+	if [ $RET -ne 0 ]; then
+		return $RET;
 	fi
 
 	HAVE_JACK=1;
@@ -196,32 +215,18 @@ int main(int argc, char **argv) {
 	lo_address a = lo_address_new(NULL, NULL);
 	
 	if( !a )
-		return -1;
+		return 1;
 	
 	lo_address_free(a);
 	return 0;
 }
 EOF
 
-	CMD="$CC $LO_CFLAGS $LO_LIBS .conftests/lo.c -o .conftests/lo"
-	$CMD;
-	try_command $CMD;
-
-	if [ $? -ne 0 ]; then
-		rm -f .conftests/lo.c;
-		rm -f .conftests/lo;
+	compile_and_run lo $LO_CFLAGS $LO_LIBS;
+	RET=$?;
 	
-		return -1;
-	fi
-	
-	CMD="./.conftests/lo";
-	try_command $CMD;
-	
-	rm -f .conftests/lo.c;
-	rm -f .conftests/lo;
-	
-	if [ $? -ne 0 ]; then
-		return -2;
+	if [ $RET -ne 0 ]; then
+		return $RET;
 	fi
 	
 	HAVE_LO=1;
@@ -255,34 +260,63 @@ int main(int argc, char **argv) {
 	if( sf_format_check(&info) )
 		return 0;
 	else
-		return -1;
+		return 1;
 }
 EOF
-
-	CMD="$CC $SNDFILE_CFLAGS $SNDFILE_LIBS .conftests/sndfile.c -o .conftests/sndfile"
-	try_command $CMD;
-
-	if [ $? -ne 0 ]; then
-		rm -f .conftests/sndfile.c;
-		rm -f .conftests/sndfile;
 	
-		return -1;
-	fi
+	compile_and_run sndfile $SNDFILE_CFLAGS $SNDFILE_LIBS;
+	RET=$?;
 	
-	CMD="./.conftests/sndfile";
-	try_command $CMD;
-	
-	rm -f .conftests/sndfile.c;
-	rm -f .conftests/sndfile;
-	
-	if [ $? -ne 0 ]; then
-		return -2;
+	if [ $RET -ne 0 ]; then
+		return $RET;
 	fi
 	
 	HAVE_SNDFILE=1;
 	
 	if [ $PKGCONFIG_VERSION ]; then
 		CMD="pkg-config --modversion sndfile"
+		try_command $CMD;
+		
+		if [ $? -ne 0 ]; then
+			return 0;
+		fi
+		
+		SNDFILE_VERSION=`$CMD`;
+	fi
+
+	return 0;
+}
+
+check_src () {
+	cat <<EOF > .conftests/src.c
+#include <samplerate.h>
+
+int main(int argc, char **argv) {
+	SRC_STATE *s;
+	int i;
+	
+	if( !(s = src_new(SRC_SINC_FASTEST, 1, &i)) )
+		return 1;
+	
+	src_delete(s);
+	return 0;
+}
+EOF
+
+	compile_and_run src $SRC_CFLAGS $SRC_LIBS;
+	RET=$?
+	
+	if [ $RET -ne 0 ]; then
+		SNDFILE_CFLAGS=;
+		SNDFILE_LIBS=;
+		
+		return $RET;
+	fi
+	
+	HAVE_SNDFILE=1;
+	
+	if [ $PKGCONFIG_VERSION ]; then
+		CMD="pkg-config --modversion samplerate"
 		try_command $CMD;
 		
 		if [ $? -ne 0 ]; then
@@ -321,7 +355,7 @@ else
 	echo   "";
 
 	cleanup;
-	exit -1;
+	exit 1;
 fi
 
 echo_n "    checking for JACK:            ";
@@ -340,7 +374,7 @@ else
 	echo   "";
 	
 	cleanup;
-	exit -1;
+	exit 1;
 fi
 
 echo_n "    checking for liblo:           ";
@@ -357,7 +391,7 @@ else
 	echo   "";
 	
 	cleanup;
-	exit -1;
+	exit 1;
 fi
 
 echo_n "    checking for libsndfile:      ";
@@ -371,7 +405,22 @@ else
 	echo_n "  users of "; style_distro -n "other distros"; echo_n " and "; style_distro -n "mac os X"; echo_n " should look for a "; style_package -n "libsndfile"; echo " package, or";
 	echo_n "  get the source from the liblo homepage at "; style_link -n "http://mega-nerd.com/libsndfile/"; echo ".";
 	echo "";
-	exit -1;
+	exit 1;
+fi
+
+echo_n "    checking for libsamplerate:   ";
+if check_src; then
+	style_success "found libsamplerate $SNDFILE_VERSION";
+else
+	echo   "no libsamplerate";
+	echo   "";
+	echo   "  I couldn't find libsamplerate on your system!"
+	echo_n "  you don't "; att bold; echo_n "need"; att; echo " it to compile rove, but you will not be able to change the speed of loops without it."
+	echo   ""
+	echo_n "  if you're on "; style_distro -n "ubuntu"; echo_n ", make sure you have the "; style_package -n "libsamplerate0-dev"; echo " package installed.";
+	echo_n "  users of "; style_distro -n "other distros"; echo_n " and "; style_distro -n "mac os X"; echo_n " should look for a "; style_package -n "libsamplerate"; echo " package, or";
+	echo_n "  get the source from the liblo homepage at "; style_link -n "http://mega-nerd.com/libsndfile/"; echo ".";
+	echo "";
 fi
 
 cat <<EOF > config.mk
@@ -390,10 +439,13 @@ export JACK_LIBS   = $JACK_LIBS
 
 export SNDFILE_CFLAGS = $SNDFILE_CFLAGS
 export SNDFILE_LIBS   = $SNDFILE_LIBS
+
+export SRC_CFLAGS = $SRC_CFLAGS
+export SRC_LIBS   = $SRC_LIBS
 EOF
 
 echo "";
-echo_n "  you're all set!  run "; style_package -n "make"; echo " to compile rove.";
+echo_n "  run "; style_package -n "make"; echo " to compile rove.";
 echo "";
 
 cleanup;
