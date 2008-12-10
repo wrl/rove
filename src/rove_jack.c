@@ -38,6 +38,118 @@ static jack_port_t *outport_r;
 
 #define on_quantize_boundary() (!state->frames)
 
+#define MAX(a, b) ((a > b) ? a : b)
+#define MIN(a, b) ((a < b) ? a : b)
+
+#define YEAH 1
+#if YEAH
+static int process(jack_nframes_t nframes, void *arg) {
+	rove_state_t *state = arg;
+	
+	jack_default_audio_sample_t *out_l;
+	jack_default_audio_sample_t *out_r;
+	jack_default_audio_sample_t *in_l;
+	jack_default_audio_sample_t *in_r;
+	
+	jack_nframes_t until_quantize, nframes_left, n;
+	int j, group_count;
+	sf_count_t i, prev_i, o;
+	
+	/* rove_pattern_step_t *s;
+	rove_list_member_t *m;
+	rove_pattern_t *p; */
+	rove_group_t *g;
+	rove_file_t *f;
+	
+	group_count = state->group_count;
+	
+	for( i = 0; i < group_count; i++ ) {
+		g = &state->groups[i];
+		
+		g->output_buffer_l = out_l = jack_port_get_buffer(g->outport_l, nframes);
+		g->output_buffer_r = out_r = jack_port_get_buffer(g->outport_r, nframes);
+		
+		for( j = 0; j < nframes; j++ )
+			out_l[j] = out_r[j] = 0;
+	}
+
+	n = nframes;
+	
+	prev_i = 0;
+	do {
+		until_quantize = (state->snap_delay - state->frames);
+		nframes_left   = MIN(until_quantize, nframes);
+		
+		if( (state->frames += nframes_left) >= state->snap_delay - 1 )
+			state->frames = 0;
+		
+		for( j = 0; j < group_count; j++ ) {
+			g = &state->groups[j];
+			
+			if( !(f = g->active_loop) )
+				continue;
+			
+			if( !rove_file_is_active(f) )
+				continue;
+			
+			if( f->channels == 1 ) {
+				for( i = prev_i; i < prev_i + nframes_left; i++ ) {
+					o = rove_file_get_play_pos(f);
+					g->output_buffer_l[i] += f->file_data[o]   * f->volume;
+					g->output_buffer_r[i] += f->file_data[o]   * f->volume;
+					rove_file_inc_play_pos(f, 1);
+				}
+			} else {
+				for( i = prev_i; i < prev_i + nframes_left; i++ ) {
+					o = rove_file_get_play_pos(f);
+					g->output_buffer_l[i] += f->file_data[o]   * f->volume;
+					g->output_buffer_r[i] += f->file_data[++o] * f->volume;
+					rove_file_inc_play_pos(f, 1);
+				}
+			}
+		}
+		
+		if( !state->frames ) {
+			for( j = 0; j < group_count; j++ ) {
+				g = &state->groups[j];
+				f = g->active_loop;
+				
+				if( g->staged_loop ) {
+					rove_file_activate(g->staged_loop);
+					g->staged_loop = NULL;
+					continue;
+				}
+				
+				if( !f )
+					continue;
+				
+				switch( f->state ) {
+				case FILE_STATE_RESEEK:
+					rove_file_reseek(f, 0);
+					rove_file_inc_play_pos(f, 0);
+					break;
+					
+				default:
+					break;
+				}
+			}
+		}
+		
+		prev_i = nframes_left;
+		pthread_cond_broadcast(&state->monome_display_notification);
+	} while( (nframes -= nframes_left) > 0 );
+	
+	out_l = jack_port_get_buffer(outport_l, n);
+	out_r = jack_port_get_buffer(outport_r, n);
+	in_l = jack_port_get_buffer(group_mix_inport_l, n);
+	in_r = jack_port_get_buffer(group_mix_inport_r, n);
+	
+	memcpy(out_l, in_l, sizeof(jack_default_audio_sample_t) * n);
+	memcpy(out_r, in_r, sizeof(jack_default_audio_sample_t) * n);
+	
+	return 0;
+}
+#else
 static int process(jack_nframes_t nframes, void *arg) {
 	rove_state_t *state = arg;
 	
@@ -67,9 +179,10 @@ static int process(jack_nframes_t nframes, void *arg) {
 			out_l[j] = out_r[j] = 0;
 	}
 	
+	
 	for( i = 0; i < nframes; i++ ) {
 		if( state->snap_delay > 0 )
-			if( ++state->frames >= state->snap_delay )
+			if( ++state->frames >= state->snap_delay - 1 )
 				state->frames = 0;
 		
 		for( j = 0; j < group_count; j++ ) {
@@ -191,6 +304,7 @@ static int process(jack_nframes_t nframes, void *arg) {
 	
 	return 0;
 }
+#endif
 
 static void jack_shutdown(void *arg) {
 	exit(0);

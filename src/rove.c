@@ -16,6 +16,7 @@
  * along with rove.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <time.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <libgen.h>
@@ -71,10 +72,14 @@ static void usage() {
 
 static void main_loop(rove_state_t *state) {
 	rove_list_member_t *m;
+	struct timespec req;
 	rove_file_t *f;
 	
+	req.tv_sec  = 0;
+	req.tv_nsec = 1000000000 / 30; /* 30 fps */
+	
 	while(1) {
-		pthread_cond_wait(&state->monome_display_notification, &state->monome_mutex);
+		nanosleep(&req, NULL);
 
 		rove_list_foreach(state->files, m, f) {
 			switch( f->state ) {
