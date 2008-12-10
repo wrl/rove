@@ -72,6 +72,7 @@ rove v0.2:
 			rows    = 2         # number of rows to span across
 			group   = 1         # group to which the file is assigned
 			columns = 14        # columns to span (overrides session columns)
+			speed   = 0.5       # playback speed
 			
 			[file]              # loops are mapped on the monome from top to bottom
 			path    = piano.wav # in order of where they appear in the session file
