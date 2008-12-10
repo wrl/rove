@@ -44,16 +44,20 @@ int rove_config_getvar(const rove_config_section_t *section, rove_config_pair_t 
 	rove_config_pair_t *p;
 	int i;
 	
+	/* if we're called incrementally, free the previous key->value pair */
 	if( *current_pair ) {
 		p = *current_pair;
 		
+		/* assume that other code holds reference to the value */
 		if( p->var->type != STRING )
 			free(p->value);
+		
 		free(p->key);
 		free(p);
 	}
 	
 	while( (p = rove_list_pop(section->pairs, HEAD)) ) {
+		/* search for a matching var structure */
 		for( i = 0; section->vars[i].key; i++ ) {
 			v = &section->vars[i];
 			
@@ -65,6 +69,7 @@ int rove_config_getvar(const rove_config_section_t *section, rove_config_pair_t 
 			}
 		}
 		
+		/* variable in conf file that was not in the array of vars */
 		free(p->value);
 		free(p->key);
 		free(p);
@@ -73,7 +78,7 @@ int rove_config_getvar(const rove_config_section_t *section, rove_config_pair_t 
 	return 0;
 }
 
-void rove_config_generic_section_callback(const rove_config_section_t *section) {
+void rove_config_default_section_callback(const rove_config_section_t *section) {
 	rove_config_pair_t *p;
 	const rove_config_var_t *v;
 	int i;
@@ -82,6 +87,7 @@ void rove_config_generic_section_callback(const rove_config_section_t *section) 
 		return;
 
 	while( (p = rove_list_pop(section->pairs, HEAD)) ) {
+		/* search for a matching var structure */
 		for( i = 0; section->vars[i].key; i++ ) {
 			v = &section->vars[i];
 			p->var = v;
@@ -117,6 +123,7 @@ void rove_config_generic_section_callback(const rove_config_section_t *section) 
 			}
 		}
 		
+		/* if the variable is a string, assume that other code holds reference to the value */
 		free(p->value);
 	assigned:
 		free(p->key);
@@ -135,7 +142,7 @@ static void close_block(const rove_config_section_t *s, rove_config_pair_t *p) {
 			s->section_callback(s, s->cb_arg);
 		else
 			if( s->vars ) 
-				rove_config_generic_section_callback(s);
+				rove_config_default_section_callback(s);
 	}
 }
 

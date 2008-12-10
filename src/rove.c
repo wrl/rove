@@ -32,6 +32,7 @@
 #include "rove_config.h"
 #include "rove_monome.h"
 
+#define DEFAULT_CONF_FILE_NAME  ".rove.conf"
 #define DEFAULT_OSC_PREFIX      "rove"
 #define DEFAULT_OSC_HOST_PORT   "8080"
 #define DEFAULT_OSC_LISTEN_PORT "8000"
@@ -96,19 +97,17 @@ static void main_loop(rove_state_t *state) {
 static char *user_config_path() {
 	char *home, *path, *conf;
 	
-	conf = "/.rove.conf";
-	
 	if( !(home = getenv("HOME")) )
 		return NULL;
 	
 	if( home[strlen(home) - 1] == '/' )
 		conf++;
 
-	asprintf(&path, "%s%s", home, conf);
+	asprintf(&path, "%s/%s", home, DEFAULT_CONF_FILE_NAME);
 	return path;
 }
 
-static void file_block_parse(const rove_config_section_t *section, void *arg) {
+static void file_section_callback(const rove_config_section_t *section, void *arg) {
 	rove_state_t *state = arg;
 	static int y = 1;
 
@@ -177,10 +176,10 @@ static void file_block_parse(const rove_config_section_t *section, void *arg) {
 	return;
 }
 
-static void session_block_parse(const rove_config_section_t *section, void *arg) {
+static void session_section_callback(const rove_config_section_t *section, void *arg) {
 	rove_state_t *state = arg;
-
-	rove_config_generic_section_callback(section);
+	
+	rove_config_default_section_callback(section);
 	state->groups = initialize_groups(state->group_count);
 
 }
@@ -204,8 +203,8 @@ static int load_session_file(const char *path, rove_state_t *state) {
 	};
 	
 	rove_config_section_t config_sections[] = {
-		{"session", session_vars, session_block_parse, state},
-		{"file",    file_vars   , file_block_parse,    state},
+		{"session", session_vars, session_section_callback, state},
+		{"file",    file_vars   , file_section_callback,    state},
 		{NULL}
 	};
 	
@@ -256,7 +255,7 @@ static int load_user_conf(int *c, char **op, char **ohp, char **olp) {
 	}
 	
 	if( osc_prefix ) {
-		if( *osc_prefix == '/' ) {
+		if( *osc_prefix == '/' ) { /* remove the leading slash if there is one */
 			conf = strdup(osc_prefix + 1);
 			free(osc_prefix);
 			osc_prefix = conf;
