@@ -56,34 +56,49 @@ rove v0.1a:
 		  
 	how do i use it?
 		currently, rove has no GUI of any sort.	 all of the configuration is done
-		through text files in an arcane file format i've designed out of laziness.
-		loosely, these can be thought of as session files.  here's an example:
+		through text files in a fairly standard-looking configuration file format
+		that's basically a windows INI file.  a session file looks like this:
 		
-			:87.68:2:8:8:.25
-			1:1:drums.wav
-			2:1:piano.wav
-			2:r1:piano.wav
+			[session]
+			bpm      = 87.68    # beats per minute
+			quantize = .25      # fraction of a quarter note to quantize to
+			groups   = 2        # number of groups
+			pattern1 = 8        # pattern 1 length (in beats)
+			pattern2 = 8        # pattern 2 length
+
+			[file]
+			path  = drums.wav   # path to the loop relative to the session file
+			rows  = 2           # number of rows to span across
+			group = 1           # group to which the file is assigned
 			
-	what?
-		okay, this might make more sense:
-		
-			: BPM : number of groups : pattern 1 length (in beats) : pattern 2 length : fraction of 1 beat (quarter note) to quantize to
-			group number : (reverse?) number of rows to span : filename relative to session file
-			group number : (reverse?) number of rows to span : filename relative to session file
-			...
+			[file]              # loops are mapped on the monome from top to bottom
+			path  = piano.wav   # in order of where they appear in the session file
+			group = 2
+			
+			[file]
+			path  = piano.wav   # "path" and "group" are required parameters
+			group = 2           # but "reverse" and "rows" are optional
+			reverse             # and are assumed to be "false" and "1" respectively
 			
 		the row spanning lets you spread a loop out across several rows for added precision.
-		adding an "r" before the "number of rows to span" indicates that the loop should be
-		played in reverse.
-
-		so the above file has a BPM of 87.68, has 2 groups, quantizes to 16th notes, and both
-		patterns recorders are set to be eight beats long.  there are three files loaded,
-		drums.wav on group 1 spanning 1 row, and then piano.wav loaded in twice, both on
-		group two and both spanning one row, but the lower one is playing backwards.
-	
 		after you've created your session file, run rove with "rove <sessionfile.rv>".
-		you'll need to have monomeserial running with your prefix set to "/rove".
+
+		there is also an additional, global configuration file.  this file looks similar to
+		the session file but has different expected sections and variables.  here is an
+		example file, with the variables set to their defaults.
+		all variables here are optional.
+
+			[monome]
+			columns     = 8
+			
+			[osc]
+			prefix      = /rove
+			host-port   = 8080
+			listen-port = 8000
 		
+		save your configuration file as ".rove.conf" in your home directory and rove will
+		load it at startup!
+
 	what do i press?
 		 +-----------+ - - - - - +-----------+-----------+-----------+-----------+
 		 |   group   |  many of  | pattern 1 | pattern 2 |   shift   |    meta   |
