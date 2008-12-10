@@ -65,6 +65,7 @@ rove v0.1a:
 			groups   = 2        # number of groups
 			pattern1 = 8        # pattern 1 length (in beats)
 			pattern2 = 8        # pattern 2 length
+			columns  = 12       # columns to span
 
 			[file]
 			path  = drums.wav   # path to the loop relative to the session file

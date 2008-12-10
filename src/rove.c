@@ -33,6 +33,8 @@
 #include "rove_monome.h"
 
 #define DEFAULT_CONF_FILE_NAME  ".rove.conf"
+
+#define DEFAULT_MONOME_COLUMNS  8
 #define DEFAULT_OSC_PREFIX      "rove"
 #define DEFAULT_OSC_HOST_PORT   "8080"
 #define DEFAULT_OSC_LISTEN_PORT "8000"
@@ -111,7 +113,7 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 	rove_state_t *state = arg;
 	static int y = 1;
 
-	int group, rows, reverse, *v;
+	int group, rows, cols, reverse, *v;
 	rove_file_t *f;
 	char *path;
 	
@@ -137,6 +139,10 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 			v = &group;
 			break;
 			
+		case 'c':
+			v = &cols;
+			break;
+
 		case 'r':
 			v = &rows;
 			break;
@@ -184,10 +190,13 @@ static void session_section_callback(const rove_config_section_t *section, void 
 
 }
 
-static int load_session_file(const char *path, rove_state_t *state) {
+static int load_session_file(const char *path, rove_state_t *state, int *c) {
+	int cols;
+
 	rove_config_var_t file_vars[] = {
 		{"path",    NULL, STRING, 'p'},
 		{"groups",  NULL,    INT, 'g'},
+		{"columns", NULL,    INT, 'c'},
 		{"rows",    NULL,    INT, 'r'},
 		{"reverse", NULL,   BOOL, 'v'},
 		{NULL}
@@ -199,6 +208,7 @@ static int load_session_file(const char *path, rove_state_t *state) {
 		{"groups",   &state->group_count,        INT, 'g'},
 		{"pattern1", &state->pattern_lengths[0], INT, '1'},
 		{"pattern2", &state->pattern_lengths[1], INT, '2'},
+		{"columns",  &cols,                      INT, 'c'},
 		{NULL}
 	};
 	
@@ -210,6 +220,9 @@ static int load_session_file(const char *path, rove_state_t *state) {
 	
 	if( rove_load_config(path, config_sections, 1) )
 		return 0;
+	
+	if( cols && !*c )
+		*c = ((cols - 1) & 0xF) + 1;
 	
 	return 0;
 }
@@ -249,12 +262,10 @@ static int load_user_conf(int *c, char **op, char **ohp, char **olp) {
 	
 	free(conf);
 	
-	if( cols ) {
-		cols = ((cols - 1) & 0xF) + 1;
-		*c = cols;
-	}
+	if( cols && !*c )
+		*c = ((cols - 1) & 0xF) + 1;
 	
-	if( osc_prefix ) {
+	if( osc_prefix && !*op ) {
 		if( *osc_prefix == '/' ) { /* remove the leading slash if there is one */
 			conf = strdup(osc_prefix + 1);
 			free(osc_prefix);
@@ -266,7 +277,7 @@ static int load_user_conf(int *c, char **op, char **ohp, char **olp) {
 		*op = osc_prefix;
 	}
 	
-	if( osc_host_port ) {
+	if( osc_host_port && !*ohp ) {
 		conf = osc_host_port;
 		do {
 			if( !is_numeric(*conf) ) {
@@ -282,7 +293,7 @@ static int load_user_conf(int *c, char **op, char **ohp, char **olp) {
 		*ohp = osc_host_port;
 	}
 	
-	if( osc_listen_port ) {
+	if( osc_listen_port && !*olp ) {
 		conf = osc_listen_port;
 		do {
 			if( !is_numeric(*conf) ) {
@@ -320,7 +331,7 @@ int main(int argc, char **argv) {
 	
 	memset(&state, 0, sizeof(rove_state_t));
 	
-	cols            = 8;
+	cols            = 0;
 	session_file    = NULL;
 	osc_prefix      = NULL;
 	osc_host_port   = NULL;
@@ -396,14 +407,14 @@ int main(int argc, char **argv) {
 	printf("you've got the following loops loaded:\n"
 		   "\t[rows]\t[file]\n");
 	
-	if( load_user_conf(&cols, &osc_prefix, &osc_host_port, &osc_listen_port) )
-		return 1;
-		
-	if( load_session_file(session_file, &state) ) {
+	if( load_session_file(session_file, &state, &cols) ) {
 		printf("error parsing session file :(\n");
 		return 1;
 	}
 	
+	if( load_user_conf(&cols, &osc_prefix, &osc_host_port, &osc_listen_port) )
+		return 1;
+		
 	if( rove_list_is_empty(state.files) ) {
 		fprintf(stderr, "\t(none, evidently.  get some and come play!)\n\n");
 		return 1;
@@ -419,7 +430,7 @@ int main(int argc, char **argv) {
 						 (osc_prefix) ? osc_prefix : DEFAULT_OSC_PREFIX,
 						 (osc_host_port) ? osc_host_port : DEFAULT_OSC_HOST_PORT,
 						 (osc_listen_port) ? osc_listen_port : DEFAULT_OSC_LISTEN_PORT,
-						 cols) )
+						 (cols) ? cols : DEFAULT_MONOME_COLUMNS) )
 		return 1;
 	
 	if( osc_prefix )
