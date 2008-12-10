@@ -20,12 +20,31 @@
 #include <string.h>
 #include <stdlib.h>
 
+#ifdef HAVE_SRC
+#include <samplerate.h>
+#endif
+
+#include "rove_types.h"
 #include "rove_file.h"
 
 static void rove_file_init(rove_file_t *f) {
 	f->state = FILE_STATE_INACTIVE;
 	f->play_direction = FILE_PLAY_DIRECTION_FORWARD;
 	f->volume = 1.0;
+}
+
+long rove_file_src_callback(void *cb_data, float **data) {
+	rove_file_t *f = cb_data;
+	sf_count_t o;
+	
+	if( !data )
+		return 0;
+	
+	o = f->play_offset;
+	*data = f->file_data + (o * f->channels);
+	rove_file_inc_play_pos(f, 1);
+	
+	return 1;
 }
 
 void rove_file_free(rove_file_t *f) {
@@ -36,6 +55,9 @@ void rove_file_free(rove_file_t *f) {
 }
 		 
 rove_file_t *rove_file_new_from_path(const char *path) {
+#ifdef HAVE_SRC
+	int err;
+#endif
 	rove_file_t *f;
 	SF_INFO info;
 	SNDFILE *snd;
@@ -56,6 +78,10 @@ rove_file_t *rove_file_new_from_path(const char *path) {
 	f->channels    = info.channels;
 	f->sample_rate = info.samplerate;
 	f->file_data   = calloc(sizeof(float), info.frames * info.channels);
+	
+#ifdef HAVE_SRC
+	f->src         = src_callback_new(rove_file_src_callback, SRC_LINEAR, info.channels, &err, f);
+#endif
 	
 	if( sf_readf_float(snd, f->file_data, f->length) != f->length )
 		rove_file_free(f);

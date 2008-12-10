@@ -53,6 +53,10 @@ static int process(jack_nframes_t nframes, void *arg) {
 	int j, group_count;
 	sf_count_t i, prev_i, o;
 	
+#ifdef HAVE_SRC
+	float b[2];
+#endif
+	
 	rove_pattern_step_t *s;
 	rove_list_member_t *m;
 	rove_pattern_t *p;
@@ -90,21 +94,41 @@ static int process(jack_nframes_t nframes, void *arg) {
 			if( !rove_file_is_active(f) )
 				continue;
 			
-			if( f->channels == 1 ) {
-				for( i = prev_i; i < prev_i + nframes_left; i++ ) {
-					o = rove_file_get_play_pos(f);
-					g->output_buffer_l[i] += f->file_data[o]   * f->volume;
-					g->output_buffer_r[i] += f->file_data[o]   * f->volume;
-					rove_file_inc_play_pos(f, 1);
+#ifdef HAVE_SRC
+			if( f->speed != 1 ) {
+				if( f->channels == 1 ) {
+					for( i = prev_i; i < prev_i + nframes_left; i++ ) {
+						src_callback_read(f->src, f->speed, 1, b);
+						g->output_buffer_l[i] += b[0]   * f->volume;
+						g->output_buffer_r[i] += b[0]   * f->volume;
+					}
+				} else {
+					for( i = prev_i; i < prev_i + nframes_left; i++ ) {
+						src_callback_read(f->src, f->speed, 1, b);
+						g->output_buffer_l[i] += b[0]   * f->volume;
+						g->output_buffer_r[i] += b[1]   * f->volume;
+					}
 				}
 			} else {
-				for( i = prev_i; i < prev_i + nframes_left; i++ ) {
-					o = rove_file_get_play_pos(f);
-					g->output_buffer_l[i] += f->file_data[o]   * f->volume;
-					g->output_buffer_r[i] += f->file_data[++o] * f->volume;
-					rove_file_inc_play_pos(f, 1);
+#endif
+				if( f->channels == 1 ) {
+					for( i = prev_i; i < prev_i + nframes_left; i++ ) {
+						o = rove_file_get_play_pos(f);
+						g->output_buffer_l[i] += f->file_data[o]   * f->volume;
+						g->output_buffer_r[i] += f->file_data[o]   * f->volume;
+						rove_file_inc_play_pos(f, 1);
+					}
+				} else {
+					for( i = prev_i; i < prev_i + nframes_left; i++ ) {
+						o = rove_file_get_play_pos(f);
+						g->output_buffer_l[i] += f->file_data[o]   * f->volume;
+						g->output_buffer_r[i] += f->file_data[++o] * f->volume;
+						rove_file_inc_play_pos(f, 1);
+					}
 				}
+#ifdef HAVE_SRC
 			}
+#endif
 		}
 		
 		if( !state->frames ) {

@@ -120,6 +120,7 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 
 	unsigned int group, rows, cols, reverse, *v;
 	rove_file_t *f;
+	double speed;
 	char *path;
 	
 	rove_config_pair_t *pair = NULL;
@@ -130,6 +131,7 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 	rows    = 1;
 	cols    = 0;
 	reverse = 0;
+	speed   = 1.0;
 	
 	while( (c = rove_config_getvar(section, &pair)) ) {
 		switch( c ) {
@@ -139,6 +141,10 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 			
 		case 'v':
 			reverse = 1;
+			continue;
+
+		case 's':
+			speed = strtod(pair->value, NULL);
 			continue;
 
 		case 'g':
@@ -174,10 +180,15 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 		group = state->group_count;
 	
 	f->y = y;
+	f->speed = speed;
 	f->row_span = rows;
 	f->columns  = (cols) ? ((cols - 1) & 0xF) + 1 : 0;
 	f->group = &state->groups[group - 1];
 	f->play_direction = ( reverse ) ? FILE_PLAY_DIRECTION_REVERSE : FILE_PLAY_DIRECTION_FORWARD;
+	
+#ifdef HAVE_SRC
+	src_set_ratio(f->src, 1 / speed);
+#endif
 	
 	rove_list_push(state->files, TAIL, f);
 	printf("\t%d - %d\t%s\n", y, y + rows - 1, path);
@@ -194,7 +205,6 @@ static void session_section_callback(const rove_config_section_t *section, void 
 	
 	rove_config_default_section_callback(section);
 	state->groups = initialize_groups(state->group_count);
-
 }
 
 static int load_session_file(const char *path, rove_state_t *state, int *c) {
@@ -206,6 +216,7 @@ static int load_session_file(const char *path, rove_state_t *state, int *c) {
 		{"columns", NULL,    INT, 'c'},
 		{"rows",    NULL,    INT, 'r'},
 		{"reverse", NULL,   BOOL, 'v'},
+		{"speed",   NULL, DOUBLE, 's'},
 		{NULL}
 	};
 	

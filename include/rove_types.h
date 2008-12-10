@@ -25,6 +25,10 @@
 #include <sndfile.h>
 #include <pthread.h>
 
+#ifdef HAVE_SRC
+#include <samplerate.h>
+#endif
+
 /**
  * types
  */
@@ -172,7 +176,12 @@ struct rove_file {
 	sf_count_t channels;
 	sf_count_t file_length;
 	sf_count_t sample_rate;
-
+	
+#ifdef HAVE_SRC	
+	SRC_STATE *src;
+#endif
+	double speed;
+	
 	float *file_data;
 	
 	uint8_t y;
