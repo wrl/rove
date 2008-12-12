@@ -40,6 +40,9 @@
 #define MONOME_POS_CMP(a, b) (memcmp(a, b, sizeof(rove_monome_position_t)))
 #define MONOME_POS_CPY(a, b) (memcpy(a, b, sizeof(rove_monome_position_t)))
 
+#define MAX(a, b) ((a > b) ? a : b)
+#define MIN(a, b) ((a < b) ? a : b)
+
 /**
  * (mostly) emulate libmonome functions in liblo
  */
@@ -348,15 +351,18 @@ static int button_handler(const char *path, const char *types, lo_arg **argv, in
 static void initialize_callbacks(rove_state_t *state, rove_monome_t *monome) {
 	rove_monome_callback_t *controls, *row;
 	uint8_t y, row_span;
-	int i;
+	int i, group_count;
 	
 	rove_list_member_t *m;
 	rove_file_t *f;
 	
+	/* leave room for two pattern recorders and the two mod keys */
+	group_count = MIN(state->group_count, monome->cols - 4);
+	
 	controls = calloc(sizeof(rove_monome_callback_t), monome->cols);
 	y = 0;
 	
-	for( i = 0; i < state->group_count; i++ ) {
+	for( i = 0; i < group_count; i++ ) {
 		controls[i].pos.x = i;
 		controls[i].pos.y = y;
 
@@ -364,7 +370,7 @@ static void initialize_callbacks(rove_state_t *state, rove_monome_t *monome) {
 		controls[i].data  = (void *) &state->groups[i];
 	}
 	
-	for( ; i < state->group_count + 2; i++ ) {
+	for( ; i < group_count + 2; i++ ) {
 		controls[i].pos.x = i;
 		controls[i].pos.y = y;
 
