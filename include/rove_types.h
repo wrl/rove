@@ -100,6 +100,8 @@ typedef struct rove_config_var rove_config_var_t;
 typedef void (*rove_monome_callback_function_t)(rove_state_t *, rove_monome_t *, const uint8_t x, const uint8_t y, const uint8_t event_type, void **data);
 typedef void (*rove_config_section_callback_t)(const rove_config_section_t *, void *arg);
 
+typedef void (*rove_file_quantize_callback_t)(rove_file_t *, jack_nframes_t offset);
+
 /**
  * rove_config
  */

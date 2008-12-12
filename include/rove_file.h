@@ -35,6 +35,6 @@ void rove_file_inc_play_pos(rove_file_t *f, sf_count_t delta);
 
 void rove_file_activate(rove_file_t *f);
 void rove_file_deactivate(rove_file_t *f);
-void rove_file_reseek(rove_file_t *f, sf_count_t seek_offset);
+void rove_file_reseek(rove_file_t *f, jack_nframes_t offset);
 
 #endif

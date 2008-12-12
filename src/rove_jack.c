@@ -79,58 +79,6 @@ static int process(jack_nframes_t nframes, void *arg) {
 	
 	prev_i = 0;
 	do {
-		until_quantize = (state->snap_delay - state->frames);
-		nframes_left   = MIN(until_quantize, nframes);
-		
-		if( (state->frames += nframes_left) >= state->snap_delay - 1 )
-			state->frames = 0;
-		
-		for( j = 0; j < group_count; j++ ) {
-			g = &state->groups[j];
-			
-			if( !(f = g->active_loop) )
-				continue;
-			
-			if( !rove_file_is_active(f) )
-				continue;
-			
-#ifdef HAVE_SRC
-			if( f->speed != 1 ) {
-				if( f->channels == 1 ) {
-					for( i = prev_i; i < prev_i + nframes_left; i++ ) {
-						src_callback_read(f->src, f->speed, 1, b);
-						g->output_buffer_l[i] += b[0]   * f->volume;
-						g->output_buffer_r[i] += b[0]   * f->volume;
-					}
-				} else {
-					for( i = prev_i; i < prev_i + nframes_left; i++ ) {
-						src_callback_read(f->src, f->speed, 1, b);
-						g->output_buffer_l[i] += b[0]   * f->volume;
-						g->output_buffer_r[i] += b[1]   * f->volume;
-					}
-				}
-			} else {
-#endif
-				if( f->channels == 1 ) {
-					for( i = prev_i; i < prev_i + nframes_left; i++ ) {
-						o = rove_file_get_play_pos(f);
-						g->output_buffer_l[i] += f->file_data[o]   * f->volume;
-						g->output_buffer_r[i] += f->file_data[o]   * f->volume;
-						rove_file_inc_play_pos(f, 1);
-					}
-				} else {
-					for( i = prev_i; i < prev_i + nframes_left; i++ ) {
-						o = rove_file_get_play_pos(f);
-						g->output_buffer_l[i] += f->file_data[o]   * f->volume;
-						g->output_buffer_r[i] += f->file_data[++o] * f->volume;
-						rove_file_inc_play_pos(f, 1);
-					}
-				}
-#ifdef HAVE_SRC
-			}
-#endif
-		}
-		
 		if( !state->frames ) {
 			for( j = 0; j < group_count; j++ ) {
 				g = &state->groups[j];
@@ -219,7 +167,59 @@ static int process(jack_nframes_t nframes, void *arg) {
 			}
 		}
 		
-		prev_i = nframes_left;
+		until_quantize = (state->snap_delay - state->frames);
+		nframes_left   = MIN(until_quantize, nframes);
+		
+		if( (state->frames += nframes_left) >= state->snap_delay - 1 )
+			state->frames = 0;
+		
+		for( j = 0; j < group_count; j++ ) {
+			g = &state->groups[j];
+			
+			if( !(f = g->active_loop) )
+				continue;
+			
+			if( !rove_file_is_active(f) )
+				continue;
+			
+#ifdef HAVE_SRC
+			if( f->speed != 1 ) {
+				if( f->channels == 1 ) {
+					for( i = prev_i; i < prev_i + nframes_left; i++ ) {
+						src_callback_read(f->src, f->speed, 1, b);
+						g->output_buffer_l[i] += b[0]   * f->volume;
+						g->output_buffer_r[i] += b[0]   * f->volume;
+					}
+				} else {
+					for( i = prev_i; i < prev_i + nframes_left; i++ ) {
+						src_callback_read(f->src, f->speed, 1, b);
+						g->output_buffer_l[i] += b[0]   * f->volume;
+						g->output_buffer_r[i] += b[1]   * f->volume;
+					}
+				}
+			} else {
+#endif
+				if( f->channels == 1 ) {
+					for( i = prev_i; i < prev_i + nframes_left; i++ ) {
+						o = rove_file_get_play_pos(f);
+						g->output_buffer_l[i] += f->file_data[o]   * f->volume;
+						g->output_buffer_r[i] += f->file_data[o]   * f->volume;
+						rove_file_inc_play_pos(f, 1);
+					}
+				} else {
+					for( i = prev_i; i < prev_i + nframes_left; i++ ) {
+						o = rove_file_get_play_pos(f);
+						g->output_buffer_l[i] += f->file_data[o]   * f->volume;
+						g->output_buffer_r[i] += f->file_data[++o] * f->volume;
+						rove_file_inc_play_pos(f, 1);
+					}
+				}
+#ifdef HAVE_SRC
+			}
+#endif
+		}
+		
+		prev_i += nframes_left;
 	} while( (nframes -= nframes_left) > 0 );
 	
 	out_l = jack_port_get_buffer(outport_l, n);

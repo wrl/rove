@@ -204,7 +204,7 @@ static void session_section_callback(const rove_config_section_t *section, void 
 	rove_state_t *state = arg;
 	
 	rove_config_default_section_callback(section);
-	state->groups = initialize_groups(state->group_count);
+	state->groups = initialize_groups(state->group_count); /* FIXME: can return null, handle properly */
 }
 
 static int load_session_file(const char *path, rove_state_t *state, int *c) {
@@ -332,6 +332,9 @@ static int load_user_conf(int *c, char **op, char **ohp, char **olp) {
 
 static void rove_recalculate_bpm_variables(rove_state_t *state) {
 	state->snap_delay = lrint(((60 / state->bpm) * state->beat_multiplier) * ((double) jack_get_sample_rate(state->client)));
+	
+	if( !state->snap_delay )
+		state->snap_delay++;
 }
 
 int main(int argc, char **argv) {

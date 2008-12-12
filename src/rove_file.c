@@ -128,7 +128,7 @@ void rove_file_deactivate(rove_file_t *f) {
 	f->state = FILE_STATE_INACTIVE;
 }
 
-void rove_file_reseek(rove_file_t *f, sf_count_t seek_offset) {
-	rove_file_set_play_pos(f, f->new_offset + seek_offset);
+void rove_file_reseek(rove_file_t *f, jack_nframes_t offset) {
+	rove_file_set_play_pos(f, f->new_offset + offset);
 	f->state = FILE_STATE_ACTIVE;
 }
