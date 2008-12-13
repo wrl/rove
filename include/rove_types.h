@@ -99,7 +99,10 @@ typedef struct rove_config_var rove_config_var_t;
 typedef void (*rove_monome_callback_t)(rove_state_t *, rove_monome_t *, const uint8_t x, const uint8_t y, const uint8_t event_type, void **data);
 typedef void (*rove_config_section_callback_t)(const rove_config_section_t *, void *arg);
 
-typedef void (*rove_file_quantize_callback_t)(rove_file_t *, jack_nframes_t offset);
+typedef void (*rove_process_callback_t)(rove_file_t *self, jack_default_audio_sample_t **buffers, int channels, jack_nframes_t nframes);
+typedef void (*rove_quantize_callback_t)(rove_file_t *self, jack_nframes_t offset);
+typedef void (*rove_monome_input_callback_t)(rove_file_t *self, rove_monome_t *, const int x, const int y, const int event_type);
+typedef void (*rove_monome_output_callback_t)(rove_file_t *self, rove_monome_t *);
 
 /**
  * rove_config
@@ -199,7 +202,8 @@ struct rove_file {
 	
 	rove_group_t *group;
 	
-	rove_file_quantize_callback_t quantize_callback;
+	rove_process_callback_t process;
+	rove_quantize_callback_t quantize_callback;
 };
 
 /**

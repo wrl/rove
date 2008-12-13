@@ -19,6 +19,7 @@
 #include <sndfile.h>
 #include <string.h>
 #include <stdlib.h>
+#include <jack/jack.h>
 
 #ifdef HAVE_SRC
 #include <samplerate.h>
@@ -31,6 +32,48 @@ static void rove_file_init(rove_file_t *f) {
 	f->state = FILE_STATE_INACTIVE;
 	f->play_direction = FILE_PLAY_DIRECTION_FORWARD;
 	f->volume = 1.0;
+}
+
+void rove_file_process(rove_file_t *self, jack_default_audio_sample_t **buffers, int channels, jack_nframes_t nframes) {
+	sf_count_t i, o;
+	
+#ifdef HAVE_SRC
+	float b[2];
+	
+	if( self->speed != 1 ) {
+		if( self->channels == 1 ) {
+			for( i = 0; i < nframes; i++ ) {
+				src_callback_read(self->src, self->speed, 1, b);
+				buffers[0][i] += b[0]   * self->volume;
+				buffers[1][i] += b[0]   * self->volume;
+			}
+		} else {
+			for( i = 0; i < nframes; i++ ) {
+				src_callback_read(self->src, self->speed, 1, b);
+				buffers[0][i] += b[0]   * self->volume;
+				buffers[1][i] += b[1]   * self->volume;
+			}
+		}
+	} else {
+#endif
+		if( self->channels == 1 ) {
+			for( i = 0; i < nframes; i++ ) {
+				o = rove_file_get_play_pos(self);
+				buffers[0][i] += self->file_data[o]   * self->volume;
+				buffers[1][i] += self->file_data[o]   * self->volume;
+				rove_file_inc_play_pos(self, 1);
+			}
+		} else {
+			for( i = 0; i < nframes; i++ ) {
+				o = rove_file_get_play_pos(self);
+				buffers[0][i] += self->file_data[o]   * self->volume;
+				buffers[1][i] += self->file_data[++o] * self->volume;
+				rove_file_inc_play_pos(self, 1);
+			}
+		}
+#ifdef HAVE_SRC
+	}
+#endif
 }
 
 long rove_file_src_callback(void *cb_data, float **data) {
@@ -74,6 +117,8 @@ rove_file_t *rove_file_new_from_path(const char *path) {
 		return NULL;
 	}
 	
+	f->process     = rove_file_process;
+
 	f->length      = f->file_length = info.frames;
 	f->channels    = info.channels;
 	f->sample_rate = info.samplerate;

@@ -51,11 +51,9 @@ static int process(jack_nframes_t nframes, void *arg) {
 	
 	jack_nframes_t until_quantize, nframes_left, n;
 	int j, group_count;
-	sf_count_t i, prev_i, o;
+	sf_count_t i, prev_i;
 	
-#ifdef HAVE_SRC
-	float b[2];
-#endif
+	jack_default_audio_sample_t *buffers[2];
 	
 	rove_pattern_step_t *s;
 	rove_list_member_t *m;
@@ -178,41 +176,12 @@ static int process(jack_nframes_t nframes, void *arg) {
 			if( !rove_file_is_active(f) )
 				continue;
 			
-#ifdef HAVE_SRC
-			if( f->speed != 1 ) {
-				if( f->channels == 1 ) {
-					for( i = prev_i; i < prev_i + nframes_left; i++ ) {
-						src_callback_read(f->src, f->speed, 1, b);
-						g->output_buffer_l[i] += b[0]   * f->volume;
-						g->output_buffer_r[i] += b[0]   * f->volume;
-					}
-				} else {
-					for( i = prev_i; i < prev_i + nframes_left; i++ ) {
-						src_callback_read(f->src, f->speed, 1, b);
-						g->output_buffer_l[i] += b[0]   * f->volume;
-						g->output_buffer_r[i] += b[1]   * f->volume;
-					}
-				}
-			} else {
-#endif
-				if( f->channels == 1 ) {
-					for( i = prev_i; i < prev_i + nframes_left; i++ ) {
-						o = rove_file_get_play_pos(f);
-						g->output_buffer_l[i] += f->file_data[o]   * f->volume;
-						g->output_buffer_r[i] += f->file_data[o]   * f->volume;
-						rove_file_inc_play_pos(f, 1);
-					}
-				} else {
-					for( i = prev_i; i < prev_i + nframes_left; i++ ) {
-						o = rove_file_get_play_pos(f);
-						g->output_buffer_l[i] += f->file_data[o]   * f->volume;
-						g->output_buffer_r[i] += f->file_data[++o] * f->volume;
-						rove_file_inc_play_pos(f, 1);
-					}
-				}
-#ifdef HAVE_SRC
-			}
-#endif
+			/* will eventually become an array of arbitrary size for better multichannel support */
+			buffers[0] = g->output_buffer_l + prev_i;
+			buffers[1] = g->output_buffer_r + prev_i;
+			
+			if( f->process )
+				f->process(f, buffers, 2, nframes_left);
 		}
 		
 		prev_i += nframes_left;
