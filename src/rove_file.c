@@ -28,10 +28,10 @@
 #include "rove_types.h"
 #include "rove_file.h"
 
-static void rove_file_init(rove_file_t *f) {
-	f->state = FILE_STATE_INACTIVE;
-	f->play_direction = FILE_PLAY_DIRECTION_FORWARD;
-	f->volume = 1.0;
+static void rove_file_init(rove_file_t *self) {
+	self->state = FILE_STATE_INACTIVE;
+	self->play_direction = FILE_PLAY_DIRECTION_FORWARD;
+	self->volume = 1.0;
 }
 
 void rove_file_process(rove_file_t *self, jack_default_audio_sample_t **buffers, int channels, jack_nframes_t nframes) {
@@ -77,102 +77,100 @@ void rove_file_process(rove_file_t *self, jack_default_audio_sample_t **buffers,
 }
 
 long rove_file_src_callback(void *cb_data, float **data) {
-	rove_file_t *f = cb_data;
+	rove_file_t *self = cb_data;
 	sf_count_t o;
 	
 	if( !data )
 		return 0;
 	
-	o = f->play_offset;
-	*data = f->file_data + (o * f->channels);
-	rove_file_inc_play_pos(f, 1);
+	o = self->play_offset;
+	*data = self->file_data + (o * self->channels);
+	rove_file_inc_play_pos(self, 1);
 	
 	return 1;
 }
 
-void rove_file_free(rove_file_t *f) {
-	free(f->file_data);
-	free(f);
-	
-	f = NULL;
+void rove_file_free(rove_file_t *self) {
+	free(self->file_data);
+	free(self);
 }
 		 
 rove_file_t *rove_file_new_from_path(const char *path) {
 #ifdef HAVE_SRC
 	int err;
 #endif
-	rove_file_t *f;
+	rove_file_t *self;
 	SF_INFO info;
 	SNDFILE *snd;
 	
-	if( !(f = calloc(sizeof(rove_file_t), 1)) )
+	if( !(self = calloc(sizeof(rove_file_t), 1)) )
 		return NULL;
 	
-	rove_file_init(f);
+	rove_file_init(self);
 	
 	if( !(snd = sf_open(path, SFM_READ, &info)) ) {
 		printf("file: couldn't load \"%s\".  sorry about your luck.\n%s\n\n", path, sf_strerror(snd));
 		
-		free(f);
+		free(self);
 		return NULL;
 	}
 	
-	f->process     = rove_file_process;
+	self->process     = rove_file_process;
 
-	f->length      = f->file_length = info.frames;
-	f->channels    = info.channels;
-	f->sample_rate = info.samplerate;
-	f->file_data   = calloc(sizeof(float), info.frames * info.channels);
+	self->length      = self->file_length = info.frames;
+	self->channels    = info.channels;
+	self->sample_rate = info.samplerate;
+	self->file_data   = calloc(sizeof(float), info.frames * info.channels);
 	
 #ifdef HAVE_SRC
-	f->src         = src_callback_new(rove_file_src_callback, SRC_SINC_FASTEST, info.channels, &err, f);
+	self->src         = src_callback_new(rove_file_src_callback, SRC_SINC_FASTEST, info.channels, &err, self);
 #endif
 	
-	if( sf_readf_float(snd, f->file_data, f->length) != f->length )
-		rove_file_free(f);
+	if( sf_readf_float(snd, self->file_data, info.frames) != info.frames )
+		rove_file_free(self);
 	
 	sf_close(snd);
 	
-	return f;
+	return self;
 }
 
-void rove_file_set_play_pos(rove_file_t *f, sf_count_t p) {
-	if( p >= f->file_length )
-	   p -= f->file_length * (abs(p) / f->file_length);
+void rove_file_set_play_pos(rove_file_t *self, sf_count_t p) {
+	if( p >= self->file_length )
+	   p -= self->file_length * (abs(p) / self->file_length);
 	
 	if( p < 0 )
-		p += f->file_length * (1 + (abs(p) / f->file_length));
+		p += self->file_length * (1 + (abs(p) / self->file_length));
 	
-	f->play_offset = p;
+	self->play_offset = p;
 	return;
 }
 
-void rove_file_inc_play_pos(rove_file_t *f, sf_count_t delta) {
-	if( f->play_direction == FILE_PLAY_DIRECTION_REVERSE )
-		rove_file_set_play_pos(f, f->play_offset - delta);
+void rove_file_inc_play_pos(rove_file_t *self, sf_count_t delta) {
+	if( self->play_direction == FILE_PLAY_DIRECTION_REVERSE )
+		rove_file_set_play_pos(self, self->play_offset - delta);
 	else
-		rove_file_set_play_pos(f, f->play_offset + delta);
+		rove_file_set_play_pos(self, self->play_offset + delta);
 }
 
-void rove_file_activate(rove_file_t *f) {
-	if( f->group->active_loop )
-		if( f->group->active_loop != f )
-			if( rove_file_is_active(f->group->active_loop) )
-				f->group->active_loop->state = FILE_STATE_DEACTIVATE;
+void rove_file_activate(rove_file_t *self) {
+	if( self->group->active_loop )
+		if( self->group->active_loop != self )
+			if( rove_file_is_active(self->group->active_loop) )
+				self->group->active_loop->state = FILE_STATE_DEACTIVATE;
 	
-	f->group->active_loop = f;
-	f->state = FILE_STATE_ACTIVE;
+	self->group->active_loop = self;
+	self->state = FILE_STATE_ACTIVE;
 	
 	return;
 }
 
-void rove_file_deactivate(rove_file_t *f) {
-	if( f->group->active_loop == f )
-		f->group->active_loop = NULL;
+void rove_file_deactivate(rove_file_t *self) {
+	if( self->group->active_loop == self )
+		self->group->active_loop = NULL;
 	
-	f->state = FILE_STATE_INACTIVE;
+	self->state = FILE_STATE_INACTIVE;
 }
 
-void rove_file_reseek(rove_file_t *f, jack_nframes_t offset) {
-	rove_file_set_play_pos(f, f->new_offset + offset);
+void rove_file_reseek(rove_file_t *self, jack_nframes_t offset) {
+	rove_file_set_play_pos(self, self->new_offset + offset);
 }

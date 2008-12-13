@@ -22,33 +22,33 @@
 #include "rove_pattern.h"
 
 rove_pattern_t *rove_pattern_new() {
-	rove_pattern_t *p = calloc(sizeof(rove_pattern_t), 1);
+	rove_pattern_t *self = calloc(sizeof(rove_pattern_t), 1);
 	
-	p->status = PATTERN_STATUS_INACTIVE;
-	p->steps  = rove_list_new();
-	p->current_step = NULL;
+	self->status = PATTERN_STATUS_INACTIVE;
+	self->steps  = rove_list_new();
+	self->current_step = NULL;
 	
-	return p;
+	return self;
 }
 
-void rove_pattern_free(rove_pattern_t *p) {
+void rove_pattern_free(rove_pattern_t *self) {
 	rove_pattern_step_t *s;
 	rove_list_member_t *m;
 	
-	if( !p )
+	if( !self )
 		return;
 	
-	rove_list_foreach(p->steps, m, s) {
-		rove_list_remove(p->steps, m);
+	rove_list_foreach(self->steps, m, s) {
+		rove_list_remove(self->steps, m);
 		free(s);
 	}
 	
-	rove_list_free(p->steps);
-	free(p);
+	rove_list_free(self->steps);
+	free(self);
 }
 
-void rove_pattern_append_step(rove_pattern_t *p, rove_pattern_cmd_t cmd, rove_file_t *f, jack_nframes_t arg) {
-	rove_pattern_step_t *s = p->steps->tail->prev->data;
+void rove_pattern_append_step(rove_pattern_t *self, rove_pattern_cmd_t cmd, rove_file_t *f, jack_nframes_t arg) {
+	rove_pattern_step_t *s = self->steps->tail->prev->data;
 	
 	if( s ) {
 		if( s->file == f && !s->delay ) {
@@ -64,5 +64,5 @@ void rove_pattern_append_step(rove_pattern_t *p, rove_pattern_cmd_t cmd, rove_fi
 	s->arg   = arg;
 	s->cmd   = cmd;
 	
-	rove_list_push(p->steps, TAIL, s);
+	rove_list_push(self->steps, TAIL, s);
 }
