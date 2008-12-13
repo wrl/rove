@@ -34,12 +34,11 @@
  */
 
 typedef enum {
-	FILE_STATE_ACTIVE,
-	FILE_STATE_INACTIVE,
-	
 	FILE_STATE_ACTIVATE,
+	FILE_STATE_ACTIVE,
+	
 	FILE_STATE_DEACTIVATE,
-	FILE_STATE_RESEEK,
+	FILE_STATE_INACTIVE
 } rove_file_state_t;
 
 typedef enum {
@@ -83,7 +82,7 @@ typedef struct rove_file rove_file_t;
 typedef struct rove_list_member rove_list_member_t;
 typedef struct rove_list rove_list_t;
 
-typedef struct rove_monome_callback rove_monome_callback_t;
+typedef struct rove_monome_action rove_monome_action_t;
 typedef struct rove_monome_position rove_monome_position_t;
 typedef struct rove_monome rove_monome_t;
 
@@ -97,7 +96,7 @@ typedef struct rove_config_section rove_config_section_t;
 typedef struct rove_config_var rove_config_var_t;
 
 
-typedef void (*rove_monome_callback_function_t)(rove_state_t *, rove_monome_t *, const uint8_t x, const uint8_t y, const uint8_t event_type, void **data);
+typedef void (*rove_monome_callback_t)(rove_state_t *, rove_monome_t *, const uint8_t x, const uint8_t y, const uint8_t event_type, void **data);
 typedef void (*rove_config_section_callback_t)(const rove_config_section_t *, void *arg);
 
 typedef void (*rove_file_quantize_callback_t)(rove_file_t *, jack_nframes_t offset);
@@ -141,10 +140,10 @@ struct rove_monome_position {
 	uint8_t y;
 };
 
-struct rove_monome_callback {
+struct rove_monome_action {
 	rove_monome_position_t pos;
 	
-	rove_monome_callback_function_t cb;
+	rove_monome_callback_t cb;
 	void *data;
 };
 
@@ -153,8 +152,8 @@ struct rove_monome {
 	lo_server_thread *st;
 	lo_address *outgoing;
 	
-	rove_monome_callback_t *callbacks;
-	rove_monome_callback_t *controls;
+	rove_monome_action_t *callbacks;
+	rove_monome_action_t *controls;
 	
 	uint8_t mod_keys;
 	uint8_t rows;
@@ -199,6 +198,8 @@ struct rove_file {
 	unsigned int columns;
 	
 	rove_group_t *group;
+	
+	rove_file_quantize_callback_t quantize_callback;
 };
 
 /**
@@ -255,7 +256,7 @@ struct rove_pattern {
 	int delay_steps;
 	rove_pattern_status_t status;
 	
-	rove_monome_callback_t *bound_button;
+	rove_monome_action_t *bound_button;
 };
 
 /**

@@ -24,7 +24,7 @@
 
 #include "rove_types.h"
 
-#define rove_file_is_active(f) ( f->state == FILE_STATE_ACTIVE || f->state == FILE_STATE_RESEEK )
+#define rove_file_is_active(f) ( f->state == FILE_STATE_ACTIVE )
 #define rove_file_get_play_pos(f) (f->play_offset * f->channels)
 
 rove_file_t*rove_file_new_from_path(const char *path);

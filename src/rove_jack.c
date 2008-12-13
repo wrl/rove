@@ -93,13 +93,9 @@ static int process(jack_nframes_t nframes, void *arg) {
 				if( !f )
 					continue;
 				
-				switch( f->state ) {
-				case FILE_STATE_RESEEK:
-					rove_file_reseek(f, 0);
-					break;
-					
-				default:
-					break;
+				if( f->quantize_callback ) {
+					f->quantize_callback(f, state->frames);
+					f->quantize_callback = NULL;
 				}
 			}
 			
