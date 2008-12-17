@@ -129,11 +129,9 @@ void rove_config_default_section_callback(const rove_config_section_t *section) 
 		free(p->key);
 		free(p);
 	}
-	
-	rove_list_free(section->pairs);
 }
 
-static void close_block(const rove_config_section_t *s, rove_config_pair_t *p) {
+static void close_block(rove_config_section_t *s, rove_config_pair_t *p) {
 	if( p )
 		rove_list_push(s->pairs, HEAD, p);
 
@@ -141,8 +139,10 @@ static void close_block(const rove_config_section_t *s, rove_config_pair_t *p) {
 		if( s->section_callback )
 			s->section_callback(s, s->cb_arg);
 		else
-			if( s->vars ) 
-				rove_config_default_section_callback(s);
+			rove_config_default_section_callback(s);
+		
+		rove_list_free(s->pairs);
+		s->pairs = NULL;
 	}
 }
 
@@ -248,6 +248,9 @@ static int config_parse(const char *path, rove_config_section_t *sections, int c
 					if( !strncmp(vbuf, sections[j].block, vlen) ) {
 						s = &sections[j];
 						s->start_line = lines;
+						
+						if( !s->pairs )
+							s->pairs = rove_list_new();
 					}
 				
 				m = COMMENT;
@@ -321,7 +324,7 @@ int rove_load_config(const char *path, rove_config_section_t *sections, int cd) 
 	int i;
 	
 	for( i = 0; sections[i].block; i++ )
-		sections[i].pairs = rove_list_new();
-	
+		sections[i].pairs = NULL;
+
 	return config_parse(path, sections, cd);
 }
