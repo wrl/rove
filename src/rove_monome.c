@@ -147,8 +147,8 @@ static void *pattern_post_record(rove_state_t *state, rove_monome_t *monome, con
 	return m;
 }
 
-static void pattern_handler(rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type, void **data) {
-	rove_list_member_t *m = *data;
+static void pattern_handler(rove_monome_action_t *self, rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type) {
+	rove_list_member_t *m = self->data;
 	rove_pattern_t *p;
 	int idx;
 
@@ -170,15 +170,13 @@ static void pattern_handler(rove_state_t *state, rove_monome_t *monome, const ui
 		
 		m = rove_list_push(state->patterns, TAIL, p);
 		state->pattern_rec = m;
-		*data = m;
+		self->data = m;
 		
-		/* this is really dirty. */
-		/* perhaps a "self" rove_monome_action_t passed to the callback would be better? */
-		p->bound_button = &monome->controls[x];
+		p->bound_button = self;
 		
 		monome_led_on(monome, x, y);
 
-		*data = m;
+		self->data = m;
 		return;
 	}
 
@@ -233,12 +231,12 @@ static void pattern_handler(rove_state_t *state, rove_monome_t *monome, const ui
 	return;
 	
  clear_pattern:
-	*data = NULL;
+	self->data = NULL;
 	return;
 }
 
-static void group_off_handler(rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type, void **data) {
-	rove_group_t *group = *data;
+static void group_off_handler(rove_monome_action_t *self, rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type) {
+	rove_group_t *group = self->data;
 	rove_file_t *f;
 
 	if( event_type != BUTTON_DOWN )
@@ -259,14 +257,14 @@ static void group_off_handler(rove_state_t *state, rove_monome_t *monome, const 
 	f->state = FILE_STATE_DEACTIVATE;
 }
 
-static void control_row_handler(rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type, void **data) {
-	rove_monome_action_t *controls = *data, *callback;
+static void control_row_handler(rove_monome_action_t *self, rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type) {
+	rove_monome_action_t *controls = self->data, *callback;
 	
 	if( !(callback = &controls[x]) )
 		return;
 	
 	if( callback->cb )
-		return callback->cb(state, monome, x, y, event_type, &callback->data);
+		return callback->cb(callback, state, monome, x, y, event_type);
 	
 	switch( event_type ) {
 	case BUTTON_DOWN:
@@ -287,8 +285,8 @@ static void control_row_handler(rove_state_t *state, rove_monome_t *monome, cons
 	}
 }
 
-void file_row_handler(rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type, void **data) {
-	rove_file_t *f = *data;
+void file_row_handler(rove_monome_action_t *self, rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type) {
+	rove_file_t *f = self->data;
 	unsigned int cols;
 
 	rove_monome_position_t pos = {x, y - f->y};
@@ -343,7 +341,7 @@ static int button_handler(const char *path, const char *types, lo_arg **argv, in
 	if( !callback->cb )
 		return -1;
 	
-	callback->cb(state, monome, event_x, event_y, event_type, &callback->data);
+	callback->cb(callback, state, monome, event_x, event_y, event_type);
 	
 	return 0;
 }
