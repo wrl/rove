@@ -55,9 +55,6 @@ static int process(jack_nframes_t nframes, void *arg) {
 	
 	jack_default_audio_sample_t *buffers[2];
 	
-	rove_pattern_step_t *s;
-	rove_list_member_t *m;
-	rove_pattern_t *p;
 	rove_group_t *g;
 	rove_file_t *f;
 	
@@ -97,68 +94,8 @@ static int process(jack_nframes_t nframes, void *arg) {
 				}
 			}
 			
-			rove_list_foreach(state->patterns, m, p) {
-				switch( p->status ) {
-				case PATTERN_STATUS_ACTIVATE:
-					p->status = PATTERN_STATUS_ACTIVE;
-					p->current_step = p->steps->tail->prev;
-					p->delay_steps = ((rove_pattern_step_t *) p->current_step->data)->delay;
-					
-				case PATTERN_STATUS_ACTIVE:
-					s = p->current_step->data;
-					
-					while( p->delay_steps >= s->delay ) {
-						p->current_step = p->current_step->next;
-						
-						if( !p->current_step->next )
-							p->current_step = p->steps->head->next;
-						
-						p->delay_steps = 0;
-						s = p->current_step->data;
-						
-						switch( s->cmd ) {
-						case CMD_GROUP_DEACTIVATE:
-							s->file->state = FILE_STATE_DEACTIVATE;
-							break;
-							
-						case CMD_LOOP_SEEK:
-							if( !rove_file_is_active(s->file) ) {
-								s->file->play_offset = s->arg;
-								s->file->new_offset  = -1;
-								
-								s->file->force_monome_update = 1;
-								rove_file_activate(s->file);
-							} else {
-								s->file->new_offset = s->arg;
-								rove_file_reseek(s->file, 0);
-							}
-							
-							break;
-						}
-					}
-					
-					p->delay_steps++;
-					
-					break;
-					
-				case PATTERN_STATUS_RECORDING:
-					if( !rove_list_is_empty(p->steps) ) {
-						((rove_pattern_step_t *) p->steps->tail->prev->data)->delay++;
-						
-						if( p->delay_steps ) {
-							if( --p->delay_steps <= 0 ) {
-								p->status = PATTERN_STATUS_ACTIVATE;
-								state->pattern_rec = NULL;
-							}
-						}
-					}
-					
-					break;
-					
-				default:
-					break;
-				}
-			}
+			/* process (playback/record) patterns */
+			rove_pattern_process_patterns(state);
 		}
 		
 		until_quantize = (state->snap_delay - state->frames);
