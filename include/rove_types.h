@@ -82,7 +82,7 @@ typedef struct rove_file rove_file_t;
 typedef struct rove_list_member rove_list_member_t;
 typedef struct rove_list rove_list_t;
 
-typedef struct rove_monome_action rove_monome_action_t;
+typedef struct rove_monome_handler rove_monome_handler_t;
 typedef struct rove_monome_position rove_monome_position_t;
 typedef struct rove_monome rove_monome_t;
 
@@ -96,7 +96,7 @@ typedef struct rove_config_section rove_config_section_t;
 typedef struct rove_config_var rove_config_var_t;
 
 
-typedef void (*rove_monome_callback_t)(rove_monome_action_t *self, rove_state_t *, rove_monome_t *, const uint8_t x, const uint8_t y, const uint8_t event_type);
+typedef void (*rove_monome_callback_t)(rove_monome_handler_t *self, rove_state_t *, rove_monome_t *, const uint8_t x, const uint8_t y, const uint8_t event_type);
 typedef void (*rove_config_section_callback_t)(const rove_config_section_t *, void *arg);
 
 typedef void (*rove_process_callback_t)(rove_file_t *self, jack_default_audio_sample_t **buffers, int channels, jack_nframes_t nframes);
@@ -143,7 +143,7 @@ struct rove_monome_position {
 	uint8_t y;
 };
 
-struct rove_monome_action {
+struct rove_monome_handler {
 	rove_monome_position_t pos;
 	
 	rove_monome_callback_t cb;
@@ -155,8 +155,8 @@ struct rove_monome {
 	lo_server_thread *st;
 	lo_address *outgoing;
 	
-	rove_monome_action_t *callbacks;
-	rove_monome_action_t *controls;
+	rove_monome_handler_t *callbacks;
+	rove_monome_handler_t *controls;
 	
 	uint8_t mod_keys;
 	uint8_t rows;
@@ -260,7 +260,7 @@ struct rove_pattern {
 	int delay_steps;
 	rove_pattern_status_t status;
 	
-	rove_monome_action_t *bound_button;
+	rove_monome_handler_t *bound_button;
 };
 
 /**
