@@ -99,7 +99,7 @@ static int process(jack_nframes_t nframes, void *arg) {
 		}
 		
 		until_quantize = (state->snap_delay - state->frames);
-		nframes_left   = MIN(until_quantize, nframes - nframes_left);
+		nframes_left   = MIN(until_quantize, nframes);
 		
 		if( (state->frames += nframes_left) >= state->snap_delay - 1 )
 			state->frames = 0;
