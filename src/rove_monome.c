@@ -144,7 +144,7 @@ static void *pattern_post_record(rove_state_t *state, rove_monome_t *monome, con
 		return NULL;
 	}
 	
-	return m;
+	return p;
 }
 
 static void pattern_handler(rove_monome_handler_t *self, rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type) {
