@@ -27,6 +27,7 @@
 #include "rove_file.h"
 #include "rove_jack.h"
 #include "rove_list.h"
+#include "rove_util.h"
 #include "rove_monome.h"
 #include "rove_pattern.h"
 
@@ -37,9 +38,6 @@ static jack_port_t *outport_l;
 static jack_port_t *outport_r;
 
 #define on_quantize_boundary() (!state->frames)
-
-#define MAX(a, b) ((a > b) ? a : b)
-#define MIN(a, b) ((a < b) ? a : b)
 
 static int process(jack_nframes_t nframes, void *arg) {
 	rove_state_t *state = arg;

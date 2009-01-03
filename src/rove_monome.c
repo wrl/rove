@@ -27,6 +27,7 @@
 #include "rove_file.h"
 #include "rove_jack.h"
 #include "rove_list.h"
+#include "rove_util.h"
 #include "rove_pattern.h"
 
 #define BUTTON_DOWN     1
@@ -39,9 +40,6 @@
 
 #define MONOME_POS_CMP(a, b) (memcmp(a, b, sizeof(rove_monome_position_t)))
 #define MONOME_POS_CPY(a, b) (memcpy(a, b, sizeof(rove_monome_position_t)))
-
-#define MAX(a, b) ((a > b) ? a : b)
-#define MIN(a, b) ((a < b) ? a : b)
 
 /**
  * (mostly) emulate libmonome functions in liblo
