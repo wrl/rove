@@ -68,8 +68,6 @@ static int process(jack_nframes_t nframes, void *arg) {
 			out_l[j] = out_r[j] = 0;
 	}
 
-
-	nframes_offset = 0;
 	for( nframes_offset = 0; nframes > 0; nframes -= nframes_left ) {
 		if( on_quantize_boundary() ) {
 			for( j = 0; j < group_count; j++ ) {
