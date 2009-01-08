@@ -70,9 +70,8 @@ static int process(jack_nframes_t nframes, void *arg) {
 
 
 	nframes_offset = 0;
-	do {
-		/* are we on a quantization boundary? */
-		if( !state->frames ) {
+	for( nframes_offset = 0; nframes > 0; nframes -= nframes_left ) {
+		if( on_quantize_boundary() ) {
 			for( j = 0; j < group_count; j++ ) {
 				g = &state->groups[j];
 				f = g->active_loop;
@@ -120,7 +119,7 @@ static int process(jack_nframes_t nframes, void *arg) {
 		}
 		
 		nframes_offset += nframes_left;
-	} while( (nframes -= nframes_left) > 0 );
+	}
 	
 	out_l = jack_port_get_buffer(outport_l, nframes_offset);
 	out_r = jack_port_get_buffer(outport_r, nframes_offset);
