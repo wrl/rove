@@ -26,6 +26,9 @@ rove v0.2:
 			- liblo
 			- JACK (http://www.jackaudio.org/)
 			- libsndfile
+			
+		and, optionally:
+			- libsamplerate
 		
 		if you're on linux, you might already have these installed. if not, use
 		your system's package manager to install both the main packages and the
@@ -36,20 +39,18 @@ rove v0.2:
 		http://mega-nerd.com/libsndfile/.  read the README and INSTALL files that
 		come along with those projects.
 		
+		you'll need libsamplerate if you want to be able to change the playback speed
+		of loops.  libsamplerate can be downloaded form http://www.mega-nerd.com/SRC/.
+		
 		if you're familiar with maintaining software on os X, please get in contact
 		with me!  i'd love to be able to distribute a proper package of rove,
 		but i haven't the faintest idea where to start.
 		additionally, i don't have any mac computers on which i can test.
 		
 	okay, i've got that stuff installed, now what?
-		if you want to build rove to run on a monome with 8 columns (40h, 64, 128
-		in some orientations), just run "make" from the top-level rove directory.
-
-		if you have a monome with 16 columns (256, 128 in the other orientations),
-		run "make 256" from the top-level directory.
-		
-		in either case, rove should build quickly and uneventfully.  after that,
-		just do a "sudo make install" to install the rove executable system-wide.
+		just run "make" from the top-level rove directory.  rove should build quickly
+		and uneventfully.  after that, do a "make install" as root to install the rove
+		executable system-wide.
 		
 		if there are any errors in the build process, let me know either via email
 		or on the monome forums.  i'll see what i can do.
