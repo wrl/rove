@@ -40,7 +40,7 @@ rove v0.2:
 		come along with those projects.
 		
 		you'll need libsamplerate if you want to be able to change the playback speed
-		of loops.  libsamplerate can be downloaded form http://www.mega-nerd.com/SRC/.
+		of loops.  libsamplerate can be downloaded from http://www.mega-nerd.com/SRC/.
 		
 		if you're familiar with maintaining software on os X, please get in contact
 		with me!  i'd love to be able to distribute a proper package of rove,
