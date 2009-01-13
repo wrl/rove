@@ -156,6 +156,10 @@ void rove_transport_stop(rove_state_t *state) {
 	jack_transport_locate(state->client, 0);
 }
 
+void rove_jack_deactivate(rove_state_t *state) {
+	jack_deactivate(state->client);
+}
+
 int rove_jack_activate(rove_state_t *state) {
 	jack_client_t *client = state->client;
 	int i, group_count;

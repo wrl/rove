@@ -23,6 +23,7 @@
 
 void rove_transport_start(rove_state_t *state);
 void rove_transport_stop(rove_state_t *state);
+void rove_jack_deactivate(rove_state_t *state);
 int  rove_jack_activate(rove_state_t *state);
 int  rove_jack_init(rove_state_t *state);
 

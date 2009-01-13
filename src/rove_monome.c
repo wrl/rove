@@ -442,6 +442,8 @@ void rove_monome_stop_thread(rove_monome_t *monome) {
 }
 
 void rove_monome_free(rove_monome_t *monome) {
+	monome_clear(monome, CLEAR_OFF);
+	
 	lo_server_thread_free(monome->st);
 	lo_address_free(monome->outgoing);
 

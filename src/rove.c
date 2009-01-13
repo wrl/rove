@@ -16,15 +16,16 @@
  * along with rove.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <time.h>
 #include <getopt.h>
-#include <stdio.h>
+#include <glob.h>
 #include <libgen.h>
+#include <pthread.h>
+#include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
-#include <pthread.h>
-#include <glob.h>
 
 #include "rove.h"
 #include "rove_file.h"
@@ -44,6 +45,8 @@
 
 /* 48 is ASCII '0', 57 is ASCII '9'. tests one character. */
 #define is_numeric(c) ((48 <= c) && (c <= 57))
+
+rove_state_t state;
 
 static rove_group_t *initialize_groups(const int group_count) {
 	rove_group_t *groups;
@@ -337,9 +340,19 @@ static void rove_recalculate_bpm_variables(rove_state_t *state) {
 		state->snap_delay++;
 }
 
+static void exit_on_signal(int s) {
+	exit(0);
+}
+
+static void cleanup() {
+	rove_monome_stop_thread(state.monome);
+	rove_monome_free(state.monome);
+	
+	rove_jack_deactivate(&state);
+}
+
 int main(int argc, char **argv) {
 	char *osc_prefix, *osc_host_port, *osc_listen_port, *session_file, c;
-	rove_state_t state;
 	int cols, i;
 	
 	struct option arguments[] = {
@@ -461,6 +474,9 @@ int main(int argc, char **argv) {
 	
 	if( rove_jack_activate(&state) )
 		return 1;
+	
+	signal(SIGINT, exit_on_signal);
+	atexit(cleanup);
 	
 	rove_monome_run_thread(state.monome);
 	main_loop(&state);
