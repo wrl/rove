@@ -258,6 +258,9 @@ static void group_off_handler(rove_monome_handler_t *self, rove_state_t *state, 
 static void control_row_handler(rove_monome_handler_t *self, rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type) {
 	rove_monome_handler_t *controls = self->data, *callback;
 	
+	if( y > monome->cols )
+		return;
+	
 	if( !(callback = &controls[x]) )
 		return;
 	
