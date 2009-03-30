@@ -126,8 +126,10 @@ rove_file_t *rove_file_new_from_path(const char *path) {
 	self->src         = src_callback_new(rove_file_src_callback, SRC_SINC_FASTEST, info.channels, &err, self);
 #endif
 	
-	if( sf_readf_float(snd, self->file_data, info.frames) != info.frames )
+	if( sf_readf_float(snd, self->file_data, info.frames) != info.frames ) {
 		rove_file_free(self);
+		self = NULL;
+	}
 	
 	sf_close(snd);
 	
