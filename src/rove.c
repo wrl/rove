@@ -105,14 +105,11 @@ static void main_loop(rove_state_t *state) {
 }
 
 static char *user_config_path() {
-	char *home, *path, *conf;
+	char *home, *path;
 	
 	if( !(home = getenv("HOME")) )
 		return NULL;
 	
-	if( home[strlen(home) - 1] == '/' )
-		conf++;
-
 	asprintf(&path, "%s/%s", home, DEFAULT_CONF_FILE_NAME);
 	return path;
 }
