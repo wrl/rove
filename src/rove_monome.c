@@ -241,8 +241,7 @@ static void group_off_handler(rove_monome_handler_t *self, rove_state_t *state, 
 		return;
 	
 	if( !(f = group->active_loop) )
-		if( !(f = group->staged_loop) )
-			return; /* group is already off (nothing set as the active or staged file) */
+		return; /* group is already off (nothing set as the active loop) */
 				
 	if( !rove_file_is_active(f) )
 		return; /* group is already off (active file not playing) */
@@ -252,7 +251,7 @@ static void group_off_handler(rove_monome_handler_t *self, rove_state_t *state, 
 		rove_pattern_append_step(state->pattern_rec->data, CMD_GROUP_DEACTIVATE, f, 0);
 				
 	/* stop the active file */
-	f->state = FILE_STATE_DEACTIVATE;
+	f->status = FILE_STATUS_DEACTIVATE;
 }
 
 static void control_row_handler(rove_monome_handler_t *self, rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type) {
@@ -310,13 +309,12 @@ void file_row_handler(rove_monome_handler_t *self, rove_state_t *state, rove_mon
 		if( !rove_file_is_active(f) ) {
 			f->force_monome_update = 1;
 			
-			f->group->staged_loop  = f;
-			f->state = FILE_STATE_ACTIVATE;
+			rove_file_on_quantize(f, rove_file_activate);
 			
 			f->play_offset = f->new_offset;
 			f->new_offset  = -1;
 		} else
-			f->quantize_callback = rove_file_reseek;
+			rove_file_on_quantize(f, rove_file_seek);
 
 		break;
 
@@ -358,7 +356,7 @@ static void initialize_callbacks(rove_state_t *state, rove_monome_t *monome) {
 	/* leave room for two pattern recorders and the two mod keys */
 	group_count = MIN(state->group_count, monome->cols - 4);
 	
-	controls = calloc(sizeof(rove_monome_handler_t), monome->cols);
+	controls = calloc(monome->cols, sizeof(rove_monome_handler_t));
 	y = 0;
 	
 	for( i = 0; i < group_count; i++ ) {
@@ -382,6 +380,7 @@ static void initialize_callbacks(rove_state_t *state, rove_monome_t *monome) {
 	monome->controls          = controls;
 	
 	rove_list_foreach(state->files, m, f) {
+		f->mapped_monome = monome;
 		row_span = f->row_span;
 		y = f->y;
 		

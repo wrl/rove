@@ -164,14 +164,19 @@ static int config_parse(const char *path, rove_config_section_t *sections, int c
 	lines = 1;
 	
 	while( (len = read(fd, buf, BUFLEN)) ) {
-		if( len < BUFLEN ) {
-			if( buf[len] != '\n' )
-				buf[len++] = '\n';
-		}
-		
+		buf[len] = '\0';
+
+		if( len < BUFLEN )
+			len++;
+
 		for( i = 0; i < len; i++ ) {
 			c = buf[i];
-			
+
+			if( !c ) {
+				lines++;
+				goto state_out;
+			}
+
 			switch( m ) {
 			case COMMENT:
 				if( c == '\n' )
@@ -185,8 +190,8 @@ static int config_parse(const char *path, rove_config_section_t *sections, int c
 					continue;
 					
 				case COMMENT_SYMBOL:
-				case '=':
 				case '\n':
+				case '=':
 					goto state_out;
 					
 				case BLOCK_OPEN_SYMBOL:
@@ -200,13 +205,9 @@ static int config_parse(const char *path, rove_config_section_t *sections, int c
 				
 			case BLOCK:
 				switch( c ) {
+				case BLOCK_CLOSE_SYMBOL:
 				case COMMENT_SYMBOL:
 				case '\n':
-					vbuf[vlen] = 0;
-					printf("rove_config: unterminated block name \"%s\" on line %d of %s\n", vbuf, lines, path);
-					return 1;
-					
-				case BLOCK_CLOSE_SYMBOL:
 					goto state_out;
 				}
 				
@@ -232,34 +233,40 @@ static int config_parse(const char *path, rove_config_section_t *sections, int c
 			continue;
 
 		state_out:
-			if( c == '\n')
+			if( c == '\n' )
 				lines++;
 			
 			vbuf[vlen] = 0;
 			
 			switch( m ) {
 			case BLOCK:
+				if( c != BLOCK_CLOSE_SYMBOL ) {
+					vbuf[vlen] = 0;
+					printf("rove_config: unterminated block name \"%s\" on line %d of %s\n", vbuf, lines, path);
+					return 1;
+				}
+
 				close_block(s, p);
-				
+
 				s = NULL;
 				p = NULL;
-				
+
 				for( j = 0; sections[j].block; j++ )
 					if( !strncmp(vbuf, sections[j].block, vlen) ) {
 						s = &sections[j];
 						s->start_line = lines;
-						
+
 						if( !s->pairs )
 							s->pairs = rove_list_new();
 					}
-				
+
 				m = COMMENT;
 				break;
-				
+
 			case COMMENT:
 				m = KEY;
 				continue;
-				
+
 			case KEY:
 				switch( c ) {
 				case '=':
@@ -267,48 +274,48 @@ static int config_parse(const char *path, rove_config_section_t *sections, int c
 						printf("rove_config: missing key on line %d of %s\n", lines, path);
 						return 1;
 					}
-					
+
 					m = VALUE;
 					/* fall through */
-					
+
 				case '\n':
 					if( !vlen )
 						continue;
 					break;
-					
+
 				case COMMENT_SYMBOL:
 					m = COMMENT;
-					
+
 					if( !vlen )
 						continue;
 				}
-				
+
 				if( s ) {
 					if( p )
 						rove_list_push(s->pairs, HEAD, p);
-					
+
 					p = calloc(1, sizeof(rove_config_pair_t));
 					p->key  = strndup(vbuf, vlen);
 					p->klen = vlen;
 				}
-				
+
 				break;
-				
+
 			case VALUE:
 				if( vbuf[vlen - 1] == ' ' ) {
 					while( vbuf[vlen - 1] == ' ' ) /* strip trailing spaces */
 						vlen--;
-					
+
 					vbuf[vlen] = 0;
 				}
-				
+
 				m = ( c == COMMENT_SYMBOL ) ? COMMENT : KEY;
-				
+
 				if( p ) {
 					p->value = strndup(vbuf, vlen);
 					p->vlen  = vlen;
 				}
-				
+
 				break;
 			}
 			

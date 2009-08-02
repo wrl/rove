@@ -34,12 +34,11 @@
  */
 
 typedef enum {
-	FILE_STATE_ACTIVATE,
-	FILE_STATE_ACTIVE,
+	FILE_STATUS_ACTIVE,
 	
-	FILE_STATE_DEACTIVATE,
-	FILE_STATE_INACTIVE
-} rove_file_state_t;
+	FILE_STATUS_DEACTIVATE,
+	FILE_STATUS_INACTIVE
+} rove_file_status_t;
 
 typedef enum {
 	FILE_PLAY_DIRECTION_FORWARD,
@@ -100,7 +99,7 @@ typedef void (*rove_monome_callback_t)(rove_monome_handler_t *self, rove_state_t
 typedef void (*rove_config_section_callback_t)(const rove_config_section_t *, void *arg);
 
 typedef void (*rove_process_callback_t)(rove_file_t *self, jack_default_audio_sample_t **buffers, int channels, jack_nframes_t nframes);
-typedef void (*rove_quantize_callback_t)(rove_file_t *self, jack_nframes_t offset);
+typedef void (*rove_quantize_callback_t)(rove_file_t *self);
 typedef void (*rove_monome_input_callback_t)(rove_file_t *self, rove_monome_t *, const int x, const int y, const int event_type);
 typedef void (*rove_monome_output_callback_t)(rove_file_t *self, rove_monome_t *);
 
@@ -154,6 +153,8 @@ struct rove_monome {
 	char *osc_prefix;
 	lo_server_thread *st;
 	lo_address *outgoing;
+
+	uint16_t dirty;
 	
 	rove_monome_handler_t *callbacks;
 	rove_monome_handler_t *controls;
@@ -169,7 +170,7 @@ struct rove_monome {
 
 struct rove_file {
 	rove_file_play_direction_t play_direction;
-	rove_file_state_t state;
+	rove_file_status_t status;
 	
 	double volume;
 	
@@ -191,6 +192,7 @@ struct rove_file {
 	uint8_t y;
 	uint8_t row_span;
 	
+	rove_monome_t *mapped_monome;
 	rove_monome_position_t monome_pos;
 	rove_monome_position_t monome_pos_old;
 	
@@ -213,7 +215,6 @@ struct rove_file {
 struct rove_group {
 	int idx;
 	rove_file_t *active_loop;
-	rove_file_t *staged_loop;
 	
 	double volume;
 	

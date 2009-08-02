@@ -29,7 +29,7 @@
 #include "rove_file.h"
 
 static void rove_file_init(rove_file_t *self) {
-	self->state = FILE_STATE_INACTIVE;
+	self->status = FILE_STATUS_INACTIVE;
 	self->play_direction = FILE_PLAY_DIRECTION_FORWARD;
 	self->volume = 1.0;
 }
@@ -158,10 +158,10 @@ void rove_file_activate(rove_file_t *self) {
 	if( self->group->active_loop )
 		if( self->group->active_loop != self )
 			if( rove_file_is_active(self->group->active_loop) )
-				self->group->active_loop->state = FILE_STATE_DEACTIVATE;
-	
+				self->group->active_loop->status = FILE_STATUS_DEACTIVATE;
+
 	self->group->active_loop = self;
-	self->state = FILE_STATE_ACTIVE;
+	self->status = FILE_STATUS_ACTIVE;
 	
 	return;
 }
@@ -170,9 +170,54 @@ void rove_file_deactivate(rove_file_t *self) {
 	if( self->group->active_loop == self )
 		self->group->active_loop = NULL;
 	
-	self->state = FILE_STATE_INACTIVE;
+	self->status = FILE_STATUS_INACTIVE;
 }
 
-void rove_file_reseek(rove_file_t *self, jack_nframes_t offset) {
-	rove_file_set_play_pos(self, self->new_offset + offset);
+void rove_file_seek(rove_file_t *self) {
+	rove_file_set_play_pos(self, self->new_offset);
+}
+
+#if 0
+void rove_file_change_status(rove_file_t *self, rove_file_status_t nstatus) {
+	switch(self->status) {
+	case FILE_STATUS_ACTIVE:
+		switch(nstatus) {
+		case FILE_STATUS_ACTIVE:
+			return;
+
+		case FILE_STATUS_INACTIVE:
+			if( self->group->active_loop == self )
+				self->group->active_loop = NULL;
+			break;
+		}
+		break;
+
+	case FILE_STATUS_INACTIVE:
+		switch(nstatus) {
+		case FILE_STATUS_ACTIVE:
+			/* replace this with rove_group_ logic */
+			if( self->group->active_loop )
+				if( self->group->active_loop != self )
+					if( rove_file_is_active(self->group->active_loop) )
+						self->group->active_loop->status = FILE_STATUS_DEACTIVATE;
+
+			break;
+
+		case FILE_STATUS_INACTIVE:
+			return;
+		}
+		break;
+	}
+
+	self->status = nstatus;
+}
+#endif
+
+void rove_file_on_quantize(rove_file_t *self, rove_quantize_callback_t cb) {
+	if( cb )
+		self->mapped_monome->dirty |= 1 << self->y;
+	else
+		self->mapped_monome->dirty &= ~(1 << self->y);
+
+	self->quantize_callback = cb;
 }

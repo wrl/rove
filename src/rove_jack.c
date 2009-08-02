@@ -39,6 +39,16 @@ static jack_port_t *outport_r;
 
 #define on_quantize_boundary() (!state->frames)
 
+static void process_file(rove_file_t *f) {
+	if( !f )
+		return;
+
+	if( f->quantize_callback ) {
+		f->quantize_callback(f);
+		rove_file_on_quantize(f, NULL);
+	}
+}
+
 static int process(jack_nframes_t nframes, void *arg) {
 	rove_state_t *state = arg;
 	
@@ -49,6 +59,7 @@ static int process(jack_nframes_t nframes, void *arg) {
 	
 	jack_nframes_t until_quantize, nframes_left, nframes_offset, i;
 	int j, group_count;
+	uint16_t dirty;
 	
 	jack_default_audio_sample_t *buffers[2];
 	
@@ -74,21 +85,19 @@ static int process(jack_nframes_t nframes, void *arg) {
 				g = &state->groups[j];
 				f = g->active_loop;
 				
-				if( g->staged_loop ) {
-					rove_file_activate(g->staged_loop);
-					g->staged_loop = NULL;
-					continue;
-				}
-				
-				if( !f )
-					continue;
-				
-				if( f->quantize_callback ) {
-					f->quantize_callback(f, state->frames);
-					f->quantize_callback = NULL;
-				}
+				process_file(f);
 			}
-			
+
+			dirty = state->monome->dirty;
+
+			for( j = 0; dirty; j++, dirty >>= 1 ) {
+				if( !(dirty & 1) )
+					continue;
+ 
+ 				f = (rove_file_t *) state->monome->callbacks[j].data; /* this is a hack */
+				process_file(f);
+			}
+
 			/* playback patterns */
 			rove_pattern_process_patterns(state);
 		}

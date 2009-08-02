@@ -85,15 +85,15 @@ static void main_loop(rove_state_t *state) {
 		nanosleep(&req, NULL);
 
 		rove_list_foreach(state->files, m, f) {
-			switch( f->state ) {
-			case FILE_STATE_DEACTIVATE:
+			switch( f->status ) {
+			case FILE_STATUS_DEACTIVATE:
 				if( f->group->active_loop == f )
 					monome_led_off(state->monome, f->group->idx, 0);
 				
 				rove_file_deactivate(f);
 				rove_monome_blank_file_row(state->monome, f);
 				
-			case FILE_STATE_INACTIVE:
+			case FILE_STATUS_INACTIVE:
 				continue;
 				
 			default:
@@ -459,7 +459,7 @@ int main(int argc, char **argv) {
 						 (osc_listen_port) ? osc_listen_port : DEFAULT_OSC_LISTEN_PORT,
 						 (cols) ? cols : DEFAULT_MONOME_COLUMNS) )
 		return 1;
-	
+
 	if( osc_prefix )
 		free(osc_prefix);
 

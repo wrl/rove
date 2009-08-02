@@ -94,7 +94,7 @@ void rove_pattern_process_patterns(rove_state_t *state) {
 						
 				switch( s->cmd ) {
 				case CMD_GROUP_DEACTIVATE:
-					s->file->state = FILE_STATE_DEACTIVATE;
+					s->file->status = FILE_STATUS_DEACTIVATE;
 					break;
 							
 				case CMD_LOOP_SEEK:
@@ -106,7 +106,7 @@ void rove_pattern_process_patterns(rove_state_t *state) {
 						rove_file_activate(s->file);
 					} else {
 						s->file->new_offset = s->arg;
-						rove_file_reseek(s->file, 0);
+						rove_file_seek(s->file);
 					}
 							
 					break;
