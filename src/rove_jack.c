@@ -58,7 +58,7 @@ static int process(jack_nframes_t nframes, void *arg) {
 	jack_default_audio_sample_t *in_r;
 	
 	jack_nframes_t until_quantize, nframes_left, nframes_offset, i;
-	int j, group_count;
+	int j, group_count, next_bit;
 	uint16_t dirty;
 	
 	jack_default_audio_sample_t *buffers[2];
@@ -88,13 +88,13 @@ static int process(jack_nframes_t nframes, void *arg) {
 				process_file(f);
 			}
 
-			dirty = state->monome->dirty;
+			dirty = state->monome->dirty >> 1;
 
-			for( j = 0; dirty; j++, dirty >>= 1 ) {
-				if( !(dirty & 1) )
-					continue;
- 
- 				f = (rove_file_t *) state->monome->callbacks[j].data; /* this is a hack */
+			for( j = 0; dirty; dirty >>= next_bit ) {
+				next_bit = ffs(dirty);
+				j += next_bit;
+
+				f = (rove_file_t *) state->monome->callbacks[j].data;
 				process_file(f);
 			}
 
