@@ -154,7 +154,8 @@ struct rove_monome {
 	lo_server_thread *st;
 	lo_address *outgoing;
 
-	uint16_t dirty;
+	uint16_t quantize_field;
+	uint16_t dirty_field;
 	
 	rove_monome_handler_t *callbacks;
 	rove_monome_handler_t *controls;

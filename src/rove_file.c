@@ -215,9 +215,9 @@ void rove_file_change_status(rove_file_t *self, rove_file_status_t nstatus) {
 
 void rove_file_on_quantize(rove_file_t *self, rove_quantize_callback_t cb) {
 	if( cb )
-		self->mapped_monome->dirty |= 1 << self->y;
+		self->mapped_monome->quantize_field |= 1 << self->y;
 	else
-		self->mapped_monome->dirty &= ~(1 << self->y);
+		self->mapped_monome->quantize_field &= ~(1 << self->y);
 
 	self->quantize_callback = cb;
 }

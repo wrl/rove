@@ -59,7 +59,7 @@ static int process(jack_nframes_t nframes, void *arg) {
 	
 	jack_nframes_t until_quantize, nframes_left, nframes_offset, i;
 	int j, group_count, next_bit;
-	uint16_t dirty;
+	uint16_t qfield;
 	
 	jack_default_audio_sample_t *buffers[2];
 	
@@ -88,10 +88,10 @@ static int process(jack_nframes_t nframes, void *arg) {
 				process_file(f);
 			}
 
-			dirty = state->monome->dirty >> 1;
+			qfield = state->monome->quantize_field >> 1;
 
-			for( j = 0; dirty; dirty >>= next_bit ) {
-				next_bit = ffs(dirty);
+			for( j = 0; qfield; qfield >>= next_bit ) {
+				next_bit = ffs(qfield);
 				j += next_bit;
 
 				f = (rove_file_t *) state->monome->callbacks[j].data;
