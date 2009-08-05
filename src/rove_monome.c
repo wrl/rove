@@ -412,7 +412,7 @@ void rove_monome_display_file(rove_file_t *f) {
 
 		MONOME_POS_CPY(&f->monome_pos_old, &pos);
 
-		if( f->status == FILE_STATUS_ACTIVE ) {
+		if( rove_file_is_active(f) ) {
 			r      = 1 << pos.x;
 			row[0] = r & 0x00FF;
 			row[1] = r >> 8;
