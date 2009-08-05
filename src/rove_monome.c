@@ -306,9 +306,6 @@ void file_row_handler(rove_monome_handler_t *self, rove_state_t *state, rove_mon
 		if( state->pattern_rec )
 			rove_pattern_append_step(state->pattern_rec->data, CMD_LOOP_SEEK, f, f->new_offset);
 		
-		if( !rove_file_is_active(f) )
-			rove_file_force_monome_update(f);
-
 		rove_file_on_quantize(f, rove_file_seek);
 
 		break;
