@@ -94,20 +94,12 @@ void rove_pattern_process_patterns(rove_state_t *state) {
 						
 				switch( s->cmd ) {
 				case CMD_GROUP_DEACTIVATE:
-					s->file->status = FILE_STATUS_DEACTIVATE;
+					rove_file_deactivate(s->file);
 					break;
 							
 				case CMD_LOOP_SEEK:
-					if( !rove_file_is_active(s->file) ) {
-						s->file->play_offset = s->arg;
-						s->file->new_offset  = -1;
-								
-						s->file->force_monome_update = 1;
-						rove_file_activate(s->file);
-					} else {
-						s->file->new_offset = s->arg;
-						rove_file_seek(s->file);
-					}
+					s->file->new_offset = s->arg;
+					rove_file_seek(s->file);
 							
 					break;
 				}

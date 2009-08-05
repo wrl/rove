@@ -154,30 +154,6 @@ void rove_file_inc_play_pos(rove_file_t *self, sf_count_t delta) {
 		rove_file_set_play_pos(self, self->play_offset + delta);
 }
 
-void rove_file_activate(rove_file_t *self) {
-	if( self->group->active_loop )
-		if( self->group->active_loop != self )
-			if( rove_file_is_active(self->group->active_loop) )
-				self->group->active_loop->status = FILE_STATUS_DEACTIVATE;
-
-	self->group->active_loop = self;
-	self->status = FILE_STATUS_ACTIVE;
-	
-	return;
-}
-
-void rove_file_deactivate(rove_file_t *self) {
-	if( self->group->active_loop == self )
-		self->group->active_loop = NULL;
-	
-	self->status = FILE_STATUS_INACTIVE;
-}
-
-void rove_file_seek(rove_file_t *self) {
-	rove_file_set_play_pos(self, self->new_offset);
-}
-
-#if 0
 void rove_file_change_status(rove_file_t *self, rove_file_status_t nstatus) {
 	switch(self->status) {
 	case FILE_STATUS_ACTIVE:
@@ -188,6 +164,7 @@ void rove_file_change_status(rove_file_t *self, rove_file_status_t nstatus) {
 		case FILE_STATUS_INACTIVE:
 			if( self->group->active_loop == self )
 				self->group->active_loop = NULL;
+	
 			break;
 		}
 		break;
@@ -199,7 +176,9 @@ void rove_file_change_status(rove_file_t *self, rove_file_status_t nstatus) {
 			if( self->group->active_loop )
 				if( self->group->active_loop != self )
 					if( rove_file_is_active(self->group->active_loop) )
-						self->group->active_loop->status = FILE_STATUS_DEACTIVATE;
+						rove_file_deactivate(self->group->active_loop);
+
+			self->group->active_loop = self;
 
 			break;
 
@@ -210,8 +189,17 @@ void rove_file_change_status(rove_file_t *self, rove_file_status_t nstatus) {
 	}
 
 	self->status = nstatus;
+	rove_file_force_monome_update(self);
 }
-#endif
+
+void rove_file_deactivate(rove_file_t *self) {
+	rove_file_change_status(self, FILE_STATUS_INACTIVE);
+}
+
+void rove_file_seek(rove_file_t *self) {
+	rove_file_change_status(self, FILE_STATUS_ACTIVE);
+	rove_file_set_play_pos(self, self->new_offset);
+}
 
 void rove_file_on_quantize(rove_file_t *self, rove_quantize_callback_t cb) {
 	if( cb )
@@ -220,4 +208,9 @@ void rove_file_on_quantize(rove_file_t *self, rove_quantize_callback_t cb) {
 		self->mapped_monome->quantize_field &= ~(1 << self->y);
 
 	self->quantize_callback = cb;
+}
+
+void rove_file_force_monome_update(rove_file_t *self) {
+	self->force_monome_update = 1;
+	self->mapped_monome->dirty_field |= 1 << self->y;
 }

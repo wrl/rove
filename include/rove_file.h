@@ -33,10 +33,10 @@ void rove_file_free(rove_file_t*self);
 void rove_file_set_play_pos(rove_file_t *self, sf_count_t pos);
 void rove_file_inc_play_pos(rove_file_t *self, sf_count_t delta);
 
-void rove_file_activate(rove_file_t *self);
 void rove_file_deactivate(rove_file_t *self);
 void rove_file_seek(rove_file_t *self);
 
 void rove_file_on_quantize(rove_file_t *self, rove_quantize_callback_t cb);
+void rove_file_force_monome_update(rove_file_t *self);
 
 #endif

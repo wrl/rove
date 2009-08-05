@@ -73,34 +73,44 @@ static void usage() {
 		   "  -l, --osc-listen-port=PORT\n");
 }
 
-static void main_loop(rove_state_t *state) {
-	rove_list_member_t *m;
+static void monome_display_loop(const rove_state_t *state) {
+	int j, group_count, next_bit;
+	uint16_t dfield;
+
 	struct timespec req;
+
+	rove_monome_t *monome = state->monome;
+	rove_group_t *g;
 	rove_file_t *f;
-	
+
 	req.tv_sec  = 0;
 	req.tv_nsec = 1000000000 / 30; /* 30 fps */
 	
-	while(1) {
-		nanosleep(&req, NULL);
+	for(;;) {
+		group_count = state->group_count;
 
-		rove_list_foreach(state->files, m, f) {
-			switch( f->status ) {
-			case FILE_STATUS_DEACTIVATE:
-				if( f->group->active_loop == f )
-					monome_led_off(state->monome, f->group->idx, 0);
-				
-				rove_file_deactivate(f);
-				rove_monome_blank_file_row(state->monome, f);
-				
-			case FILE_STATUS_INACTIVE:
+		for( j = 0; j < group_count; j++ ) {
+			g = &state->groups[j];
+			f = g->active_loop;
+
+			if( !f )
 				continue;
-				
-			default:
-				rove_monome_display_file(state, f);
-				break;
-			}
+
+			rove_monome_display_file(f);
 		}
+
+		dfield = monome->dirty_field >> 1;
+
+		for( j = 0; dfield; dfield >>= next_bit ) {
+			next_bit = ffs(dfield);
+			j += next_bit;
+
+			f = (rove_file_t *) state->monome->callbacks[j].data;
+			monome->dirty_field &= ~(1 << f->y);
+			rove_monome_display_file(f);
+		}
+
+		nanosleep(&req, NULL);
 	}
 }
 
@@ -476,7 +486,7 @@ int main(int argc, char **argv) {
 	atexit(cleanup);
 	
 	rove_monome_run_thread(state.monome);
-	main_loop(&state);
+	monome_display_loop(&state);
 
 	return 0;
 }

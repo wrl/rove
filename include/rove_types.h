@@ -35,8 +35,6 @@
 
 typedef enum {
 	FILE_STATUS_ACTIVE,
-	
-	FILE_STATUS_DEACTIVATE,
 	FILE_STATUS_INACTIVE
 } rove_file_status_t;
 

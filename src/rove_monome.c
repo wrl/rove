@@ -251,7 +251,7 @@ static void group_off_handler(rove_monome_handler_t *self, rove_state_t *state, 
 		rove_pattern_append_step(state->pattern_rec->data, CMD_GROUP_DEACTIVATE, f, 0);
 				
 	/* stop the active file */
-	f->status = FILE_STATUS_DEACTIVATE;
+	rove_file_deactivate(f);
 }
 
 static void control_row_handler(rove_monome_handler_t *self, rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type) {
@@ -306,15 +306,10 @@ void file_row_handler(rove_monome_handler_t *self, rove_state_t *state, rove_mon
 		if( state->pattern_rec )
 			rove_pattern_append_step(state->pattern_rec->data, CMD_LOOP_SEEK, f, f->new_offset);
 		
-		if( !rove_file_is_active(f) ) {
-			f->force_monome_update = 1;
-			
-			rove_file_on_quantize(f, rove_file_activate);
-			
-			f->play_offset = f->new_offset;
-			f->new_offset  = -1;
-		} else
-			rove_file_on_quantize(f, rove_file_seek);
+		if( !rove_file_is_active(f) )
+			rove_file_force_monome_update(f);
+
+		rove_file_on_quantize(f, rove_file_seek);
 
 		break;
 
@@ -396,43 +391,39 @@ static void initialize_callbacks(rove_state_t *state, rove_monome_t *monome) {
 	}
 }
 
-void rove_monome_blank_file_row(rove_monome_t *monome, rove_file_t *f) {
-	uint8_t row[2] = {0, 0};
-
-	monome_led_row(monome, f->y + f->monome_pos.y, row);
-}
-
-void rove_monome_display_file(rove_state_t *state, rove_file_t *f) {
-	rove_monome_t *monome = state->monome;
+void rove_monome_display_file(rove_file_t *f) {
+	rove_monome_t *monome = f->mapped_monome;
 	rove_monome_position_t pos;
-	uint8_t row[2];
+	uint8_t row[2] = {0, 0};
 	uint16_t r;
-	
+
 	calculate_monome_pos(f->file_length * f->channels, rove_file_get_play_pos(f), f->row_span, (f->columns) ? f->columns : monome->cols, &pos);
-	
+
 	if( MONOME_POS_CMP(&pos, &f->monome_pos_old) || f->force_monome_update ) {
 		if( f->force_monome_update ) {
-			monome_led_on(monome, f->group->idx, 0);
-			f->force_monome_update = 0;
+			if( !f->group->active_loop )
+				monome_led_off(f->mapped_monome, f->group->idx, 0);
+			else
+				monome_led_on(f->mapped_monome, f->group->idx, 0);
 		}
 
-		if( pos.y != f->monome_pos_old.y ) {
-			row[0] = row[1] = 0;
-
+		if( pos.y != f->monome_pos_old.y ) 
 			monome_led_row(monome, f->y + f->monome_pos_old.y, row);
-		}
-		
-		MONOME_POS_CPY(&f->monome_pos_old, &pos);
-	
-		r      = 1 << pos.x;
-		row[0] = r & 0x00FF;
-		row[1] = r >> 8;
 
+		MONOME_POS_CPY(&f->monome_pos_old, &pos);
+
+		if( f->status == FILE_STATUS_ACTIVE ) {
+			r      = 1 << pos.x;
+			row[0] = r & 0x00FF;
+			row[1] = r >> 8;
+		}
 
 		monome_led_row(monome, f->y + pos.y, row);
 	}
 
 	MONOME_POS_CPY(&f->monome_pos, &pos);
+
+	f->force_monome_update = 0;
 }
 
 void rove_monome_run_thread(rove_monome_t *monome) {
@@ -475,6 +466,9 @@ int rove_monome_init(rove_state_t *state, const char *osc_prefix, const char *os
 	monome->cols       = cols;
 	monome->rows       = rows;
 	monome->mod_keys   = 0;
+
+	monome->quantize_field = 0;
+	monome->dirty_field    = 0;
 	
 	initialize_callbacks(state, monome);
 
