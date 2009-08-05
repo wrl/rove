@@ -106,7 +106,6 @@ static void monome_display_loop(const rove_state_t *state) {
 			j += next_bit;
 
 			f = (rove_file_t *) state->monome->callbacks[j].data;
-			monome->dirty_field &= ~(1 << f->y);
 			rove_monome_display_file(f);
 		}
 

@@ -405,6 +405,9 @@ void rove_monome_display_file(rove_file_t *f) {
 				monome_led_off(f->mapped_monome, f->group->idx, 0);
 			else
 				monome_led_on(f->mapped_monome, f->group->idx, 0);
+
+			monome->dirty_field &= ~(1 << f->y);
+			f->force_monome_update = 0;
 		}
 
 		if( pos.y != f->monome_pos_old.y ) 
@@ -423,7 +426,6 @@ void rove_monome_display_file(rove_file_t *f) {
 
 	MONOME_POS_CPY(&f->monome_pos, &pos);
 
-	f->force_monome_update = 0;
 }
 
 void rove_monome_run_thread(rove_monome_t *monome) {
