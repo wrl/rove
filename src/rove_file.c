@@ -26,6 +26,7 @@
 #endif
 
 #include "rove_types.h"
+#include "rove_group.h"
 #include "rove_file.h"
 
 static void rove_file_init(rove_file_t *self) {
@@ -172,14 +173,7 @@ void rove_file_change_status(rove_file_t *self, rove_file_status_t nstatus) {
 	case FILE_STATUS_INACTIVE:
 		switch(nstatus) {
 		case FILE_STATUS_ACTIVE:
-			/* replace this with rove_group_ logic */
-			if( self->group->active_loop )
-				if( self->group->active_loop != self )
-					if( rove_file_is_active(self->group->active_loop) )
-						rove_file_deactivate(self->group->active_loop);
-
-			self->group->active_loop = self;
-
+			rove_group_activate_file(self);
 			break;
 
 		case FILE_STATUS_INACTIVE:
