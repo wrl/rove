@@ -84,7 +84,7 @@ static void monome_display_loop(const rove_state_t *state) {
 	rove_file_t *f;
 
 	req.tv_sec  = 0;
-	req.tv_nsec = 1000000000 / 30; /* 30 fps */
+	req.tv_nsec = 1000000000 / 80; /* 80 fps */
 	
 	for(;;) {
 		group_count = state->group_count;
