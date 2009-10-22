@@ -20,10 +20,11 @@
 #define _ROVE_TYPES_H
 
 #include <stdint.h>
-#include <lo/lo.h>
+#include <pthread.h>
+
+#include <monome.h>
 #include <jack/jack.h>
 #include <sndfile.h>
-#include <pthread.h>
 
 #ifdef HAVE_SRC
 #include <samplerate.h>
@@ -148,9 +149,9 @@ struct rove_monome_handler {
 };
 
 struct rove_monome {
-	char *osc_prefix;
-	lo_server_thread *st;
-	lo_address *outgoing;
+	monome_t *dev;
+
+	pthread_t thread;
 
 	uint16_t quantize_field;
 	uint16_t dirty_field;

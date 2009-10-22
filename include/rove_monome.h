@@ -19,15 +19,8 @@
 #ifndef _ROVE_MONOME_H
 #define _ROVE_MONOME_H
 
-#include <lo/lo.h>
-
 #include "rove.h"
 #include "rove_file.h"
-
-void monome_led_row_16(rove_monome_t *monome, uint8_t row, uint8_t *row_data);
-void monome_clear(rove_monome_t *monome, uint8_t mode);
-void monome_led_on(rove_monome_t *monome, uint8_t x, uint8_t y);
-void monome_led_off(rove_monome_t *monome, uint8_t x, uint8_t y);
 
 void rove_monome_run_thread(rove_monome_t *monome);
 void rove_monome_stop_thread(rove_monome_t *monome);
