@@ -25,11 +25,6 @@ CC="gcc";
 CC_VERSION=;
 PKGCONFIG_VERSION=;
 
-HAVE_LO=;
-LO_VERSION=;
-LO_CFLAGS="";
-LO_LIBS="-llo -lpthread";
-
 HAVE_MONOME=;
 MONOME_VERSION=;
 MONOME_CFLAGS="";
@@ -212,44 +207,6 @@ EOF
 	return 0;
 }
 
-check_lo () {
-	cat <<EOF > .conftests/lo.c
-#include <lo/lo.h>
-
-int main(int argc, char **argv) {
-	lo_address a = lo_address_new(NULL, NULL);
-	
-	if( !a )
-		return 1;
-	
-	lo_address_free(a);
-	return 0;
-}
-EOF
-
-	compile_and_run lo $LO_CFLAGS $LO_LIBS;
-	RET=$?;
-	
-	if [ $RET -ne 0 ]; then
-		return $RET;
-	fi
-	
-	HAVE_LO=1;
-	
-	if [ $PKGCONFIG_VERSION ]; then
-		CMD="pkg-config --modversion liblo"
-		try_command $CMD;
-		
-		if [ $? -ne 0 ]; then
-			return 0;
-		fi
-		
-		LO_VERSION=`$CMD`;
-	fi
-
-	return 0;
-}
-
 check_monome () {
 	cat <<EOF > .conftests/monome.c
 #include <monome.h>
@@ -273,7 +230,7 @@ EOF
 		return $RET;
 	fi
 	
-	HAVE_LO=1;
+	HAVE_MONOME=1;
 	
 	if [ $PKGCONFIG_VERSION ]; then
 		CMD="pkg-config --modversion libmonome"
@@ -426,23 +383,11 @@ if check_monome; then
 	style_success "found libmonome $MONOME_VERSION";
 else
 	style_error "no libmonome :(";
-fi
 
-echo_n "    checking for liblo:           ";
-if check_lo; then
-	style_success "found liblo $LO_VERSION";
-else
-	style_error "no liblo :(";
-
-	echo   "";
-	echo   "  I couldn't find liblo on your system!  you will need it to compile rove."
-	echo_n "  if you're on "; style_distro -n "ubuntu"; echo_n ", make sure you have the "; style_package -n "liblo0-dev "; echo " package installed.";
-	echo_n "  users of "; style_distro -n "other distros"; echo_n " and "; style_distro -n "mac os X"; echo_n " should look for a "; style_package -n "liblo"; echo " package, or";
-	echo_n "  get the source from the liblo homepage at "; style_link -n "http://liblo.sourceforge.net/"; echo ".";
-	echo   "";
-	
-	cleanup;
-	exit 1;
+	echo "";
+	echo "  I couldn't find libmonome on your system!  you will need it to compile rove.";
+	echo_n "  The latest version of libmonome can be found at "; style_link -n "http://github.com/visinin/libmonome/archives/master"; echo ".";
+	echo "";
 fi
 
 echo_n "    checking for libsndfile:      ";
@@ -454,7 +399,7 @@ else
 	echo   "  I couldn't find libsndfile on your system!  you will need it to compile rove."
 	echo_n "  if you're on "; style_distro -n "ubuntu"; echo_n ", make sure you have the "; style_package -n "libsndfile1-dev"; echo " package installed.";
 	echo_n "  users of "; style_distro -n "other distros"; echo_n " and "; style_distro -n "mac os X"; echo_n " should look for a "; style_package -n "libsndfile"; echo " package, or";
-	echo_n "  get the source from the liblo homepage at "; style_link -n "http://mega-nerd.com/libsndfile/"; echo ".";
+	echo_n "  get the source from the libsndfile homepage at "; style_link -n "http://mega-nerd.com/libsndfile/"; echo ".";
 	echo "";
 	exit 1;
 fi
@@ -470,7 +415,7 @@ else
 	echo   ""
 	echo_n "  if you're on "; style_distro -n "ubuntu"; echo_n ", make sure you have the "; style_package -n "libsamplerate0-dev"; echo " package installed.";
 	echo_n "  users of "; style_distro -n "other distros"; echo_n " and "; style_distro -n "mac os X"; echo_n " should look for a "; style_package -n "libsamplerate"; echo " package, or";
-	echo_n "  get the source from the liblo homepage at "; style_link -n "http://mega-nerd.com/libsndfile/"; echo ".";
+	echo_n "  get the source from the libsamplerate homepage at "; style_link -n "http://mega-nerd.com/SRC/"; echo ".";
 	echo "";
 fi
 
@@ -481,9 +426,6 @@ export PREFIX  = $PREFIX
 export CC      = $CC
 export CFLAGS  = $CFLAGS
 export LDFLAGS = $LDFLAGS
-
-export LO_CFLAGS = $LO_CFLAGS
-export LO_LIBS   = $LO_LIBS
 
 export MONOME_CFLAGS = $MONOME_CFLAGS
 export MONOME_LIBS   = $MONOME_LIBS
