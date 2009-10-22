@@ -30,6 +30,11 @@ LO_VERSION=;
 LO_CFLAGS="";
 LO_LIBS="-llo -lpthread";
 
+HAVE_MONOME=;
+MONOME_VERSION=;
+MONOME_CFLAGS="";
+MONOME_LIBS="-lmonome";
+
 HAVE_JACK=;
 JACK_VERSION=;
 JACK_CFLAGS="";
@@ -245,6 +250,45 @@ EOF
 	return 0;
 }
 
+check_monome () {
+	cat <<EOF > .conftests/monome.c
+#include <monome.h>
+
+int main(int argc, char **argv) {
+	monome_t *monome;
+
+	if( !(monome = monome_open("osc.udp://127.0.0.1:42424/monome", "osc", "56565")) )
+		return 1;
+	
+	monome_close(monome);
+	
+	return 0;
+}
+EOF
+
+	compile_and_run monome $MONOME_CFLAGS $MONOME_LIBS;
+	RET=$?;
+	
+	if [ $RET -ne 0 ]; then
+		return $RET;
+	fi
+	
+	HAVE_LO=1;
+	
+	if [ $PKGCONFIG_VERSION ]; then
+		CMD="pkg-config --modversion libmonome"
+		try_command $CMD;
+		
+		if [ $? -ne 0 ]; then
+			return 0;
+		fi
+		
+		MONOME_VERSION=`$CMD`;
+	fi
+
+	return 0;
+}
+
 check_sndfile () {
 	cat <<EOF > .conftests/sndfile.c
 #include <sndfile.h>
@@ -377,6 +421,13 @@ else
 	exit 1;
 fi
 
+echo_n "    checking for libmonome:       ";
+if check_monome; then
+	style_success "found libmonome $MONOME_VERSION";
+else
+	style_error "no libmonome :(";
+fi
+
 echo_n "    checking for liblo:           ";
 if check_lo; then
 	style_success "found liblo $LO_VERSION";
@@ -433,6 +484,9 @@ export LDFLAGS = $LDFLAGS
 
 export LO_CFLAGS = $LO_CFLAGS
 export LO_LIBS   = $LO_LIBS
+
+export MONOME_CFLAGS = $MONOME_CFLAGS
+export MONOME_LIBS   = $MONOME_LIBS
 
 export JACK_CFLAGS = $JACK_CFLAGS
 export JACK_LIBS   = $JACK_LIBS
