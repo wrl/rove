@@ -16,9 +16,10 @@
  * along with rove.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <sndfile.h>
 #include <string.h>
 #include <stdlib.h>
+
+#include <sndfile.h>
 #include <jack/jack.h>
 
 #ifdef HAVE_SRC
@@ -139,13 +140,12 @@ rove_file_t *rove_file_new_from_path(const char *path) {
 
 void rove_file_set_play_pos(rove_file_t *self, sf_count_t p) {
 	if( p >= self->file_length )
-	   p -= self->file_length * (abs(p) / self->file_length);
+		p %= self->file_length;
 	
 	if( p < 0 )
-		p += self->file_length * (1 + (abs(p) / self->file_length));
+		p = self->file_length - (abs(p) % self->file_length);
 	
 	self->play_offset = p;
-	return;
 }
 
 void rove_file_inc_play_pos(rove_file_t *self, sf_count_t delta) {
