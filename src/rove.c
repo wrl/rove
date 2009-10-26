@@ -37,6 +37,8 @@
 #define DEFAULT_CONF_FILE_NAME  ".rove.conf"
 
 #define DEFAULT_MONOME_COLUMNS  8
+#define DEFAULT_MONOME_ROWS     8
+
 #define DEFAULT_OSC_PREFIX      "rove"
 #define DEFAULT_OSC_HOST_PORT   "8080"
 #define DEFAULT_OSC_LISTEN_PORT "8000"
@@ -254,12 +256,13 @@ static int load_session_file(const char *path, rove_state_t *state, int *c) {
 	return 0;
 }
 
-static int load_user_conf(int *c, char **op, char **ohp, char **olp) {
+static int load_user_conf(int *c, int *r, char **op, char **ohp, char **olp) {
 	char *osc_prefix, *osc_host_port, *osc_listen_port, *conf;
-	int cols;
+	int cols, rows;
 
 	rove_config_var_t monome_vars[] = {
 		{"columns", &cols, INT, 'c'},
+		{"rows",    &rows, INT, 'r'},
 		{NULL}
 	};
 	
@@ -277,6 +280,7 @@ static int load_user_conf(int *c, char **op, char **ohp, char **olp) {
 	};
 	
 	cols            = 0;
+	rows            = 0;
 	osc_prefix      = NULL;
 	osc_host_port   = NULL;
 	osc_listen_port = NULL;
@@ -291,6 +295,9 @@ static int load_user_conf(int *c, char **op, char **ohp, char **olp) {
 	
 	if( cols && !*c )
 		*c = ((cols - 1) & 0xF) + 1;
+
+	if( rows && !*r )
+		*r = ((rows - 1) & 0xF) + 1;
 	
 	if( osc_prefix && !*op ) {
 		if( *osc_prefix == '/' ) { /* remove the leading slash if there is one */
@@ -359,10 +366,11 @@ static void cleanup() {
 
 int main(int argc, char **argv) {
 	char *osc_prefix, *osc_host_port, *osc_listen_port, *session_file, c;
-	int cols, i;
+	int cols, rows, i;
 	
 	struct option arguments[] = {
 		{"monome-columns",	required_argument, 0, 'c'},
+		{"monome-rows",		required_argument, 0, 'r'},
 		{"osc-prefix", 		required_argument, 0, 'p'},
 		{"osc-host-port", 	required_argument, 0, 'h'},
 		{"osc-listen-port",	required_argument, 0, 'l'},
@@ -372,6 +380,7 @@ int main(int argc, char **argv) {
 	memset(&state, 0, sizeof(rove_state_t));
 	
 	cols            = 0;
+	rows            = 0;
 	session_file    = NULL;
 	osc_prefix      = NULL;
 	osc_host_port   = NULL;
@@ -383,6 +392,10 @@ int main(int argc, char **argv) {
 		switch( c ) {
 		case 'c':
 			cols = ((atoi(optarg) - 1) & 0xF) + 1;
+			break;
+			
+		case 'r':
+			rows = ((atoi(optarg) - 1) & 0xF) + 1;
 			break;
 			
 		case 'p':
@@ -448,7 +461,7 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 	
-	if( load_user_conf(&cols, &osc_prefix, &osc_host_port, &osc_listen_port) )
+	if( load_user_conf(&cols, &rows, &osc_prefix, &osc_host_port, &osc_listen_port) )
 		return 1;
 		
 	if( rove_list_is_empty(state.files) ) {
@@ -466,7 +479,8 @@ int main(int argc, char **argv) {
 						 (osc_prefix) ? osc_prefix : DEFAULT_OSC_PREFIX,
 						 (osc_host_port) ? osc_host_port : DEFAULT_OSC_HOST_PORT,
 						 (osc_listen_port) ? osc_listen_port : DEFAULT_OSC_LISTEN_PORT,
-						 (cols) ? cols : DEFAULT_MONOME_COLUMNS) )
+						 (cols) ? cols : DEFAULT_MONOME_COLUMNS,
+						 (rows) ? rows : DEFAULT_MONOME_ROWS) )
 		return 1;
 
 	if( osc_prefix )

@@ -16,6 +16,8 @@
  * along with rove.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <assert.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -28,6 +30,7 @@
 #include "rove_jack.h"
 #include "rove_list.h"
 #include "rove_util.h"
+#include "rove_monome.h"
 #include "rove_pattern.h"
 
 #define SHIFT 0x01
@@ -200,12 +203,12 @@ static void group_off_handler(rove_monome_handler_t *self, rove_state_t *state, 
 }
 
 static void control_row_handler(rove_monome_handler_t *self, rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type) {
-	rove_monome_handler_t *controls = self->data, *callback;
+	rove_monome_handler_t *callback;
 	
 	if( y > monome->cols )
 		return;
 	
-	if( !(callback = &controls[x]) )
+	if( !(callback = &monome->controls[x]) )
 		return;
 	
 	if( callback->cb )
@@ -271,6 +274,9 @@ static void button_handler(const monome_event_t *e, void *user_data) {
 	event_y    = e->y;
 	event_type = e->event_type;
 
+	if( event_y >= monome->rows )
+		return;
+
 	if( !(callback = &monome->callbacks[event_y]) )
 		return;
 	
@@ -281,7 +287,7 @@ static void button_handler(const monome_event_t *e, void *user_data) {
 }
 
 static void initialize_callbacks(rove_state_t *state, rove_monome_t *monome) {
-	rove_monome_handler_t *controls, *row;
+	rove_monome_handler_t *ctrl, *row;
 	uint8_t y, row_span;
 	int i, group_count;
 	
@@ -291,35 +297,39 @@ static void initialize_callbacks(rove_state_t *state, rove_monome_t *monome) {
 	/* leave room for two pattern recorders and the two mod keys */
 	group_count = MIN(state->group_count, monome->cols - 4);
 	
-	controls = calloc(monome->cols, sizeof(rove_monome_handler_t));
 	y = 0;
 	
 	for( i = 0; i < group_count; i++ ) {
-		controls[i].pos.x = i;
-		controls[i].pos.y = y;
+		ctrl = &monome->controls[i];
 
-		controls[i].cb    = group_off_handler;
-		controls[i].data  = (void *) &state->groups[i];
+		ctrl->pos.x = i;
+		ctrl->pos.y = y;
+
+		ctrl->cb    = group_off_handler;
+		ctrl->data  = (void *) &state->groups[i];
 	}
 	
 	for( ; i < group_count + 2; i++ ) {
-		controls[i].pos.x = i;
-		controls[i].pos.y = y;
+		ctrl = &monome->controls[i];
 
-		controls[i].cb    = pattern_handler;
-		controls[i].data  = NULL;
+		ctrl->pos.x = i;
+		ctrl->pos.y = y;
+
+		ctrl->cb    = pattern_handler;
+		ctrl->data  = NULL;
 	}
 	
-	monome->callbacks[y].cb   = control_row_handler;
-	monome->callbacks[y].data = controls;
-	monome->controls          = controls;
-	
+	monome->callbacks[y].cb = control_row_handler;
+
 	rove_list_foreach(state->files, m, f) {
 		f->mapped_monome = monome;
 		row_span = f->row_span;
 		y = f->y;
 		
 		for( i = y; i < y + row_span; i++ ) {
+			if( i >= monome->rows )
+				continue;
+
 			row = &monome->callbacks[i];
 			
 			row->pos.x = 0;
@@ -387,16 +397,25 @@ void rove_monome_free(rove_monome_t *monome) {
 	monome_clear(monome->dev, MONOME_CLEAR_OFF);
 	monome_close(monome->dev);
 
-	free(monome->callbacks[0].data);
 	free(monome->callbacks);
-	
+	free(monome->controls);
+
 	free(monome);
 }
 
-int rove_monome_init(rove_state_t *state, const char *osc_prefix, const char *osc_host_port, const char *osc_listen_port, const uint8_t cols, const uint8_t rows) {
-	rove_monome_t *monome = calloc(sizeof(rove_monome_t), 1);
+int rove_monome_init(rove_state_t *state, const char *osc_prefix, const char *osc_host_port, const char *osc_listen_port, const int cols, const int rows) {
+	rove_monome_t *monome;
 	char *buf;
 	
+	assert(state);
+	assert(osc_prefix);
+	assert(osc_host_port);
+	assert(osc_listen_port);
+	assert(cols > 0);
+	assert(rows > 0);
+
+	monome = calloc(sizeof(rove_monome_t), 1);
+
 	asprintf(&buf, "osc.udp://127.0.0.1:%s/%s", osc_host_port, osc_prefix);
 
 	if( !(monome->dev = monome_open(buf, "osc", osc_listen_port)) ) {
@@ -410,14 +429,15 @@ int rove_monome_init(rove_state_t *state, const char *osc_prefix, const char *os
 	monome_register_handler(monome->dev, MONOME_BUTTON_DOWN, button_handler, state);
 	monome_register_handler(monome->dev, MONOME_BUTTON_UP, button_handler, state);
 
-	monome->cols       = cols;
-	monome->rows       = rows;
-	monome->mod_keys   = 0;
+	monome->cols     = cols;
+	monome->rows     = rows;
+	monome->mod_keys = 0;
 
 	monome->quantize_field = 0;
 	monome->dirty_field    = 0;
 	
 	monome->callbacks = calloc(sizeof(rove_monome_handler_t), rows);
+	monome->controls  = calloc(sizeof(rove_monome_handler_t), cols);
 	initialize_callbacks(state, monome);
 
 	monome_clear(monome->dev, MONOME_CLEAR_OFF);

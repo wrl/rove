@@ -159,9 +159,9 @@ struct rove_monome {
 	rove_monome_handler_t *callbacks;
 	rove_monome_handler_t *controls;
 	
-	uint8_t mod_keys;
-	uint8_t rows;
-	uint8_t cols;
+	int mod_keys;
+	int rows;
+	int cols;
 };
 
 /**
