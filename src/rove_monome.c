@@ -108,7 +108,7 @@ static void pattern_handler(rove_monome_handler_t *self, rove_state_t *state, ro
 			if( (p = pattern_post_record(state, monome, x, y, state->pattern_rec)) )
 				p->status = PATTERN_STATUS_ACTIVATE;
 		
-		idx = x - state->group_count;
+		idx = x - (monome->cols - 4);
 		
 		p = rove_pattern_new();
 		p->status = PATTERN_STATUS_RECORDING;
@@ -216,17 +216,17 @@ static void control_row_handler(rove_monome_handler_t *self, rove_state_t *state
 	
 	switch( event_type ) {
 	case MONOME_BUTTON_DOWN:
-		if( x == state->group_count + 2 )
+		if( x == monome->rows - 2 )
 			monome->mod_keys |= SHIFT;
-		else if( x == state->group_count + 3 )
+		else if( x == monome->rows - 1 )
 			monome->mod_keys |= META;
 		
 		break;
 		
 	case MONOME_BUTTON_UP:
-		if( x == state->group_count + 2 )
+		if( x == monome->rows - 2 )
 			monome->mod_keys &= ~SHIFT;
-		else if( x == state->group_count + 3 )
+		else if( x == monome->rows - 1 )
 			monome->mod_keys &= ~META;
 
 		break;
@@ -309,7 +309,7 @@ static void initialize_callbacks(rove_state_t *state, rove_monome_t *monome) {
 		ctrl->data  = (void *) &state->groups[i];
 	}
 	
-	for( ; i < group_count + 2; i++ ) {
+	for( i = monome->cols - 4; i < monome->cols - 2; i++ ) {
 		ctrl = &monome->controls[i];
 
 		ctrl->pos.x = i;

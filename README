@@ -106,10 +106,10 @@ rove v0.2:
 		load it at startup!
 
 	what do i press?
-		 +-----------+ - - - - - +-----------+-----------+-----------+-----------+
-		 |   group   |  many of  | pattern 1 | pattern 2 |   shift   |    meta   |
-		 |    mute   |   those   | rec / tog | rec / tog |           |           |
-		 +-----------+ - - - - - +-----------+-----------+-----------+-----------+
+		       +-----------+ - - - - - +-----------+-----------+-----------+-----------+
+		 right |   group   |  many of  | pattern 1 | pattern 2 |   shift   |    meta   | left
+		  side |    mute   |   those   | rec / tog | rec / tog |           |           | side
+		       +-----------+ - - - - - +-----------+-----------+-----------+-----------+
 
 		at the moment, it's designed to mimic mlr.  the top row is the control row, with the
 		first [number of groups in session] buttons turning off their respective group.
