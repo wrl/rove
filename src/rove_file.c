@@ -36,24 +36,27 @@ static void rove_file_init(rove_file_t *self) {
 	self->volume = 1.0;
 }
 
-void rove_file_process(rove_file_t *self, jack_default_audio_sample_t **buffers, int channels, jack_nframes_t nframes) {
+void rove_file_process(rove_file_t *self, jack_default_audio_sample_t **buffers, int channels, jack_nframes_t nframes, jack_nframes_t sample_rate) {
 	sf_count_t i, o;
 	
 #ifdef HAVE_SRC
 	float b[2];
+	double speed;
+
+	speed = (sample_rate / (double) self->sample_rate) * (1 / self->speed);
 	
-	if( self->speed != 1 ) {
+	if( self->speed != 1 || self->sample_rate != sample_rate ) {
 		if( self->channels == 1 ) {
 			for( i = 0; i < nframes; i++ ) {
-				src_callback_read(self->src, self->speed, 1, b);
-				buffers[0][i] += b[0]   * self->volume;
-				buffers[1][i] += b[0]   * self->volume;
+				src_callback_read(self->src, speed, 1, b);
+				buffers[0][i] += b[0] * self->volume;
+				buffers[1][i] += b[0] * self->volume;
 			}
 		} else {
 			for( i = 0; i < nframes; i++ ) {
-				src_callback_read(self->src, self->speed, 1, b);
-				buffers[0][i] += b[0]   * self->volume;
-				buffers[1][i] += b[1]   * self->volume;
+				src_callback_read(self->src, speed, 1, b);
+				buffers[0][i] += b[0] * self->volume;
+				buffers[1][i] += b[1] * self->volume;
 			}
 		}
 	} else {

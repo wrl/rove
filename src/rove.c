@@ -197,10 +197,6 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 	f->group = &state->groups[group - 1];
 	f->play_direction = ( reverse ) ? FILE_PLAY_DIRECTION_REVERSE : FILE_PLAY_DIRECTION_FORWARD;
 	
-#ifdef HAVE_SRC
-	src_set_ratio(f->src, 1 / speed);
-#endif
-	
 	rove_list_push(state->files, TAIL, f);
 	printf("\t%d - %d\t%s\n", y, y + rows - 1, path);
 	

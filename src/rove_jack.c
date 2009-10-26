@@ -57,7 +57,7 @@ static int process(jack_nframes_t nframes, void *arg) {
 	jack_default_audio_sample_t *in_l;
 	jack_default_audio_sample_t *in_r;
 	
-	jack_nframes_t until_quantize, nframes_left, nframes_offset, i;
+	jack_nframes_t until_quantize, rate, nframes_left, nframes_offset, i;
 	int j, group_count, next_bit;
 	uint16_t qfield;
 	
@@ -67,6 +67,8 @@ static int process(jack_nframes_t nframes, void *arg) {
 	rove_file_t *f;
 	
 	group_count = state->group_count;
+
+	rate = jack_get_sample_rate(state->client);
 	
 	/* initialize each group's output buffers and zero them */
 	for( i = 0; i < group_count; i++ ) {
@@ -123,7 +125,7 @@ static int process(jack_nframes_t nframes, void *arg) {
 			buffers[1] = g->output_buffer_r + nframes_offset;
 			
 			if( f->process )
-				f->process(f, buffers, 2, nframes_left);
+				f->process(f, buffers, 2, nframes_left, rate);
 		}
 		
 		nframes_offset += nframes_left;
