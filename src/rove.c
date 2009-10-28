@@ -43,6 +43,9 @@
 
 #define MAX_LENGTH 1024
 
+#define usage_printf_exit(...)		do { usage(); printf(__VA_ARGS__); exit(EXIT_FAILURE); } while(0);
+#define usage_printf_return(...)	do { usage(); printf(__VA_ARGS__); return 1;           } while(0);
+
 static char *osc_prefix, *osc_host_port, *osc_listen_port;
 static int cols, rows, session_cols;
 
@@ -255,7 +258,7 @@ static int load_session_file(const char *path, rove_state_t *state) {
 	session_cols = 0;
 
 	if( rove_load_config(path, config_sections, 1) )
-		return 0;
+		return 1;
 	
 	return 0;
 }
@@ -314,23 +317,17 @@ static int load_user_conf() {
 	}
 	
 	if( ohp && !osc_host_port ) {
-		if( !is_numstr(ohp) ) {
-			usage();
-			printf("\nrove_config: \"%s\" is not a valid host port."
-				   "\n             please check your conf file!\n", ohp);
-			return 1;
-		}
+		if( !is_numstr(ohp) )
+			usage_printf_return("rove_config: \"%s\" is not a valid host port.\n"
+								"             please check your conf file!\n", ohp);
 
 		osc_host_port = ohp;
 	}
 	
 	if( olp && !osc_listen_port ) {
-		if( !is_numstr(olp) ) {
-			usage();
-			printf("\nrove_config: \"%s\" is not a valid listen port."
-				   "\n             please check your conf file!\n", olp);
-			return 1;
-		}
+		if( !is_numstr(olp) )
+			usage_printf_return("rove_config: \"%s\" is not a valid listen port.\n"
+								"             please check your conf file!\n", ohp);
 
 		osc_listen_port = olp;
 	}
@@ -403,37 +400,26 @@ int main(int argc, char **argv) {
 			break;
 			
 		case 'h':
-			if( !is_numstr(optarg) ) {
-				usage();
-				printf("\nerror: \"%s\" is not a valid host port.\n\n", optarg);
-				exit(EXIT_FAILURE);
-			}
+			if( !is_numstr(optarg) )
+				usage_printf_exit("error: \"%s\" is not a valid host port.\n\n", optarg);
 
 			osc_host_port = strdup(optarg);
 			break;
 			
 		case 'l':
-			if( !is_numstr(optarg) ) {
-				usage();
-				printf("\nerror: \"%s\" is not a valid listen port.\n\n", optarg);
-				exit(EXIT_FAILURE);
-			}
+			if( !is_numstr(optarg) )
+				usage_printf_exit("error: \"%s\" is not a valid listen port.\n\n", optarg);
 
 			osc_listen_port = strdup(optarg);
 			break;
 		}
 	}
 	
-	if( optind == argc ) {
-		usage();
-		printf("\nerror: you did not specify a session file!\n\n");
-		exit(EXIT_FAILURE);
-	}
+	if( optind == argc )
+		usage_printf_exit("error: you did not specify a session file!\n\n");
 	
 	session_file = argv[optind];
 
-	printf("\nhey, welcome to rove!\n\n");
-	
 	state.files    = rove_list_new();
 	state.patterns = rove_list_new();
 
@@ -444,23 +430,26 @@ int main(int argc, char **argv) {
 	pthread_cond_init(&state.monome_display_notification, NULL);
 
 	if( load_user_conf() )
-		return 1;
+		exit(EXIT_FAILURE);
 		
-	printf("you've got the following loops loaded:\n"
+	printf("\nhey, welcome to rove!\n\n"
+		   "you've got the following loops loaded:\n"
 		   "\t[rows]\t[file]\n");
 	
 	if( load_session_file(session_file, &state) ) {
 		printf("error parsing session file :(\n");
-		return 1;
+		exit(EXIT_FAILURE);
 	}
 	
 	if( rove_list_is_empty(state.files) ) {
 		fprintf(stderr, "\t(none, evidently.  get some and come play!)\n\n");
-		return 1;
+		exit(EXIT_FAILURE);
 	}
 	
-	if( rove_jack_init(&state) )
-		return 1;
+	if( rove_jack_init(&state) ) {
+		fprintf(stderr, "error initializing JACK :(\n");
+		exit(EXIT_FAILURE);
+	}
 	
 	rove_recalculate_bpm_variables(&state);
 	state.frames = state.snap_delay;
@@ -471,7 +460,7 @@ int main(int argc, char **argv) {
 						 (osc_listen_port) ? osc_listen_port : DEFAULT_OSC_LISTEN_PORT,
 						 (cols) ? cols : DEFAULT_MONOME_COLUMNS,
 						 (rows) ? rows : DEFAULT_MONOME_ROWS) )
-		return 1;
+		exit(EXIT_FAILURE);
 
 	if( osc_prefix )
 		free(osc_prefix);
@@ -483,7 +472,7 @@ int main(int argc, char **argv) {
 		free(osc_listen_port);
 	
 	if( rove_jack_activate(&state) )
-		return 1;
+		exit(EXIT_FAILURE);
 	
 	signal(SIGINT, exit_on_signal);
 	atexit(cleanup);
