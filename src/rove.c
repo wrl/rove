@@ -70,10 +70,6 @@ static rove_group_t *initialize_groups(const int group_count) {
 	rove_group_t *groups;
 	int i;
 	
-	/**
-	 * leave room for the four control buttons on the top row
-	 */
-
 	if( !(groups = calloc(sizeof(rove_group_t), group_count)) )
 		return NULL;
 
