@@ -44,7 +44,7 @@
 #define MAX_LENGTH 1024
 
 static char *osc_prefix, *osc_host_port, *osc_listen_port;
-static int cols, rows;
+static int cols, rows, session_cols;
 
 rove_state_t state;
 
@@ -204,7 +204,7 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 	f->y = y;
 	f->speed = speed;
 	f->row_span = r;
-	f->columns  = (c) ? ((c - 1) & 0xF) + 1 : 0;
+	f->columns  = (c) ? ((c - 1) & 0xF) + 1 : session_cols;
 	f->group = &state->groups[group - 1];
 	f->play_direction = ( reverse ) ? FILE_PLAY_DIRECTION_REVERSE : FILE_PLAY_DIRECTION_FORWARD;
 	
@@ -226,8 +226,6 @@ static void session_section_callback(const rove_config_section_t *section, void 
 }
 
 static int load_session_file(const char *path, rove_state_t *state) {
-	unsigned int c = 0;
-
 	rove_config_var_t file_vars[] = {
 		{"path",    NULL, STRING, 'p'},
 		{"groups",  NULL,    INT, 'g'},
@@ -244,7 +242,7 @@ static int load_session_file(const char *path, rove_state_t *state) {
 		{"groups",   &state->group_count,        INT, 'g'},
 		{"pattern1", &state->pattern_lengths[0], INT, '1'},
 		{"pattern2", &state->pattern_lengths[1], INT, '2'},
-		{"columns",  &cols,                      INT, 'c'},
+		{"columns",  &session_cols,              INT, 'c'},
 		{NULL}
 	};
 	
@@ -254,11 +252,10 @@ static int load_session_file(const char *path, rove_state_t *state) {
 		{NULL}
 	};
 	
+	session_cols = 0;
+
 	if( rove_load_config(path, config_sections, 1) )
 		return 0;
-	
-	if( c && !cols )
-		cols = ((c - 1) & 0xF) + 1;
 	
 	return 0;
 }
