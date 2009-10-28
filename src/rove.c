@@ -17,8 +17,6 @@
  */
 
 #include <getopt.h>
-#include <glob.h>
-#include <libgen.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
