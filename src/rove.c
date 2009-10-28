@@ -45,10 +45,26 @@
 
 #define MAX_LENGTH 1024
 
-/* 48 is ASCII '0', 57 is ASCII '9'. tests one character. */
-#define is_numeric(c) ((48 <= c) && (c <= 57))
+static char *osc_prefix, *osc_host_port, *osc_listen_port;
+static int cols, rows;
 
 rove_state_t state;
+
+static int is_numstr(char *str) {
+	/* scan through the string looking for either a NULL (end of string)
+	   or a non-numeric character */
+
+	/* 48 is ASCII '0', 57 is ASCII '9'. tests one character. */
+#define is_numeric(c) ((48 <= c) && (c <= 57))
+
+	for(; *str && is_numeric(*str); str++);
+
+	/* did we make it all the way through? */
+	if( *str )
+		return 0;
+
+	return 1;
+}
 
 static rove_group_t *initialize_groups(const int group_count) {
 	rove_group_t *groups;
@@ -70,9 +86,11 @@ static rove_group_t *initialize_groups(const int group_count) {
 static void usage() {
 	printf("Usage: rove [OPTION]... session_file.rv\n"
 		   "  -c, --monome-columns=COLUMNS\n"
+		   "  -r, --monome-rows=ROWS\n"
+		   "\n"
 		   "  -p, --osc-prefix=PREFIX\n"
 		   "  -h, --osc-host-port=PORT\n"
-		   "  -l, --osc-listen-port=PORT\n");
+		   "  -l, --osc-listen-port=PORT\n\n");
 }
 
 static void monome_display_loop(const rove_state_t *state) {
@@ -129,18 +147,17 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 	rove_state_t *state = arg;
 	static unsigned int y = 1;
 
-	unsigned int group, rows, cols, reverse, *v;
+	unsigned int c, r, group, reverse, *v;
 	rove_file_t *f;
 	double speed;
 	char *path;
 	
 	rove_config_pair_t *pair = NULL;
-	int c;
 	
 	path    = NULL;
 	group   = 0;
-	rows    = 1;
-	cols    = 0;
+	r       = 1;
+	c       = 0;
 	reverse = 0;
 	speed   = 1.0;
 	
@@ -163,11 +180,11 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 			break;
 			
 		case 'c':
-			v = &cols;
+			v = &c;
 			break;
 
 		case 'r':
-			v = &rows;
+			v = &r;
 			break;
 		}
 		
@@ -192,15 +209,15 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 	
 	f->y = y;
 	f->speed = speed;
-	f->row_span = rows;
-	f->columns  = (cols) ? ((cols - 1) & 0xF) + 1 : 0;
+	f->row_span = r;
+	f->columns  = (c) ? ((c - 1) & 0xF) + 1 : 0;
 	f->group = &state->groups[group - 1];
 	f->play_direction = ( reverse ) ? FILE_PLAY_DIRECTION_REVERSE : FILE_PLAY_DIRECTION_FORWARD;
 	
 	rove_list_push(state->files, TAIL, f);
-	printf("\t%d - %d\t%s\n", y, y + rows - 1, path);
+	printf("\t%d - %d\t%s\n", y, y + r - 1, path);
 	
-	y += rows;
+	y += r;
 	
  out:
 	free(path);
@@ -214,8 +231,8 @@ static void session_section_callback(const rove_config_section_t *section, void 
 	state->groups = initialize_groups(state->group_count); /* FIXME: can return null, handle properly */
 }
 
-static int load_session_file(const char *path, rove_state_t *state, int *c) {
-	unsigned int cols = 0;
+static int load_session_file(const char *path, rove_state_t *state) {
+	unsigned int c = 0;
 
 	rove_config_var_t file_vars[] = {
 		{"path",    NULL, STRING, 'p'},
@@ -246,26 +263,26 @@ static int load_session_file(const char *path, rove_state_t *state, int *c) {
 	if( rove_load_config(path, config_sections, 1) )
 		return 0;
 	
-	if( cols && !*c )
-		*c = ((cols - 1) & 0xF) + 1;
+	if( c && !cols )
+		cols = ((c - 1) & 0xF) + 1;
 	
 	return 0;
 }
 
-static int load_user_conf(int *c, int *r, char **op, char **ohp, char **olp) {
-	char *osc_prefix, *osc_host_port, *osc_listen_port, *conf;
-	int cols, rows;
+static int load_user_conf() {
+	char *op, *ohp, *olp, *conf;
+	int c, r;
 
 	rove_config_var_t monome_vars[] = {
-		{"columns", &cols, INT, 'c'},
-		{"rows",    &rows, INT, 'r'},
+		{"columns", &c, INT, 'c'},
+		{"rows",    &r, INT, 'r'},
 		{NULL}
 	};
 	
 	rove_config_var_t osc_vars[] = {
-		{"prefix",      &osc_prefix,      STRING, 'p'},
-		{"host-port",   &osc_host_port,   STRING, 'h'},
-		{"listen-port", &osc_listen_port, STRING, 'h'},
+		{"prefix",      &op,  STRING, 'p'},
+		{"host-port",   &ohp, STRING, 'h'},
+		{"listen-port", &olp, STRING, 'l'},
 		{NULL}
 	};
 	
@@ -275,11 +292,11 @@ static int load_user_conf(int *c, int *r, char **op, char **ohp, char **olp) {
 		{NULL}
 	};
 	
-	cols            = 0;
-	rows            = 0;
-	osc_prefix      = NULL;
-	osc_host_port   = NULL;
-	osc_listen_port = NULL;
+	c   = 0;
+	r   = 0;
+	op  = NULL;
+	ohp = NULL;
+	olp = NULL;
 
 	if( !(conf = user_config_path()) )
 		return 0;
@@ -289,54 +306,42 @@ static int load_user_conf(int *c, int *r, char **op, char **ohp, char **olp) {
 	
 	free(conf);
 	
-	if( cols && !*c )
-		*c = ((cols - 1) & 0xF) + 1;
+	if( c && !cols )
+		cols = ((c - 1) & 0xF) + 1;
 
-	if( rows && !*r )
-		*r = ((rows - 1) & 0xF) + 1;
+	if( r && !rows )
+		rows = ((r - 1) & 0xF) + 1;
 	
-	if( osc_prefix && !*op ) {
-		if( *osc_prefix == '/' ) { /* remove the leading slash if there is one */
-			conf = strdup(osc_prefix + 1);
-			free(osc_prefix);
-			osc_prefix = conf;
+	if( op && !osc_prefix ) {
+		if( *op == '/' ) { /* remove the leading slash if there is one */
+			conf = strdup(op + 1);
+			free(op);
+			op = conf;
 		}
 		
-		if( *op )
-			free(*op);
-		*op = osc_prefix;
+		osc_prefix = op;
 	}
 	
-	if( osc_host_port && !*ohp ) {
-		conf = osc_host_port;
-		do {
-			if( !is_numeric(*conf) ) {
-				usage();
-				printf("\nrove_config: \"%s\" is not a valid host port."
-					   "\n             please check your conf file!\n", osc_host_port);
-				return 1;
-			}
-		} while( *++conf );
-		
-		if( *ohp )
-			free(*ohp);
-		*ohp = osc_host_port;
+	if( ohp && !osc_host_port ) {
+		if( !is_numstr(ohp) ) {
+			usage();
+			printf("\nrove_config: \"%s\" is not a valid host port."
+				   "\n             please check your conf file!\n", ohp);
+			return 1;
+		}
+
+		osc_host_port = ohp;
 	}
 	
-	if( osc_listen_port && !*olp ) {
-		conf = osc_listen_port;
-		do {
-			if( !is_numeric(*conf) ) {
-				usage();
-				printf("\nrove_config: \"%s\" is not a valid listen port."
-					   "\n             please check your conf file!\n", osc_listen_port);
-				return 1;
-			}
-		} while( *++conf );
-		
-		if( *olp )
-			free(*olp);
-		*olp = osc_listen_port;
+	if( olp && !osc_listen_port ) {
+		if( !is_numstr(olp) ) {
+			usage();
+			printf("\nrove_config: \"%s\" is not a valid listen port."
+				   "\n             please check your conf file!\n", olp);
+			return 1;
+		}
+
+		osc_listen_port = olp;
 	}
 
 	return 0;
@@ -361,10 +366,11 @@ static void cleanup() {
 }
 
 int main(int argc, char **argv) {
-	char *osc_prefix, *osc_host_port, *osc_listen_port, *session_file, c;
-	int cols, rows, i;
+	char *session_file, c;
+	int i;
 	
 	struct option arguments[] = {
+		{"help",			no_argument,       0, 'u'}, /* for "usage", get it?  hah, hah... */
 		{"monome-columns",	required_argument, 0, 'c'},
 		{"monome-rows",		required_argument, 0, 'r'},
 		{"osc-prefix", 		required_argument, 0, 'p'},
@@ -384,8 +390,12 @@ int main(int argc, char **argv) {
 	
 	opterr = 0;
 	
-	while( (c = getopt_long(argc, argv, "c:p:h:l:", arguments, &i)) > 0 ) {
+	while( (c = getopt_long(argc, argv, "uc:r:p:h:l:", arguments, &i)) > 0 ) {
 		switch( c ) {
+		case 'u':
+			usage();
+			exit(EXIT_FAILURE); /* should we exit after displaying usage? (i think so) */
+
 		case 'c':
 			cols = ((atoi(optarg) - 1) & 0xF) + 1;
 			break;
@@ -399,33 +409,26 @@ int main(int argc, char **argv) {
 				optarg++;
 			
 			osc_prefix = strdup(optarg);
-			
 			break;
 			
 		case 'h':
+			if( !is_numstr(optarg) ) {
+				usage();
+				printf("\nerror: \"%s\" is not a valid host port.\n\n", optarg);
+				exit(EXIT_FAILURE);
+			}
+
 			osc_host_port = strdup(optarg);
-
-			do {
-				if( !is_numeric(*optarg) ) {
-					usage();
-					printf("\nerror: \"%s\" is not a valid host port.\n\n", osc_host_port);
-					return 1;
-				}
-			} while( *++optarg );
-
 			break;
 			
 		case 'l':
+			if( !is_numstr(optarg) ) {
+				usage();
+				printf("\nerror: \"%s\" is not a valid listen port.\n\n", optarg);
+				exit(EXIT_FAILURE);
+			}
+
 			osc_listen_port = strdup(optarg);
-
-			do {
-				if( !is_numeric(*optarg) ) {
-					usage();
-					printf("\nerror: \"%s\" is not a valid listen port.\n\n", osc_listen_port);
-					return 1;
-				}
-			} while( *++optarg );
-
 			break;
 		}
 	}
@@ -433,7 +436,7 @@ int main(int argc, char **argv) {
 	if( optind == argc ) {
 		usage();
 		printf("\nerror: you did not specify a session file!\n\n");
-		return 1;
+		exit(EXIT_FAILURE);
 	}
 	
 	session_file = argv[optind];
@@ -449,17 +452,17 @@ int main(int argc, char **argv) {
 	pthread_mutex_init(&state.monome_mutex, NULL);
 	pthread_cond_init(&state.monome_display_notification, NULL);
 
+	if( load_user_conf() )
+		return 1;
+		
 	printf("you've got the following loops loaded:\n"
 		   "\t[rows]\t[file]\n");
 	
-	if( load_session_file(session_file, &state, &cols) ) {
+	if( load_session_file(session_file, &state) ) {
 		printf("error parsing session file :(\n");
 		return 1;
 	}
 	
-	if( load_user_conf(&cols, &rows, &osc_prefix, &osc_host_port, &osc_listen_port) )
-		return 1;
-		
 	if( rove_list_is_empty(state.files) ) {
 		fprintf(stderr, "\t(none, evidently.  get some and come play!)\n\n");
 		return 1;
