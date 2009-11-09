@@ -107,7 +107,7 @@ rove v0.2:
 
 	what do i press?
 		       +-----------+ - - - - - +-----------+-----------+-----------+-----------+
-		 right |   group   |  many of  | pattern 1 | pattern 2 |   shift   |    meta   | left
+		  left |   group   |  many of  | pattern 1 | pattern 2 |   shift   |    meta   | right
 		  side |    mute   |   those   | rec / tog | rec / tog |           |           | side
 		       +-----------+ - - - - - +-----------+-----------+-----------+-----------+
 
