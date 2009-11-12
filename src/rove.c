@@ -144,7 +144,7 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 	rove_state_t *state = arg;
 	static unsigned int y = 1;
 
-	unsigned int c, r, group, reverse, *v;
+	unsigned int e, c, r, group, reverse, *v;
 	rove_file_t *f;
 	double speed;
 	char *path;
@@ -158,8 +158,8 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 	reverse = 0;
 	speed   = 1.0;
 	
-	while( (c = rove_config_getvar(section, &pair)) ) {
-		switch( c ) {
+	while( (e = rove_config_getvar(section, &pair)) ) {
+		switch( e ) {
 		case 'p':
 			path = pair->value;
 			continue;
@@ -185,7 +185,7 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 			break;
 		}
 		
-		*v = (int) strtol(pair->value, NULL, 10);
+		*v = (unsigned int) strtol(pair->value, NULL, 10);
 	}
 	
 	if( !path ) {
