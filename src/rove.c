@@ -90,13 +90,13 @@ static void usage() {
 		   "  -l, --osc-listen-port=PORT\n\n");
 }
 
-static void monome_display_loop(const rove_state_t *state) {
+static void monome_display_loop() {
 	int j, group_count, next_bit;
 	uint16_t dfield;
 
 	struct timespec req;
 
-	rove_monome_t *monome = state->monome;
+	rove_monome_t *monome = state.monome;
 	rove_group_t *g;
 	rove_file_t *f;
 
@@ -104,16 +104,17 @@ static void monome_display_loop(const rove_state_t *state) {
 	req.tv_nsec = 1000000000 / 80; /* 80 fps */
 	
 	for(;;) {
-		group_count = state->group_count;
+		group_count = state.group_count;
 
 		for( j = 0; j < group_count; j++ ) {
-			g = &state->groups[j];
+			g = &state.groups[j];
 			f = g->active_loop;
 
 			if( !f )
 				continue;
 
-			rove_monome_display_file(f);
+			if( f->monome_out_cb )
+				f->monome_out_cb(f, state.monome);
 		}
 
 		dfield = monome->dirty_field >> 1;
@@ -122,8 +123,10 @@ static void monome_display_loop(const rove_state_t *state) {
 			next_bit = ffs(dfield);
 			j += next_bit;
 
-			f = (rove_file_t *) state->monome->callbacks[j].data;
-			rove_monome_display_file(f);
+			f = (rove_file_t *) state.monome->callbacks[j].data;
+
+			if( f->monome_out_cb )
+				f->monome_out_cb(f, state.monome);
 		}
 
 		nanosleep(&req, NULL);
@@ -141,8 +144,7 @@ static char *user_config_path() {
 }
 
 static void file_section_callback(const rove_config_section_t *section, void *arg) {
-	rove_state_t *state = arg;
-	static unsigned int y = 1;
+	static int y = 1;
 
 	unsigned int e, c, r, group, reverse, *v;
 	rove_file_t *f;
@@ -201,17 +203,17 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 	if( !(f = rove_file_new_from_path(path)) )
 		goto out;
 	
-	if( group > state->group_count )
-		group = state->group_count;
+	if( group > state.group_count )
+		group = state.group_count;
 	
 	f->y = y;
 	f->speed = speed;
 	f->row_span = r;
 	f->columns  = (c) ? ((c - 1) & 0xF) + 1 : session_cols;
-	f->group = &state->groups[group - 1];
+	f->group = &state.groups[group - 1];
 	f->play_direction = ( reverse ) ? FILE_PLAY_DIRECTION_REVERSE : FILE_PLAY_DIRECTION_FORWARD;
 	
-	rove_list_push(state->files, TAIL, f);
+	rove_list_push(state.files, TAIL, f);
 	printf("\t%d - %d\t%s\n", y, y + r - 1, path);
 	
 	y += r;
@@ -222,13 +224,11 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 }
 
 static void session_section_callback(const rove_config_section_t *section, void *arg) {
-	rove_state_t *state = arg;
-	
 	rove_config_default_section_callback(section);
-	state->groups = initialize_groups(state->group_count); /* FIXME: can return null, handle properly */
+	state.groups = initialize_groups(state.group_count); /* FIXME: can return null, handle properly */
 }
 
-static int load_session_file(const char *path, rove_state_t *state) {
+static int load_session_file(const char *path) {
 	rove_config_var_t file_vars[] = {
 		{"path",    NULL, STRING, 'p'},
 		{"groups",  NULL,    INT, 'g'},
@@ -240,18 +240,18 @@ static int load_session_file(const char *path, rove_state_t *state) {
 	};
 	
 	rove_config_var_t session_vars[] = {
-		{"quantize", &state->beat_multiplier, DOUBLE, 'q'},
-		{"bpm",      &state->bpm,             DOUBLE, 'b'},
-		{"groups",   &state->group_count,        INT, 'g'},
-		{"pattern1", &state->pattern_lengths[0], INT, '1'},
-		{"pattern2", &state->pattern_lengths[1], INT, '2'},
-		{"columns",  &session_cols,              INT, 'c'},
+		{"quantize", &state.beat_multiplier, DOUBLE, 'q'},
+		{"bpm",      &state.bpm,             DOUBLE, 'b'},
+		{"groups",   &state.group_count,        INT, 'g'},
+		{"pattern1", &state.pattern_lengths[0], INT, '1'},
+		{"pattern2", &state.pattern_lengths[1], INT, '2'},
+		{"columns",  &session_cols,             INT, 'c'},
 		{NULL}
 	};
 	
 	rove_config_section_t config_sections[] = {
-		{"session", session_vars, session_section_callback, state},
-		{"file",    file_vars   , file_section_callback,    state},
+		{"session", session_vars, session_section_callback},
+		{"file",    file_vars   , file_section_callback},
 		{NULL}
 	};
 	
@@ -335,11 +335,11 @@ static int load_user_conf() {
 	return 0;
 }
 
-static void rove_recalculate_bpm_variables(rove_state_t *state) {
-	state->snap_delay = lrint(((60 / state->bpm) * state->beat_multiplier) * ((double) jack_get_sample_rate(state->client)));
+static void rove_recalculate_bpm_variables() {
+	state.snap_delay = lrint(((60 / state.bpm) * state.beat_multiplier) * ((double) jack_get_sample_rate(state.client)));
 	
-	if( !state->snap_delay )
-		state->snap_delay++;
+	if( !state.snap_delay )
+		state.snap_delay++;
 }
 
 static void exit_on_signal(int s) {
@@ -350,7 +350,7 @@ static void cleanup() {
 	rove_monome_stop_thread(state.monome);
 	rove_monome_free(state.monome);
 	
-	rove_jack_deactivate(&state);
+	rove_jack_deactivate();
 }
 
 int main(int argc, char **argv) {
@@ -436,7 +436,7 @@ int main(int argc, char **argv) {
 		   "you've got the following loops loaded:\n"
 		   "\t[rows]\t[file]\n");
 	
-	if( load_session_file(session_file, &state) ) {
+	if( load_session_file(session_file) ) {
 		printf("error parsing session file :(\n");
 		exit(EXIT_FAILURE);
 	}
@@ -446,16 +446,15 @@ int main(int argc, char **argv) {
 		exit(EXIT_FAILURE);
 	}
 	
-	if( rove_jack_init(&state) ) {
+	if( rove_jack_init() ) {
 		fprintf(stderr, "error initializing JACK :(\n");
 		exit(EXIT_FAILURE);
 	}
 	
-	rove_recalculate_bpm_variables(&state);
+	rove_recalculate_bpm_variables();
 	state.frames = state.snap_delay;
 	
-	if( rove_monome_init(&state,
-						 (osc_prefix) ? osc_prefix : DEFAULT_OSC_PREFIX,
+	if( rove_monome_init((osc_prefix) ? osc_prefix : DEFAULT_OSC_PREFIX,
 						 (osc_host_port) ? osc_host_port : DEFAULT_OSC_HOST_PORT,
 						 (osc_listen_port) ? osc_listen_port : DEFAULT_OSC_LISTEN_PORT,
 						 (cols) ? cols : DEFAULT_MONOME_COLUMNS,
@@ -471,14 +470,14 @@ int main(int argc, char **argv) {
 	if( osc_listen_port )
 		free(osc_listen_port);
 	
-	if( rove_jack_activate(&state) )
+	if( rove_jack_activate() )
 		exit(EXIT_FAILURE);
 	
 	signal(SIGINT, exit_on_signal);
 	atexit(cleanup);
 	
 	rove_monome_run_thread(state.monome);
-	monome_display_loop(&state);
+	monome_display_loop();
 
 	return 0;
 }
