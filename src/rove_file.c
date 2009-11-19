@@ -32,6 +32,25 @@
 #include "rove_monome.h"
 #include "rove_file.h"
 
+extern rove_state_t state;
+
+static sf_count_t calculate_play_pos(sf_count_t length, uint8_t x, uint8_t y, uint8_t reverse, uint8_t rows, uint8_t cols) {
+	double elapsed;
+	
+	x &= 0x0F;
+
+	if( reverse )
+		x += 1;
+	
+	x += y * cols;
+	elapsed = x / (double) (cols * rows);
+	
+	if( reverse )
+		return lrint(floor(elapsed * length));
+	else
+		return lrint(ceil(elapsed * length));
+}
+
 static void calculate_monome_pos(sf_count_t length, sf_count_t position, uint8_t rows, uint8_t cols, rove_monome_position_t *pos) {
 	double elapsed;
 	uint8_t x, y;
@@ -139,6 +158,37 @@ static void file_monome_out(rove_file_t *self, rove_monome_t *monome) {
 	MONOME_POS_CPY(&self->monome_pos, &pos);
 }
 
+static void file_monome_in(rove_file_t *self, rove_monome_t *monome, const int x, const int y, const int type) {
+	unsigned int cols;
+
+	rove_monome_position_t pos = {x, y - self->y};
+	
+	switch( type ) {
+	case MONOME_BUTTON_DOWN:
+		if( y < self->y || y > ( self->y + self->row_span - 1) )
+			return;
+		
+		cols = (self->columns) ? self->columns : monome->cols;
+		if( x > cols - 1 )
+			return;
+
+		self->new_offset =
+			calculate_play_pos(self->file_length, pos.x, pos.y,
+		                       (self->play_direction == FILE_PLAY_DIRECTION_REVERSE),
+		                       self->row_span, cols);
+		
+		if( state.pattern_rec )
+			rove_pattern_append_step(state.pattern_rec->data, CMD_LOOP_SEEK, self, self->new_offset);
+		
+		rove_file_on_quantize(self, rove_file_seek);
+
+		break;
+
+	case MONOME_BUTTON_UP:
+		break;
+	}
+}
+
 static void file_init(rove_file_t *self) {
 	self->status         = FILE_STATUS_INACTIVE;
 	self->play_direction = FILE_PLAY_DIRECTION_FORWARD;
@@ -146,6 +196,7 @@ static void file_init(rove_file_t *self) {
 
 	self->process_cb     = file_process;
 	self->monome_out_cb  = file_monome_out;
+	self->monome_in_cb   = file_monome_in;
 }
 
 void rove_file_free(rove_file_t *self) {

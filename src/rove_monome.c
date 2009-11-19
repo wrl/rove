@@ -36,23 +36,6 @@
 #define SHIFT 0x01
 #define META  0x02
 
-static sf_count_t calculate_play_pos(sf_count_t length, uint8_t x, uint8_t y, uint8_t reverse, uint8_t rows, uint8_t cols) {
-	double elapsed;
-	
-	x &= 0x0F;
-
-	if( reverse )
-		x += 1;
-	
-	x += y * cols;
-	elapsed = x / (double) (cols * rows);
-	
-	if( reverse )
-		return lrint(floor(elapsed * length));
-	else
-		return lrint(ceil(elapsed * length));
-}
-
 static void *pattern_post_record(rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, rove_list_member_t *m) {
 	rove_pattern_t *p = m->data;
 
@@ -219,32 +202,9 @@ static void control_row_handler(rove_monome_handler_t *self, rove_state_t *state
 
 void file_row_handler(rove_monome_handler_t *self, rove_state_t *state, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type) {
 	rove_file_t *f = self->data;
-	unsigned int cols;
 
-	rove_monome_position_t pos = {x, y - f->y};
-	
-	switch( event_type ) {
-	case MONOME_BUTTON_DOWN:
-		if( y < f->y || y > ( f->y + f->row_span - 1) )
-			return;
-		
-		cols = (f->columns) ? f->columns : monome->cols;
-		if( x > cols - 1 )
-			return;
-
-		f->new_offset = calculate_play_pos(f->file_length, pos.x, pos.y,
-										   (f->play_direction == FILE_PLAY_DIRECTION_REVERSE), f->row_span, cols);
-		
-		if( state->pattern_rec )
-			rove_pattern_append_step(state->pattern_rec->data, CMD_LOOP_SEEK, f, f->new_offset);
-		
-		rove_file_on_quantize(f, rove_file_seek);
-
-		break;
-
-	case MONOME_BUTTON_UP:
-		break;
-	}
+	if( f->monome_in_cb )
+		f->monome_in_cb(f, monome, x, y, event_type); 
 }
 
 static void button_handler(const monome_event_t *e, void *user_data) {
