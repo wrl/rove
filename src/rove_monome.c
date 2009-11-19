@@ -163,11 +163,7 @@ static void group_off_handler(rove_monome_handler_t *self, rove_monome_t *monome
 	if( !rove_file_is_active(f) )
 		return; /* group is already off (active file not playing) */
 				
-	/* if there is a pattern being recorded, record this group off */
-	if( state.pattern_rec )
-		rove_pattern_append_step(state.pattern_rec->data, CMD_GROUP_DEACTIVATE, f, 0);
-				
-	/* stop the active file */
+	rove_pattern_append_step(CMD_GROUP_DEACTIVATE, f, 0);
 	rove_file_deactivate(f);
 }
 

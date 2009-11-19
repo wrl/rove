@@ -50,15 +50,25 @@ void rove_pattern_free(rove_pattern_t *self) {
 	free(self);
 }
 
-void rove_pattern_append_step(rove_pattern_t *self, rove_pattern_cmd_t cmd, rove_file_t *f, jack_nframes_t arg) {
-	rove_pattern_step_t *s = self->steps->tail->prev->data;
+void rove_pattern_append_step(rove_pattern_cmd_t cmd, rove_file_t *f, jack_nframes_t arg) {
+	rove_pattern_step_t *s;
+	rove_pattern_t *self;
+
+	if( !state.pattern_rec )
+		return;
+
+	self = state.pattern_rec->data;
+	s = self->steps->tail->prev->data;
 	
-	if( s ) {
-		if( s->file == f && !s->delay ) {
-			s->arg = arg;
-			s->cmd = cmd;
-			return;
-		}
+	if( s && s->file == f && !s->delay ) {
+		/* if a step has already been recorded for this file
+		   during this quantize tick, we'll overwrite it
+		   (effectively leaving us with the final step) */
+
+		s->arg = arg;
+		s->cmd = cmd;
+
+		return;
 	}
 	
 	s        = calloc(sizeof(rove_pattern_step_t), 1);
