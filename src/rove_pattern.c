@@ -22,6 +22,8 @@
 #include "rove_list.h"
 #include "rove_pattern.h"
 
+extern rove_state_t state;
+
 rove_pattern_t *rove_pattern_new() {
 	rove_pattern_t *self = calloc(sizeof(rove_pattern_t), 1);
 	
@@ -68,12 +70,12 @@ void rove_pattern_append_step(rove_pattern_t *self, rove_pattern_cmd_t cmd, rove
 	rove_list_push(self->steps, TAIL, s);
 }
 
-void rove_pattern_process_patterns(rove_state_t *state) {
+void rove_pattern_process_patterns() {
 	rove_pattern_step_t *s;
 	rove_list_member_t *m;
 	rove_pattern_t *p;
 
-	rove_list_foreach(state->patterns, m, p) {
+	rove_list_foreach(state.patterns, m, p) {
 		switch( p->status ) {
 		case PATTERN_STATUS_ACTIVATE:
 			p->status = PATTERN_STATUS_ACTIVE;
@@ -116,7 +118,7 @@ void rove_pattern_process_patterns(rove_state_t *state) {
 				if( p->delay_steps ) {
 					if( --p->delay_steps <= 0 ) {
 						p->status = PATTERN_STATUS_ACTIVATE;
-						state->pattern_rec = NULL;
+						state.pattern_rec = NULL;
 					}
 				}
 			}

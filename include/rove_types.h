@@ -70,7 +70,7 @@ typedef struct rove_monome rove_monome_t;
 
 typedef struct rove_state rove_state_t;
 
-typedef void (*rove_monome_callback_t)(rove_monome_handler_t *self, rove_state_t *, rove_monome_t *, const uint8_t x, const uint8_t y, const uint8_t event_type);
+typedef void (*rove_monome_callback_t)(rove_monome_handler_t *self, rove_monome_t *, const uint8_t x, const uint8_t y, const uint8_t event_type);
 
 typedef void (*rove_process_callback_t)(rove_file_t *self, jack_default_audio_sample_t **buffers, int channels, jack_nframes_t nframes, jack_nframes_t sample_rate);
 typedef void (*rove_quantize_callback_t)(rove_file_t *self);

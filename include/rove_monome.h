@@ -30,6 +30,6 @@ void rove_monome_stop_thread(rove_monome_t *monome);
 
 void rove_monome_display_file(rove_file_t *f);
 void rove_monome_free(rove_monome_t *monome);
-int  rove_monome_init(rove_state_t *state, const char *osc_prefix, const char *osc_host_port, const char *osc_listen_port, const int cols, const int rows);
+int  rove_monome_init(const char *osc_prefix, const char *osc_host_port, const char *osc_listen_port, const int cols, const int rows);
 
 #endif
