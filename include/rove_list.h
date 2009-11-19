@@ -19,11 +19,34 @@
 #ifndef _ROVE_LIST_H
 #define _ROVE_LIST_H
 
-#include "rove_types.h"
-
 #define rove_list_foreach(list, cursor, datum) for( cursor = list->head->next, datum = cursor->data;\
 													cursor->next; cursor = cursor->next, datum = cursor->data )
 #define rove_list_is_empty(list) (list->head->next == list->tail && list->tail->prev == list->head)
+
+typedef enum {
+	HEAD,
+	TAIL
+} rove_list_global_location_t;
+
+typedef enum {
+	BEFORE,
+	AFTER
+} rove_list_local_location_t;
+
+typedef struct rove_list_member rove_list_member_t;
+typedef struct rove_list rove_list_t;
+
+struct rove_list_member {
+	void *data;
+	
+	rove_list_member_t *prev;
+	rove_list_member_t *next;
+};
+
+struct rove_list {
+	rove_list_member_t *head;
+	rove_list_member_t *tail;
+};
 
 rove_list_t *rove_list_new();
 void  rove_list_free(rove_list_t *list);

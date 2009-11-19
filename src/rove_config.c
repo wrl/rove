@@ -23,7 +23,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 
-#include "rove_types.h"
+#include "rove_config.h"
 #include "rove_list.h"
 
 #define BUFLEN 256

@@ -30,6 +30,8 @@
 #include <samplerate.h>
 #endif
 
+#include "rove_list.h"
+
 /**
  * types
  */
@@ -45,16 +47,6 @@ typedef enum {
 } rove_file_play_direction_t;
 
 typedef enum {
-	HEAD,
-	TAIL
-} rove_list_global_location_t;
-
-typedef enum {
-	BEFORE,
-	AFTER
-} rove_list_local_location_t;
-
-typedef enum {
 	CMD_GROUP_DEACTIVATE,
 	CMD_LOOP_SEEK
 } rove_pattern_cmd_t;
@@ -66,71 +58,24 @@ typedef enum {
 	PATTERN_STATUS_INACTIVE
 } rove_pattern_status_t;
 
-typedef enum {
-	INT,
-	LONG,
-	STRING,
-	DOUBLE,
-	BOOL
-} rove_config_var_type_t;
-
 typedef struct rove_group rove_group_t;
 typedef struct rove_file rove_file_t;
 
-typedef struct rove_list_member rove_list_member_t;
-typedef struct rove_list rove_list_t;
+typedef struct rove_pattern_step rove_pattern_step_t;
+typedef struct rove_pattern rove_pattern_t;
 
 typedef struct rove_monome_handler rove_monome_handler_t;
 typedef struct rove_monome_position rove_monome_position_t;
 typedef struct rove_monome rove_monome_t;
 
-typedef struct rove_pattern_step rove_pattern_step_t;
-typedef struct rove_pattern rove_pattern_t;
-
 typedef struct rove_state rove_state_t;
 
-typedef struct rove_config_pair rove_config_pair_t;
-typedef struct rove_config_section rove_config_section_t;
-typedef struct rove_config_var rove_config_var_t;
-
-
 typedef void (*rove_monome_callback_t)(rove_monome_handler_t *self, rove_state_t *, rove_monome_t *, const uint8_t x, const uint8_t y, const uint8_t event_type);
-typedef void (*rove_config_section_callback_t)(const rove_config_section_t *, void *arg);
 
 typedef void (*rove_process_callback_t)(rove_file_t *self, jack_default_audio_sample_t **buffers, int channels, jack_nframes_t nframes, jack_nframes_t sample_rate);
 typedef void (*rove_quantize_callback_t)(rove_file_t *self);
 typedef void (*rove_monome_input_callback_t)(rove_file_t *self, rove_monome_t *, const int x, const int y, const int event_type);
 typedef void (*rove_monome_output_callback_t)(rove_file_t *self, rove_monome_t *);
-
-/**
- * rove_config
- */
-
-struct rove_config_var {
-	const char *key;
-	void *dest;
-	rove_config_var_type_t type;
-	int val;
-};
-
-struct rove_config_pair {
-	char *key;
-	char *value;
-	
-	const rove_config_var_t *var;
-	int klen;
-	int vlen;
-};
-
-struct rove_config_section {
-	char *block;
-	const rove_config_var_t *vars;
-	rove_config_section_callback_t section_callback;
-	void *cb_arg;
-
-	int start_line;
-	rove_list_t *pairs;
-};
 
 /**
  * rove_monome
@@ -225,22 +170,6 @@ struct rove_group {
 	
 	jack_default_audio_sample_t *output_buffer_l;
 	jack_default_audio_sample_t *output_buffer_r;
-};
-
-/**
- * rove_list
- */
-
-struct rove_list_member {
-	void *data;
-	
-	rove_list_member_t *prev;
-	rove_list_member_t *next;
-};
-
-struct rove_list {
-	rove_list_member_t *head;
-	rove_list_member_t *tail;
 };
 
 /**
