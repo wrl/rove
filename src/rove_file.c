@@ -19,6 +19,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <math.h>
 #include <sndfile.h>
 #include <jack/jack.h>
 
@@ -28,15 +29,23 @@
 
 #include "rove_types.h"
 #include "rove_group.h"
+#include "rove_monome.h"
 #include "rove_file.h"
 
-static void rove_file_init(rove_file_t *self) {
-	self->status = FILE_STATUS_INACTIVE;
-	self->play_direction = FILE_PLAY_DIRECTION_FORWARD;
-	self->volume = 1.0;
+static void calculate_monome_pos(sf_count_t length, sf_count_t position, uint8_t rows, uint8_t cols, rove_monome_position_t *pos) {
+	double elapsed;
+	uint8_t x, y;
+	
+	elapsed = position / (double) length;
+	x  = lrint(floor(elapsed * (((double) cols) * rows)));
+	y  = (x / cols) & 0x0F;
+	x %= cols;
+
+	pos->x = x;
+	pos->y = y;
 }
 
-void rove_file_process(rove_file_t *self, jack_default_audio_sample_t **buffers, int channels, jack_nframes_t nframes, jack_nframes_t sample_rate) {
+static void file_process(rove_file_t *self, jack_default_audio_sample_t **buffers, int channels, jack_nframes_t nframes, jack_nframes_t sample_rate) {
 	sf_count_t i, o;
 	
 #ifdef HAVE_SRC
@@ -81,7 +90,7 @@ void rove_file_process(rove_file_t *self, jack_default_audio_sample_t **buffers,
 #endif
 }
 
-long rove_file_src_callback(void *cb_data, float **data) {
+static long file_src_callback(void *cb_data, float **data) {
 	rove_file_t *self = cb_data;
 	sf_count_t o;
 	
@@ -93,6 +102,50 @@ long rove_file_src_callback(void *cb_data, float **data) {
 	rove_file_inc_play_pos(self, 1);
 	
 	return 1;
+}
+
+static void file_monome_out(rove_file_t *self, rove_monome_t *monome) {
+	rove_monome_position_t pos;
+	unsigned int row[2] = {0, 0};
+	uint16_t r;
+
+	calculate_monome_pos(self->file_length * self->channels, rove_file_get_play_pos(self), self->row_span, (self->columns) ? self->columns : monome->cols, &pos);
+
+	if( MONOME_POS_CMP(&pos, &self->monome_pos_old) || self->force_monome_update ) {
+		if( self->force_monome_update ) {
+			if( !self->group->active_loop )
+				monome_led_off(self->mapped_monome->dev, self->group->idx, 0);
+			else
+				monome_led_on(self->mapped_monome->dev, self->group->idx, 0);
+
+			monome->dirty_field &= ~(1 << self->y);
+			self->force_monome_update = 0;
+		}
+
+		if( pos.y != self->monome_pos_old.y ) 
+			monome_led_row_16(monome->dev, self->y + self->monome_pos_old.y, row);
+
+		MONOME_POS_CPY(&self->monome_pos_old, &pos);
+
+		if( rove_file_is_active(self) ) {
+			r      = 1 << pos.x;
+			row[0] = r & 0x00FF;
+			row[1] = r >> 8;
+		}
+
+		monome_led_row_16(monome->dev, self->y + pos.y, row);
+	}
+
+	MONOME_POS_CPY(&self->monome_pos, &pos);
+}
+
+static void file_init(rove_file_t *self) {
+	self->status         = FILE_STATUS_INACTIVE;
+	self->play_direction = FILE_PLAY_DIRECTION_FORWARD;
+	self->volume         = 1.0;
+
+	self->process_cb     = file_process;
+	self->monome_out_cb  = file_monome_out;
 }
 
 void rove_file_free(rove_file_t *self) {
@@ -111,7 +164,7 @@ rove_file_t *rove_file_new_from_path(const char *path) {
 	if( !(self = calloc(sizeof(rove_file_t), 1)) )
 		return NULL;
 	
-	rove_file_init(self);
+	file_init(self);
 	
 	if( !(snd = sf_open(path, SFM_READ, &info)) ) {
 		printf("file: couldn't load \"%s\".  sorry about your luck.\n%s\n\n", path, sf_strerror(snd));
@@ -120,15 +173,13 @@ rove_file_t *rove_file_new_from_path(const char *path) {
 		return NULL;
 	}
 	
-	self->process     = rove_file_process;
-
 	self->length      = self->file_length = info.frames;
 	self->channels    = info.channels;
 	self->sample_rate = info.samplerate;
 	self->file_data   = calloc(sizeof(float), info.frames * info.channels);
 	
 #ifdef HAVE_SRC
-	self->src         = src_callback_new(rove_file_src_callback, SRC_SINC_FASTEST, info.channels, &err, self);
+	self->src         = src_callback_new(file_src_callback, SRC_SINC_FASTEST, info.channels, &err, self);
 #endif
 	
 	if( sf_readf_float(snd, self->file_data, info.frames) != info.frames ) {
@@ -204,7 +255,7 @@ void rove_file_on_quantize(rove_file_t *self, rove_quantize_callback_t cb) {
 	else
 		self->mapped_monome->quantize_field &= ~(1 << self->y);
 
-	self->quantize_callback = cb;
+	self->quantize_cb = cb;
 }
 
 void rove_file_force_monome_update(rove_file_t *self) {

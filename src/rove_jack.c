@@ -43,8 +43,8 @@ static void process_file(rove_file_t *f) {
 	if( !f )
 		return;
 
-	if( f->quantize_callback ) {
-		f->quantize_callback(f);
+	if( f->quantize_cb ) {
+		f->quantize_cb(f);
 		rove_file_on_quantize(f, NULL);
 	}
 }
@@ -124,8 +124,8 @@ static int process(jack_nframes_t nframes, void *arg) {
 			buffers[0] = g->output_buffer_l + nframes_offset;
 			buffers[1] = g->output_buffer_r + nframes_offset;
 			
-			if( f->process )
-				f->process(f, buffers, 2, nframes_left, rate);
+			if( f->process_cb )
+				f->process_cb(f, buffers, 2, nframes_left, rate);
 		}
 		
 		nframes_offset += nframes_left;

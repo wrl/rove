@@ -36,22 +36,6 @@
 #define SHIFT 0x01
 #define META  0x02
 
-#define MONOME_POS_CMP(a, b) (memcmp(a, b, sizeof(rove_monome_position_t)))
-#define MONOME_POS_CPY(a, b) (memcpy(a, b, sizeof(rove_monome_position_t)))
-
-static void calculate_monome_pos(sf_count_t length, sf_count_t position, uint8_t rows, uint8_t cols, rove_monome_position_t *pos) {
-	double elapsed;
-	uint8_t x, y;
-	
-	elapsed = position / (double) length;
-	x  = lrint(floor(elapsed * (((double) cols) * rows)));
-	y  = (x / cols) & 0x0F;
-	x %= cols;
-
-	pos->x = x;
-	pos->y = y;
-}
-
 static sf_count_t calculate_play_pos(sf_count_t length, uint8_t x, uint8_t y, uint8_t reverse, uint8_t rows, uint8_t cols) {
 	double elapsed;
 	
@@ -339,43 +323,6 @@ static void initialize_callbacks(rove_state_t *state, rove_monome_t *monome) {
 			row->data  = f;
 		}
 	}
-}
-
-void rove_monome_display_file(rove_file_t *f) {
-	rove_monome_t *monome = f->mapped_monome;
-	rove_monome_position_t pos;
-	unsigned int row[2] = {0, 0};
-	uint16_t r;
-
-	calculate_monome_pos(f->file_length * f->channels, rove_file_get_play_pos(f), f->row_span, (f->columns) ? f->columns : monome->cols, &pos);
-
-	if( MONOME_POS_CMP(&pos, &f->monome_pos_old) || f->force_monome_update ) {
-		if( f->force_monome_update ) {
-			if( !f->group->active_loop )
-				monome_led_off(f->mapped_monome->dev, f->group->idx, 0);
-			else
-				monome_led_on(f->mapped_monome->dev, f->group->idx, 0);
-
-			monome->dirty_field &= ~(1 << f->y);
-			f->force_monome_update = 0;
-		}
-
-		if( pos.y != f->monome_pos_old.y ) 
-			monome_led_row_16(monome->dev, f->y + f->monome_pos_old.y, row);
-
-		MONOME_POS_CPY(&f->monome_pos_old, &pos);
-
-		if( rove_file_is_active(f) ) {
-			r      = 1 << pos.x;
-			row[0] = r & 0x00FF;
-			row[1] = r >> 8;
-		}
-
-		monome_led_row_16(monome->dev, f->y + pos.y, row);
-	}
-
-	MONOME_POS_CPY(&f->monome_pos, &pos);
-
 }
 
 void *rove_monome_loop_thread(void *user_data) {

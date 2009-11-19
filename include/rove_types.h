@@ -149,8 +149,9 @@ struct rove_file {
 	
 	rove_group_t *group;
 	
-	rove_process_callback_t process;
-	rove_quantize_callback_t quantize_callback;
+	rove_process_callback_t process_cb;
+	rove_quantize_callback_t quantize_cb;
+	rove_monome_output_callback_t monome_out_cb;
 };
 
 /**

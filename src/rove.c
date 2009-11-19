@@ -113,7 +113,8 @@ static void monome_display_loop(const rove_state_t *state) {
 			if( !f )
 				continue;
 
-			rove_monome_display_file(f);
+			if( f->monome_out_cb )
+				f->monome_out_cb(f, state->monome);
 		}
 
 		dfield = monome->dirty_field >> 1;
@@ -123,7 +124,9 @@ static void monome_display_loop(const rove_state_t *state) {
 			j += next_bit;
 
 			f = (rove_file_t *) state->monome->callbacks[j].data;
-			rove_monome_display_file(f);
+
+			if( f->monome_out_cb )
+				f->monome_out_cb(f, state->monome);
 		}
 
 		nanosleep(&req, NULL);
