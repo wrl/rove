@@ -68,6 +68,58 @@ void rove_pattern_append_step(rove_pattern_t *self, rove_pattern_cmd_t cmd, rove
 	rove_list_push(self->steps, TAIL, s);
 }
 
+#if 0
+int rove_pattern_change_status(rove_pattern_t *self, rove_pattern_status_t nstatus) {
+	switch( self->status ) {
+	case PATTERN_STATUS_INACTIVE:
+		switch( nstatus ) {
+		case PATTERN_STATUS_RECORDING:
+			if( !rove_list_is_empty(self->steps) )
+				return 1;
+			break;
+
+		default:
+			break;
+		}
+
+		/* FIXME: currently falls through, eventually would like to
+		          eliminate PATTERN_STATUS_ACTIVATE */
+
+	case PATTERN_STATUS_ACTIVATE: 
+		switch( nstatus ) {
+		case PATTERN_STATUS_ACTIVE:
+			self->current_step = self->steps->tail->prev; /* this is counterintuitive */
+			self->delay_steps  = ((rove_pattern_step_t *) self->current_step->data)->delay;
+			break;
+
+		case PATTERN_STATUS_RECORDING:
+			if( !rove_list_is_empty(self->steps) )
+				return 1;
+			break;
+
+		default:
+			break;
+		}
+		break;
+
+	case PATTERN_STATUS_RECORDING:
+		/* deallocate pattern if it contains no steps */
+		if( rove_list_is_empty(self->steps) ) {
+			self->status = PATTERN_STATUS_INACTIVE;
+
+			if( self->bound_button )
+				self->bound_button->data = NULL;
+
+		
+
+	case PATTERN_STATUS_ACTIVE:
+	}
+
+	self->status = nstatus;
+	return 0;
+}
+#endif
+
 void rove_pattern_process_patterns(rove_state_t *state) {
 	rove_pattern_step_t *s;
 	rove_list_member_t *m;
