@@ -125,11 +125,9 @@ void rove_pattern_process_patterns() {
 			if( !rove_list_is_empty(p->steps) ) {
 				((rove_pattern_step_t *) p->steps->tail->prev->data)->delay++;
 
-				if( p->delay_steps ) {
-					if( --p->delay_steps <= 0 ) {
-						p->status = PATTERN_STATUS_ACTIVATE;
-						state.pattern_rec = NULL;
-					}
+				if( p->delay_steps && --p->delay_steps <= 0 ) {
+					p->status = PATTERN_STATUS_ACTIVATE;
+					state.pattern_rec = NULL;
 				}
 			}
 
