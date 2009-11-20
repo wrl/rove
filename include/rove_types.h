@@ -215,11 +215,6 @@ struct rove_state {
 	rove_list_t *active;
 	rove_list_t *staging;
 	
-	pthread_mutex_t monome_mutex;
-	pthread_cond_t monome_display_notification;
-
-	uint8_t active_loops;
-
 	double bpm;
 	double beat_multiplier;
 

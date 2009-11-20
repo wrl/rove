@@ -425,9 +425,6 @@ int main(int argc, char **argv) {
 	state.active   = rove_list_new();
 	state.staging  = rove_list_new();
 	
-	pthread_mutex_init(&state.monome_mutex, NULL);
-	pthread_cond_init(&state.monome_display_notification, NULL);
-
 	if( load_user_conf() )
 		exit(EXIT_FAILURE);
 		
