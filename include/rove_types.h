@@ -224,7 +224,7 @@ struct rove_state {
 	double beat_multiplier;
 
 	jack_nframes_t snap_delay;
-	jack_nframes_t frames;
+	jack_nframes_t frames_per_beat;
 };
 
 #endif

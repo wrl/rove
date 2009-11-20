@@ -39,8 +39,6 @@ static jack_port_t *group_mix_inport_r;
 static jack_port_t *outport_l;
 static jack_port_t *outport_r;
 
-#define on_quantize_boundary() (!state.frames)
-
 static void process_file(rove_file_t *f) {
 	if( !f )
 		return;
@@ -52,6 +50,10 @@ static void process_file(rove_file_t *f) {
 }
 
 static int process(jack_nframes_t nframes, void *arg) {
+	static int quantize_frames = 0;
+
+#define on_quantize_boundary() (!quantize_frames)
+
 	jack_default_audio_sample_t *out_l;
 	jack_default_audio_sample_t *out_r;
 	jack_default_audio_sample_t *in_l;
@@ -104,12 +106,12 @@ static int process(jack_nframes_t nframes, void *arg) {
 			rove_pattern_process_patterns();
 		}
 		
-		until_quantize = (state.snap_delay - state.frames);
-		nframes_left   = MIN(until_quantize, nframes);
-		state.frames  += nframes_left;
+		until_quantize   = (state.snap_delay - quantize_frames);
+		nframes_left     = MIN(until_quantize, nframes);
+		quantize_frames += nframes_left;
 		
-		if( state.frames >= state.snap_delay - 1 )
-			state.frames = 0;
+		if( quantize_frames >= state.snap_delay - 1 )
+			quantize_frames = 0;
 		
 		for( j = 0; j < group_count; j++ ) {
 			g = &state.groups[j];
