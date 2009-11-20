@@ -70,7 +70,7 @@ typedef struct rove_monome rove_monome_t;
 
 typedef struct rove_state rove_state_t;
 
-typedef void (*rove_monome_callback_t)(rove_monome_handler_t *self, rove_monome_t *, const uint8_t x, const uint8_t y, const uint8_t event_type);
+typedef void (*rove_monome_callback_t)(rove_monome_handler_t *self, rove_monome_t *, const int x, const int y, const int event_type);
 
 typedef void (*rove_process_callback_t)(rove_file_t *self, jack_default_audio_sample_t **buffers, int channels, jack_nframes_t nframes, jack_nframes_t sample_rate);
 typedef void (*rove_quantize_callback_t)(rove_file_t *self);
@@ -82,8 +82,8 @@ typedef void (*rove_monome_output_callback_t)(rove_file_t *self, rove_monome_t *
  */
 
 struct rove_monome_position {
-	uint8_t x;
-	uint8_t y;
+	int x;
+	int y;
 };
 
 struct rove_monome_handler {
@@ -134,8 +134,8 @@ struct rove_file {
 	
 	float *file_data;
 	
-	uint8_t y;
-	uint8_t row_span;
+	int y;
+	int row_span;
 	
 	rove_monome_t *mapped_monome;
 	rove_monome_position_t monome_pos;
@@ -143,7 +143,7 @@ struct rove_file {
 	
 	/* set to 1 if the next run of rove_monome_display_file should
 	   update the row regardless of whether it has changed. */
-	uint8_t force_monome_update;
+	int force_monome_update;
 	
 	unsigned int columns;
 	
@@ -203,28 +203,23 @@ struct rove_state {
 	rove_monome_t *monome;
 	jack_client_t *client;
 	
-	uint8_t group_count;
+	int group_count;
 	rove_group_t *groups;
 	
 	rove_list_t *files;
 	rove_list_t *patterns;
 	rove_list_member_t *pattern_rec;
-	uint8_t pattern_lengths[2];
+	int pattern_lengths[2];
 
-	uint8_t staged_loops;
+	int staged_loops;
 	rove_list_t *active;
 	rove_list_t *staging;
 	
-	pthread_mutex_t monome_mutex;
-	pthread_cond_t monome_display_notification;
-
-	uint8_t active_loops;
-
 	double bpm;
 	double beat_multiplier;
 
 	jack_nframes_t snap_delay;
-	jack_nframes_t frames;
+	jack_nframes_t frames_per_beat;
 };
 
 #endif

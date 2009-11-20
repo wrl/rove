@@ -38,7 +38,7 @@
 
 extern rove_state_t state;
 
-static void *pattern_post_record(rove_monome_t *monome, const uint8_t x, const uint8_t y, rove_list_member_t *m) {
+static void *pattern_post_record(rove_monome_t *monome, const int x, const int y, rove_list_member_t *m) {
 	rove_pattern_t *p = m->data;
 
 	state.pattern_rec = NULL;
@@ -53,7 +53,7 @@ static void *pattern_post_record(rove_monome_t *monome, const uint8_t x, const u
 	return p;
 }
 
-static void pattern_handler(rove_monome_handler_t *self, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type) {
+static void pattern_handler(rove_monome_handler_t *self, rove_monome_t *monome, const int x, const int y, const int event_type) {
 	rove_list_member_t *m = self->data;
 	rove_pattern_t *p;
 	int idx;
@@ -142,7 +142,7 @@ static void pattern_handler(rove_monome_handler_t *self, rove_monome_t *monome, 
 	return;
 }
 
-static void group_off_handler(rove_monome_handler_t *self, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type) {
+static void group_off_handler(rove_monome_handler_t *self, rove_monome_t *monome, const int x, const int y, const int event_type) {
 	rove_group_t *group = self->data;
 	rove_file_t *f;
 
@@ -159,7 +159,7 @@ static void group_off_handler(rove_monome_handler_t *self, rove_monome_t *monome
 	rove_file_deactivate(f);
 }
 
-static void control_row_handler(rove_monome_handler_t *self, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type) {
+static void control_row_handler(rove_monome_handler_t *self, rove_monome_t *monome, const int x, const int y, const int event_type) {
 	rove_monome_handler_t *callback;
 	
 	if( x >= monome->cols )
@@ -190,7 +190,7 @@ static void control_row_handler(rove_monome_handler_t *self, rove_monome_t *mono
 	}
 }
 
-void file_row_handler(rove_monome_handler_t *self, rove_monome_t *monome, const uint8_t x, const uint8_t y, const uint8_t event_type) {
+void file_row_handler(rove_monome_handler_t *self, rove_monome_t *monome, const int x, const int y, const int event_type) {
 	rove_file_t *f = self->data;
 
 	if( f->monome_in_cb )
@@ -221,8 +221,7 @@ static void button_handler(const monome_event_t *e, void *user_data) {
 
 static void initialize_callbacks(rove_monome_t *monome) {
 	rove_monome_handler_t *ctrl, *row;
-	uint8_t y, row_span;
-	int i, group_count;
+	int y, row_span, i, group_count;
 	
 	rove_list_member_t *m;
 	rove_file_t *f;

@@ -39,8 +39,6 @@ static jack_port_t *group_mix_inport_r;
 static jack_port_t *outport_l;
 static jack_port_t *outport_r;
 
-#define on_quantize_boundary() (!state.frames)
-
 static void process_file(rove_file_t *f) {
 	if( !f )
 		return;
@@ -52,24 +50,28 @@ static void process_file(rove_file_t *f) {
 }
 
 static int process(jack_nframes_t nframes, void *arg) {
+	static int quantize_frames = 0;
+
+#define on_quantize_boundary() (!quantize_frames)
+
 	jack_default_audio_sample_t *out_l;
 	jack_default_audio_sample_t *out_r;
 	jack_default_audio_sample_t *in_l;
 	jack_default_audio_sample_t *in_r;
-	
+
 	jack_nframes_t until_quantize, rate, nframes_left, nframes_offset, i;
 	int j, group_count, next_bit;
 	uint16_t qfield;
-	
+
 	jack_default_audio_sample_t *buffers[2];
-	
+
 	rove_group_t *g;
 	rove_file_t *f;
-	
+
 	group_count = state.group_count;
 
 	rate = jack_get_sample_rate(state.client);
-	
+
 	/* initialize each group's output buffers and zero them */
 	for( i = 0; i < group_count; i++ ) {
 		g = &state.groups[i];
@@ -86,7 +88,7 @@ static int process(jack_nframes_t nframes, void *arg) {
 			for( j = 0; j < group_count; j++ ) {
 				g = &state.groups[j];
 				f = g->active_loop;
-				
+
 				process_file(f);
 			}
 
@@ -103,42 +105,42 @@ static int process(jack_nframes_t nframes, void *arg) {
 			/* playback patterns */
 			rove_pattern_process_patterns();
 		}
-		
-		until_quantize = (state.snap_delay - state.frames);
-		nframes_left   = MIN(until_quantize, nframes);
-		state.frames  += nframes_left;
-		
-		if( state.frames >= state.snap_delay - 1 )
-			state.frames = 0;
-		
+
+		until_quantize   = (state.snap_delay - quantize_frames);
+		nframes_left     = MIN(until_quantize, nframes);
+		quantize_frames += nframes_left;
+
+		if( quantize_frames >= state.snap_delay - 1 )
+			quantize_frames = 0;
+
 		for( j = 0; j < group_count; j++ ) {
 			g = &state.groups[j];
-			
+
 			if( !(f = g->active_loop) )
 				continue;
-			
+
 			if( !rove_file_is_active(f) )
 				continue;
-			
+
 			/* will eventually become an array of arbitrary size for better multichannel support */
 			buffers[0] = g->output_buffer_l + nframes_offset;
 			buffers[1] = g->output_buffer_r + nframes_offset;
-			
+
 			if( f->process_cb )
 				f->process_cb(f, buffers, 2, nframes_left, rate);
 		}
-		
+
 		nframes_offset += nframes_left;
 	}
-	
+
 	out_l = jack_port_get_buffer(outport_l, nframes_offset);
 	out_r = jack_port_get_buffer(outport_r, nframes_offset);
 	in_l = jack_port_get_buffer(group_mix_inport_l, nframes_offset);
 	in_r = jack_port_get_buffer(group_mix_inport_r, nframes_offset);
-	
+
 	memcpy(out_l, in_l, sizeof(jack_default_audio_sample_t) * nframes_offset);
 	memcpy(out_r, in_r, sizeof(jack_default_audio_sample_t) * nframes_offset);
-	
+
 	return 0;
 }
 

@@ -34,7 +34,7 @@
 
 extern rove_state_t state;
 
-static sf_count_t calculate_play_pos(sf_count_t length, uint8_t x, uint8_t y, uint8_t reverse, uint8_t rows, uint8_t cols) {
+static sf_count_t calculate_play_pos(sf_count_t length, int x, int y, const int reverse, const int rows, const int cols) {
 	double elapsed;
 	
 	x &= 0x0F;
@@ -51,9 +51,9 @@ static sf_count_t calculate_play_pos(sf_count_t length, uint8_t x, uint8_t y, ui
 		return lrint(ceil(elapsed * length));
 }
 
-static void calculate_monome_pos(sf_count_t length, sf_count_t position, uint8_t rows, uint8_t cols, rove_monome_position_t *pos) {
+static void calculate_monome_pos(sf_count_t length, sf_count_t position, const int rows, const int cols, rove_monome_position_t *pos) {
 	double elapsed;
-	uint8_t x, y;
+	int x, y;
 	
 	elapsed = position / (double) length;
 	x  = lrint(floor(elapsed * (((double) cols) * rows)));

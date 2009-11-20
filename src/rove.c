@@ -31,6 +31,7 @@
 #include "rove_list.h"
 #include "rove_config.h"
 #include "rove_monome.h"
+#include "rove_util.h"
 
 #define DEFAULT_CONF_FILE_NAME  ".rove.conf"
 
@@ -162,27 +163,27 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 	
 	while( (e = rove_config_getvar(section, &pair)) ) {
 		switch( e ) {
-		case 'p':
+		case 'p': /* file path */
 			path = pair->value;
 			continue;
-			
-		case 'v':
+
+		case 'v': /* reverse */
 			reverse = 1;
 			continue;
 
-		case 's':
+		case 's': /* speed */
 			speed = strtod(pair->value, NULL);
 			continue;
 
-		case 'g':
+		case 'g': /* group */
 			v = &group;
 			break;
 			
-		case 'c':
+		case 'c': /* columns */
 			v = &c;
 			break;
 
-		case 'r':
+		case 'r': /* rows */
 			v = &r;
 			break;
 		}
@@ -336,10 +337,8 @@ static int load_user_conf() {
 }
 
 static void rove_recalculate_bpm_variables() {
-	state.snap_delay = lrint(((60 / state.bpm) * state.beat_multiplier) * ((double) jack_get_sample_rate(state.client)));
-	
-	if( !state.snap_delay )
-		state.snap_delay++;
+	state.frames_per_beat = lrintf((60 / state.bpm) * (double) jack_get_sample_rate(state.client));
+	state.snap_delay = MAX(state.frames_per_beat * state.beat_multiplier, 1);
 }
 
 static void exit_on_signal(int s) {
@@ -426,9 +425,6 @@ int main(int argc, char **argv) {
 	state.active   = rove_list_new();
 	state.staging  = rove_list_new();
 	
-	pthread_mutex_init(&state.monome_mutex, NULL);
-	pthread_cond_init(&state.monome_display_notification, NULL);
-
 	if( load_user_conf() )
 		exit(EXIT_FAILURE);
 		
@@ -452,7 +448,6 @@ int main(int argc, char **argv) {
 	}
 	
 	rove_recalculate_bpm_variables();
-	state.frames = state.snap_delay;
 	
 	if( rove_monome_init((osc_prefix) ? osc_prefix : DEFAULT_OSC_PREFIX,
 						 (osc_host_port) ? osc_host_port : DEFAULT_OSC_HOST_PORT,
