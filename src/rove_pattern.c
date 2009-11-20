@@ -16,6 +16,7 @@
  * along with rove.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <assert.h>
 #include <stdlib.h>
 
 #include "rove_file.h"
@@ -27,7 +28,7 @@ extern rove_state_t state;
 rove_pattern_t *rove_pattern_new() {
 	rove_pattern_t *self = calloc(sizeof(rove_pattern_t), 1);
 	
-	self->status = PATTERN_STATUS_INACTIVE;
+	self->status = PATTERN_STATUS_RECORDING;
 	self->steps  = rove_list_new();
 	self->current_step = NULL;
 	
@@ -35,19 +36,13 @@ rove_pattern_t *rove_pattern_new() {
 }
 
 void rove_pattern_free(rove_pattern_t *self) {
-	rove_pattern_step_t *s;
-	rove_list_member_t *m;
+	assert(self);
 	
-	if( !self )
-		return;
-	
-	rove_list_foreach(self->steps, m, s) {
-		rove_list_remove(self->steps, m);
-		free(s);
-	}
+	while( !rove_list_is_empty(self->steps) )
+		free(rove_list_pop(self->steps, HEAD));
 	
 	rove_list_free(self->steps);
-	free(self);
+	free(self); /* so liberating */
 }
 
 void rove_pattern_append_step(rove_pattern_cmd_t cmd, rove_file_t *f, jack_nframes_t arg) {
@@ -80,34 +75,32 @@ void rove_pattern_append_step(rove_pattern_cmd_t cmd, rove_file_t *f, jack_nfram
 	rove_list_push(self->steps, TAIL, s);
 }
 
-#if 0
 int rove_pattern_change_status(rove_pattern_t *self, rove_pattern_status_t nstatus) {
 	switch( self->status ) {
 	case PATTERN_STATUS_INACTIVE:
 		switch( nstatus ) {
 		case PATTERN_STATUS_RECORDING:
-			if( !rove_list_is_empty(self->steps) )
-				return 1;
-			break;
+			/* will eventually support overdub */
+			return 1;
 
 		default:
 			break;
 		}
 
-		/* FIXME: currently falls through, eventually would like to
+		/* TODO: currently falls through, eventually would like to
 		          eliminate PATTERN_STATUS_ACTIVATE */
 
 	case PATTERN_STATUS_ACTIVATE: 
 		switch( nstatus ) {
 		case PATTERN_STATUS_ACTIVE:
+			break; /* XXX: obv. */
 			self->current_step = self->steps->tail->prev; /* this is counterintuitive */
 			self->delay_steps  = ((rove_pattern_step_t *) self->current_step->data)->delay;
 			break;
 
 		case PATTERN_STATUS_RECORDING:
-			if( !rove_list_is_empty(self->steps) )
-				return 1;
-			break;
+			/* will eventually support overdub */
+			return 1;
 
 		default:
 			break;
@@ -119,18 +112,23 @@ int rove_pattern_change_status(rove_pattern_t *self, rove_pattern_status_t nstat
 		if( rove_list_is_empty(self->steps) ) {
 			self->status = PATTERN_STATUS_INACTIVE;
 
-			if( self->bound_button )
+			if( self->bound_button ) {
 				self->bound_button->data = NULL;
+				monome_led_off(state.monome->dev, self->bound_button->pos.x,
+							   self->bound_button->pos.y);
+			}
 
+			return -1;
+		}
 		
 
 	case PATTERN_STATUS_ACTIVE:
+		break;
 	}
 
 	self->status = nstatus;
 	return 0;
 }
-#endif
 
 void rove_pattern_process_patterns() {
 	rove_pattern_step_t *s;
@@ -143,40 +141,40 @@ void rove_pattern_process_patterns() {
 			p->status = PATTERN_STATUS_ACTIVE;
 			p->current_step = p->steps->tail->prev;
 			p->delay_steps = ((rove_pattern_step_t *) p->current_step->data)->delay;
-					
+
 		case PATTERN_STATUS_ACTIVE:
 			s = p->current_step->data;
-					
+
 			while( p->delay_steps >= s->delay ) {
 				p->current_step = p->current_step->next;
-						
+
 				if( !p->current_step->next )
 					p->current_step = p->steps->head->next;
-						
+
 				p->delay_steps = 0;
 				s = p->current_step->data;
-						
+
 				switch( s->cmd ) {
 				case CMD_GROUP_DEACTIVATE:
 					rove_file_deactivate(s->file);
 					break;
-							
+
 				case CMD_LOOP_SEEK:
 					s->file->new_offset = s->arg;
 					rove_file_seek(s->file);
-							
+
 					break;
 				}
 			}
-					
+
 			p->delay_steps++;
-					
+
 			break;
-					
+
 		case PATTERN_STATUS_RECORDING:
 			if( !rove_list_is_empty(p->steps) ) {
 				((rove_pattern_step_t *) p->steps->tail->prev->data)->delay++;
-						
+
 				if( p->delay_steps ) {
 					if( --p->delay_steps <= 0 ) {
 						p->status = PATTERN_STATUS_ACTIVATE;
@@ -184,7 +182,7 @@ void rove_pattern_process_patterns() {
 					}
 				}
 			}
-					
+
 			break;
 					
 		default:

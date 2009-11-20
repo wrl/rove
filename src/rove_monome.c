@@ -43,22 +43,13 @@ static void *pattern_post_record(rove_monome_t *monome, const uint8_t x, const u
 
 	state.pattern_rec = NULL;
 	
-	/* deallocate pattern if it contains no steps */
-	if( rove_list_is_empty(p->steps) ) {
-		/* first mark it as inactive so that rove_jack.process() skips over it */
-		p->status = PATTERN_STATUS_INACTIVE;
-
-		if( p->bound_button ) {
-			monome_led_off(monome->dev, p->bound_button->pos.x, p->bound_button->pos.y);
-			p->bound_button->data = NULL;
-		}
-
+	if( rove_pattern_change_status(p, PATTERN_STATUS_ACTIVATE) < 0 ) {
 		rove_list_remove(state.patterns, m);
 		rove_pattern_free(p);
-				
+
 		return NULL;
 	}
-	
+
 	return p;
 }
 
@@ -74,14 +65,16 @@ static void pattern_handler(rove_monome_handler_t *self, rove_monome_t *monome, 
 	if( !m ) {
 		/* if there is a pattern currently being recorded to, finalize it before allocating a new one */
 		if( state.pattern_rec )
-			if( (p = pattern_post_record(monome, x, y, state.pattern_rec)) )
-				p->status = PATTERN_STATUS_ACTIVATE;
+			pattern_post_record(monome, x, y, state.pattern_rec);
 		
 		idx = x - (monome->cols - 4);
 		
 		p = rove_pattern_new();
-		p->status = PATTERN_STATUS_RECORDING;
-		p->delay_steps = (lrint(1 / state.beat_multiplier) * state.pattern_lengths[idx]);
+
+		if( state.pattern_lengths[idx] )
+			p->delay_steps = (lrint(1 / state.beat_multiplier) * state.pattern_lengths[idx]);
+		else
+			p->delay_steps = 0;
 		
 		m = rove_list_push(state.patterns, TAIL, p);
 		state.pattern_rec = m;
@@ -103,7 +96,7 @@ static void pattern_handler(rove_monome_handler_t *self, rove_monome_t *monome, 
 		if( state.pattern_rec == m )
 			state.pattern_rec = NULL;
 			
-		/* set as inactive so that rock_jack.process() skips over it */
+		/* set as inactive so that rove_jack.process() skips over it */
 		p->status = PATTERN_STATUS_INACTIVE;
 
 		/* deallocate all the steps */
@@ -125,10 +118,9 @@ static void pattern_handler(rove_monome_handler_t *self, rove_monome_t *monome, 
 				   "      this shouldn't happen.  visinin fucked up, sorry :(\n");
 			goto clear_pattern;
 		}
-			
-		if( !pattern_post_record(monome, x, y, m) )
-			goto clear_pattern;
-			
+
+		pattern_post_record(monome, x, y, m);
+
 		/* fall through */
 
 	case PATTERN_STATUS_ACTIVATE:
