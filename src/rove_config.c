@@ -69,7 +69,7 @@ int rove_config_getvar(const rove_config_section_t *section, rove_config_pair_t 
 			}
 		}
 		
-		/* variable in conf file that was not in the array of vars */
+		/* variable in conf file that was not in the array of expected vars */
 		free(p->value);
 		free(p->key);
 		free(p);
@@ -324,11 +324,21 @@ static int config_parse(const char *path, rove_config_section_t *sections, int c
 	}
 	
 	close_block(s, p);
+	close(fd);
+
 	return 0;
 }
 
 int rove_load_config(const char *path, rove_config_section_t *sections, int cd) {
-	int i;
+	struct stat buf;
+	int i, ret;
+
+	ret = stat(path, &buf);
+	if( ret < 0 )
+		return ret;
+
+	if( !S_ISREG(buf.st_mode) )
+		return 1;
 	
 	for( i = 0; sections[i].block; i++ )
 		sections[i].pairs = NULL;
