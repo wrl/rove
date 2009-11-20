@@ -163,27 +163,27 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 	
 	while( (e = rove_config_getvar(section, &pair)) ) {
 		switch( e ) {
-		case 'p':
+		case 'p': /* file path */
 			path = pair->value;
 			continue;
-			
-		case 'v':
+
+		case 'v': /* reverse */
 			reverse = 1;
 			continue;
 
-		case 's':
+		case 's': /* speed */
 			speed = strtod(pair->value, NULL);
 			continue;
 
-		case 'g':
+		case 'g': /* group */
 			v = &group;
 			break;
 			
-		case 'c':
+		case 'c': /* columns */
 			v = &c;
 			break;
 
-		case 'r':
+		case 'r': /* rows */
 			v = &r;
 			break;
 		}
