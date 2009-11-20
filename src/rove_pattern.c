@@ -26,26 +26,26 @@ extern rove_state_t state;
 
 rove_pattern_t *rove_pattern_new() {
 	rove_pattern_t *self = calloc(sizeof(rove_pattern_t), 1);
-	
+
 	self->status = PATTERN_STATUS_INACTIVE;
 	self->steps  = rove_list_new();
 	self->current_step = NULL;
-	
+
 	return self;
 }
 
 void rove_pattern_free(rove_pattern_t *self) {
 	rove_pattern_step_t *s;
 	rove_list_member_t *m;
-	
+
 	if( !self )
 		return;
-	
+
 	rove_list_foreach(self->steps, m, s) {
 		rove_list_remove(self->steps, m);
 		free(s);
 	}
-	
+
 	rove_list_free(self->steps);
 	free(self);
 }
@@ -59,7 +59,7 @@ void rove_pattern_append_step(rove_pattern_cmd_t cmd, rove_file_t *f, jack_nfram
 
 	self = state.pattern_rec->data;
 	s = self->steps->tail->prev->data;
-	
+
 	if( s && s->file == f && !s->delay ) {
 		/* if a step has already been recorded for this file
 		   during this quantize tick, we'll overwrite it
@@ -70,13 +70,13 @@ void rove_pattern_append_step(rove_pattern_cmd_t cmd, rove_file_t *f, jack_nfram
 
 		return;
 	}
-	
+
 	s        = calloc(sizeof(rove_pattern_step_t), 1);
 	s->delay = 0;
 	s->file  = f;
 	s->arg   = arg;
 	s->cmd   = cmd;
-	
+
 	rove_list_push(self->steps, TAIL, s);
 }
 
@@ -91,40 +91,40 @@ void rove_pattern_process_patterns() {
 			p->status = PATTERN_STATUS_ACTIVE;
 			p->current_step = p->steps->tail->prev;
 			p->delay_steps = ((rove_pattern_step_t *) p->current_step->data)->delay;
-					
+
 		case PATTERN_STATUS_ACTIVE:
 			s = p->current_step->data;
-					
+
 			while( p->delay_steps >= s->delay ) {
 				p->current_step = p->current_step->next;
-						
+
 				if( !p->current_step->next )
 					p->current_step = p->steps->head->next;
-						
+
 				p->delay_steps = 0;
 				s = p->current_step->data;
-						
+
 				switch( s->cmd ) {
 				case CMD_GROUP_DEACTIVATE:
 					rove_file_deactivate(s->file);
 					break;
-							
+
 				case CMD_LOOP_SEEK:
 					s->file->new_offset = s->arg;
 					rove_file_seek(s->file);
-							
+
 					break;
 				}
 			}
-					
+
 			p->delay_steps++;
-					
+
 			break;
-					
+
 		case PATTERN_STATUS_RECORDING:
 			if( !rove_list_is_empty(p->steps) ) {
 				((rove_pattern_step_t *) p->steps->tail->prev->data)->delay++;
-						
+
 				if( p->delay_steps ) {
 					if( --p->delay_steps <= 0 ) {
 						p->status = PATTERN_STATUS_ACTIVATE;
@@ -132,9 +132,9 @@ void rove_pattern_process_patterns() {
 					}
 				}
 			}
-					
+
 			break;
-					
+
 		default:
 			break;
 		}
