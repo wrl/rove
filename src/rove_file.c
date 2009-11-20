@@ -177,9 +177,7 @@ static void file_monome_in(rove_file_t *self, rove_monome_t *monome, const int x
 		                       (self->play_direction == FILE_PLAY_DIRECTION_REVERSE),
 		                       self->row_span, cols);
 		
-		rove_pattern_append_step(CMD_LOOP_SEEK, self, self->new_offset);
 		rove_file_on_quantize(self, rove_file_seek);
-
 		break;
 
 	case MONOME_BUTTON_UP:

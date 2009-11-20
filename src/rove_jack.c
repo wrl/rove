@@ -101,9 +101,6 @@ static int process(jack_nframes_t nframes, void *arg) {
 				f = (rove_file_t *) state.monome->callbacks[j].data;
 				process_file(f);
 			}
-
-			/* playback patterns */
-			rove_pattern_process_patterns();
 		}
 
 		until_quantize   = (state.snap_delay - quantize_frames);

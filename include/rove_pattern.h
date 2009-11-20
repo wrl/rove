@@ -24,8 +24,4 @@
 rove_pattern_t *rove_pattern_new();
 void rove_pattern_free(rove_pattern_t *);
 
-void rove_pattern_append_step(rove_pattern_cmd_t, rove_file_t *, jack_nframes_t);
-int rove_pattern_change_status(rove_pattern_t *self, rove_pattern_status_t nstatus);
-void rove_pattern_process_patterns();
-	
 #endif

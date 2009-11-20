@@ -61,7 +61,6 @@ typedef enum {
 typedef struct rove_group rove_group_t;
 typedef struct rove_file rove_file_t;
 
-typedef struct rove_pattern_step rove_pattern_step_t;
 typedef struct rove_pattern rove_pattern_t;
 
 typedef struct rove_monome_handler rove_monome_handler_t;
@@ -178,21 +177,7 @@ struct rove_group {
  * rove_pattern
  */
 
-struct rove_pattern_step {
-	int delay;
-	rove_pattern_cmd_t cmd;
-	rove_file_t *file;
-	jack_nframes_t arg;
-};
-
 struct rove_pattern {
-	rove_list_t *steps;
-	rove_list_member_t *current_step;
-	
-	int delay_steps;
-	rove_pattern_status_t status;
-	
-	rove_monome_handler_t *bound_button;
 };
 
 /**

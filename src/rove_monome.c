@@ -38,107 +38,7 @@
 
 extern rove_state_t state;
 
-static void *pattern_post_record(rove_monome_t *monome, const int x, const int y, rove_list_member_t *m) {
-	rove_pattern_t *p = m->data;
-
-	state.pattern_rec = NULL;
-	
-	if( rove_pattern_change_status(p, PATTERN_STATUS_ACTIVATE) < 0 ) {
-		rove_list_remove(state.patterns, m);
-		rove_pattern_free(p);
-
-		return NULL;
-	}
-
-	return p;
-}
-
 static void pattern_handler(rove_monome_handler_t *self, rove_monome_t *monome, const int x, const int y, const int event_type) {
-	rove_list_member_t *m = self->data;
-	rove_pattern_t *p;
-	int idx;
-
-	if( event_type != MONOME_BUTTON_DOWN )
-		return;
-	
-	/* pattern allocation (i.e. no pattern currently associated with this button) */
-	if( !m ) {
-		/* if there is a pattern currently being recorded to, finalize it before allocating a new one */
-		if( state.pattern_rec )
-			pattern_post_record(monome, x, y, state.pattern_rec);
-		
-		idx = x - (monome->cols - 4);
-		
-		p = rove_pattern_new();
-
-		if( state.pattern_lengths[idx] )
-			p->delay_steps = (lrint(1 / state.beat_multiplier) * state.pattern_lengths[idx]);
-		else
-			p->delay_steps = 0;
-		
-		m = rove_list_push(state.patterns, TAIL, p);
-		state.pattern_rec = m;
-		self->data = m;
-		
-		p->bound_button = self;
-		
-		monome_led_on(monome->dev, x, y);
-
-		self->data = m;
-		return;
-	}
-
-	p = m->data;
-	
-	/* pattern erasure/deletion (pressing in conjunction with shift) */
-	if( monome->mod_keys & SHIFT ) {
-		/* if this pattern is currently set as the global recordee, remove it */
-		if( state.pattern_rec == m )
-			state.pattern_rec = NULL;
-			
-		/* set as inactive so that rove_jack.process() skips over it */
-		p->status = PATTERN_STATUS_INACTIVE;
-
-		/* deallocate all the steps */
-		while( !rove_list_is_empty(p->steps) )
-			free(rove_list_pop(p->steps, HEAD)); /* rove_list_pop() returns the rove_pattern_step_t, free that */
-			
-		rove_pattern_free(m->data);
-		rove_list_remove(state.patterns, m);
-
-		monome_led_off(monome->dev, x, y);
-
-		goto clear_pattern;
-	}
-
-	switch( p->status ) {
-	case PATTERN_STATUS_RECORDING:
-		if( state.pattern_rec != m ) {
-			printf("what: pattern is marked as recording but is not the globally-designated recordee\n"
-				   "      this shouldn't happen.  visinin fucked up, sorry :(\n");
-			goto clear_pattern;
-		}
-
-		pattern_post_record(monome, x, y, m);
-
-		/* fall through */
-
-	case PATTERN_STATUS_ACTIVATE:
-	case PATTERN_STATUS_INACTIVE:
-		p->status = PATTERN_STATUS_ACTIVATE;
-		monome_led_on(monome->dev, x, y);
-		break;
-		
-	case PATTERN_STATUS_ACTIVE:
-		p->status = PATTERN_STATUS_INACTIVE;
-		monome_led_off(monome->dev, x, y);
-		break;
-	}
-	
-	return;
-	
- clear_pattern:
-	self->data = NULL;
 	return;
 }
 
@@ -154,8 +54,7 @@ static void group_off_handler(rove_monome_handler_t *self, rove_monome_t *monome
 				
 	if( !rove_file_is_active(f) )
 		return; /* group is already off (active file not playing) */
-				
-	rove_pattern_append_step(CMD_GROUP_DEACTIVATE, f, 0);
+
 	rove_file_deactivate(f);
 }
 
