@@ -16,6 +16,7 @@
  * along with rove.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <assert.h>
 #include <stdlib.h>
 
 #include "rove_list.h"
@@ -53,6 +54,29 @@ void rove_list_free(rove_list_t *self) {
 	free(self);
 }
 
+void rove_list_push_raw(rove_list_t *self, rove_list_global_location_t l, rove_list_member_t *m) {
+	assert(self);
+	assert(m);
+
+	switch( l ) {
+	case HEAD:
+		m->prev = self->head;
+		m->next = self->head->next;
+		
+		self->head->next->prev = m;
+		self->head->next = m;
+		break;
+
+	case TAIL:
+		m->prev = self->tail->prev;
+		m->next = self->tail;
+		
+		self->tail->prev->next = m;
+		self->tail->prev = m;
+		break;
+	}
+}
+
 rove_list_member_t *rove_list_push(rove_list_t *self, rove_list_global_location_t l, void *data) {
 	rove_list_member_t *m = calloc(1, sizeof(rove_list_member_t));
 	
@@ -60,22 +84,31 @@ rove_list_member_t *rove_list_push(rove_list_t *self, rove_list_global_location_
 		return NULL;
 	
 	m->data = data;
-	
-	if( l == HEAD ) {
-		m->prev = self->head;
-		m->next = self->head->next;
-		
-		self->head->next->prev = m;
-		self->head->next = m;
-	} else {
-		m->prev = self->tail->prev;
-		m->next = self->tail;
-		
-		self->tail->prev->next = m;
-		self->tail->prev = m;
-	}
-	
+	rove_list_push_raw(self, l, m);
 	return m;
+}
+
+void rove_list_insert_raw(rove_list_member_t *m, rove_list_local_location_t l, rove_list_member_t *rel) {
+	assert(m);
+	assert(rel);
+
+	switch( l ) {
+	case BEFORE:
+		m->prev = rel;
+		m->next = rel->next;
+		
+		rel->next->prev = m;
+		rel->next = m;
+		break;
+
+	case AFTER:
+		m->prev = rel->prev;
+		m->next = rel;
+		
+		rel->prev->next = rel;
+		rel->prev = rel;
+		break;
+	}
 }
 
 rove_list_member_t *rove_list_insert(void *data, rove_list_local_location_t l, rove_list_member_t *rel) {
@@ -85,63 +118,71 @@ rove_list_member_t *rove_list_insert(void *data, rove_list_local_location_t l, r
 		return NULL;
 	
 	m->data = data;
-	
-	if( l == AFTER ) {
-		m->prev = rel;
-		m->next = rel->next;
+	rove_list_insert_raw(m, l, rel);
+	return m;
+}
+
+rove_list_member_t *rove_list_pop_raw(rove_list_t *self, rove_list_global_location_t l) {
+	rove_list_member_t *m;
+
+	assert(self);
+
+	switch( l ) {
+	case HEAD:
+		m = self->head->next;
 		
-		rel->next->prev = m;
-		rel->next = m;
-	} else {
-		m->prev = rel->prev;
-		m->next = rel;
+		m->next->prev    = self->head;
+		self->head->next = m->next;
+		break;
+
+	case TAIL:
+		m = self->tail->prev;
 		
-		rel->prev->next = rel;
-		rel->prev = rel;
+		m->prev->next    = self->tail;
+		self->tail->prev = m->prev;
+		break;
 	}
-	
+
 	return m;
 }
 
 void *rove_list_pop(rove_list_t *self, rove_list_global_location_t l) {
 	rove_list_member_t *m;
 	void *data;
+
+	assert(self);
 	
-	if( l == HEAD ) {
-		m = self->head->next;
-		
-		if( !m->next )
-			return NULL;
-		
-		data = m->data;
-		
-		m->next->prev    = self->head;
-		self->head->next = m->next;
-	} else {
-		m = self->tail->prev;
-		
-		if( !m->prev )
-			return NULL;
-		
-		data = m->data;
-		
-		m->prev->next    = self->tail;
-		self->tail->prev = m->prev;
-	}
+	if( rove_list_is_empty(self) )
+		return NULL;
+
+	m = rove_list_pop_raw(self, l);
+	data = m->data;
 	
 	free(m);
 	return data;
 }
 
-void *rove_list_remove(rove_list_t *self, rove_list_member_t *m) {
-	void *data = m->data;
+int rove_list_remove_raw(rove_list_member_t *m) {
+	assert(m);
 
 	if( !m->next || !m->prev )
-		return NULL;
-	
+		return 1;
+
 	m->prev->next = m->next;
 	m->next->prev = m->prev;
-	free(m);
+
+	return 0;
+}
+
+void *rove_list_remove(rove_list_member_t *m) {
+	void *data;
+
+	assert(m);
+	data = m->data;
+
+	if( rove_list_remove_raw(m) )
+		return NULL;
 	
+	free(m);
 	return data;
 }
