@@ -197,21 +197,21 @@ void rove_monome_free(rove_monome_t *monome) {
 	free(monome);
 }
 
-int rove_monome_init(const char *osc_prefix, const char *osc_host_port, const char *osc_listen_port, const int cols, const int rows) {
+int rove_monome_init() {
 	rove_monome_t *monome;
 	char *buf;
 	
-	assert(osc_prefix);
-	assert(osc_host_port);
-	assert(osc_listen_port);
-	assert(cols > 0);
-	assert(rows > 0);
+	assert(state.config.osc_prefix);
+	assert(state.config.osc_host_port);
+	assert(state.config.osc_listen_port);
+	assert(state.config.cols > 0);
+	assert(state.config.rows > 0);
 
 	monome = calloc(sizeof(rove_monome_t), 1);
 
-	asprintf(&buf, "osc.udp://127.0.0.1:%s/%s", osc_host_port, osc_prefix);
+	asprintf(&buf, "osc.udp://127.0.0.1:%s/%s", state.config.osc_host_port, state.config.osc_prefix);
 
-	if( !(monome->dev = monome_open(buf, "osc", osc_listen_port)) ) {
+	if( !(monome->dev = monome_open(buf, "osc", state.config.osc_listen_port)) ) {
 		free(monome);
 		free(buf);
 		return -1;
@@ -222,15 +222,16 @@ int rove_monome_init(const char *osc_prefix, const char *osc_host_port, const ch
 	monome_register_handler(monome->dev, MONOME_BUTTON_DOWN, button_handler, monome);
 	monome_register_handler(monome->dev, MONOME_BUTTON_UP, button_handler, monome);
 
-	monome->cols     = cols;
-	monome->rows     = rows;
+	/* eventually we will support several monomes */
+	monome->cols     = state.config.cols;
+	monome->rows     = state.config.rows;
 	monome->mod_keys = 0;
 
 	monome->quantize_field = 0;
 	monome->dirty_field    = 0;
 	
-	monome->callbacks = calloc(sizeof(rove_monome_handler_t), rows);
-	monome->controls  = calloc(sizeof(rove_monome_handler_t), cols);
+	monome->callbacks = calloc(sizeof(rove_monome_handler_t), state.config.rows);
+	monome->controls  = calloc(sizeof(rove_monome_handler_t), state.config.cols);
 	initialize_callbacks(monome);
 
 	monome_clear(monome->dev, MONOME_CLEAR_OFF);

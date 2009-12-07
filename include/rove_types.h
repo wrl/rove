@@ -185,6 +185,15 @@ struct rove_pattern {
  */
 
 struct rove_state {
+	struct {
+		char *osc_prefix;
+		char *osc_host_port;
+		char *osc_listen_port;
+
+		int cols;
+		int rows;
+	} config;
+
 	rove_monome_t *monome;
 	jack_client_t *client;
 	

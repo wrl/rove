@@ -47,8 +47,7 @@
 #define usage_printf_exit(...)		do { usage(); printf(__VA_ARGS__); exit(EXIT_FAILURE); } while(0);
 #define usage_printf_return(...)	do { usage(); printf(__VA_ARGS__); return 1;           } while(0);
 
-static char *osc_prefix, *osc_host_port, *osc_listen_port;
-static int cols, rows, session_cols;
+static int session_cols;
 
 rove_state_t state;
 
@@ -301,36 +300,36 @@ static int load_user_conf() {
 	
 	free(conf);
 	
-	if( c && !cols )
-		cols = ((c - 1) & 0xF) + 1;
+	if( c && !state.config.cols )
+		state.config.cols = ((c - 1) & 0xF) + 1;
 
-	if( r && !rows )
-		rows = ((r - 1) & 0xF) + 1;
+	if( r && !state.config.rows )
+		state.config.rows = ((r - 1) & 0xF) + 1;
 	
-	if( op && !osc_prefix ) {
+	if( op && !state.config.osc_prefix ) {
 		if( *op == '/' ) { /* remove the leading slash if there is one */
 			conf = strdup(op + 1);
 			free(op);
 			op = conf;
 		}
 		
-		osc_prefix = op;
+		state.config.osc_prefix = op;
 	}
 	
-	if( ohp && !osc_host_port ) {
+	if( ohp && !state.config.osc_host_port ) {
 		if( !is_numstr(ohp) )
 			usage_printf_return("rove_config: \"%s\" is not a valid host port.\n"
 								"             please check your conf file!\n", ohp);
 
-		osc_host_port = ohp;
+		state.config.osc_host_port = ohp;
 	}
 	
-	if( olp && !osc_listen_port ) {
+	if( olp && !state.config.osc_listen_port ) {
 		if( !is_numstr(olp) )
 			usage_printf_return("rove_config: \"%s\" is not a valid listen port.\n"
 								"             please check your conf file!\n", ohp);
 
-		osc_listen_port = olp;
+		state.config.osc_listen_port = olp;
 	}
 
 	return 0;
@@ -368,13 +367,7 @@ int main(int argc, char **argv) {
 	
 	memset(&state, 0, sizeof(rove_state_t));
 	
-	cols            = 0;
-	rows            = 0;
-	session_file    = NULL;
-	osc_prefix      = NULL;
-	osc_host_port   = NULL;
-	osc_listen_port = NULL;
-	
+	session_file = NULL;
 	opterr = 0;
 	
 	while( (c = getopt_long(argc, argv, "uc:r:p:h:l:", arguments, &i)) > 0 ) {
@@ -384,32 +377,32 @@ int main(int argc, char **argv) {
 			exit(EXIT_FAILURE); /* should we exit after displaying usage? (i think so) */
 
 		case 'c':
-			cols = ((atoi(optarg) - 1) & 0xF) + 1;
+			state.config.cols = ((atoi(optarg) - 1) & 0xF) + 1;
 			break;
 			
 		case 'r':
-			rows = ((atoi(optarg) - 1) & 0xF) + 1;
+			state.config.rows = ((atoi(optarg) - 1) & 0xF) + 1;
 			break;
 			
 		case 'p':
 			if( *optarg == '/' ) /* remove the leading slash if there is one */
 				optarg++;
 			
-			osc_prefix = strdup(optarg);
+			state.config.osc_prefix = strdup(optarg);
 			break;
 			
 		case 'h':
 			if( !is_numstr(optarg) )
 				usage_printf_exit("error: \"%s\" is not a valid host port.\n\n", optarg);
 
-			osc_host_port = strdup(optarg);
+			state.config.osc_host_port = strdup(optarg);
 			break;
 			
 		case 'l':
 			if( !is_numstr(optarg) )
 				usage_printf_exit("error: \"%s\" is not a valid listen port.\n\n", optarg);
 
-			osc_listen_port = strdup(optarg);
+			state.config.osc_listen_port = strdup(optarg);
 			break;
 		}
 	}
@@ -417,6 +410,9 @@ int main(int argc, char **argv) {
 	if( optind == argc )
 		usage_printf_exit("error: you did not specify a session file!\n\n");
 	
+	if( load_user_conf() )
+		exit(EXIT_FAILURE);
+		
 	session_file = argv[optind];
 
 	state.files    = rove_list_new();
@@ -425,9 +421,6 @@ int main(int argc, char **argv) {
 	state.active   = rove_list_new();
 	state.staging  = rove_list_new();
 	
-	if( load_user_conf() )
-		exit(EXIT_FAILURE);
-		
 	printf("\nhey, welcome to rove!\n\n"
 		   "you've got the following loops loaded:\n"
 		   "\t[rows]\t[file]\n");
@@ -449,22 +442,22 @@ int main(int argc, char **argv) {
 	
 	rove_recalculate_bpm_variables();
 	
-	if( rove_monome_init((osc_prefix) ? osc_prefix : DEFAULT_OSC_PREFIX,
-						 (osc_host_port) ? osc_host_port : DEFAULT_OSC_HOST_PORT,
-						 (osc_listen_port) ? osc_listen_port : DEFAULT_OSC_LISTEN_PORT,
-						 (cols) ? cols : DEFAULT_MONOME_COLUMNS,
-						 (rows) ? rows : DEFAULT_MONOME_ROWS) )
+#define ASSIGN_IF_UNSET(k, v) do { \
+	if( !k ) \
+		k = v; \
+} while( 0 );
+
+	ASSIGN_IF_UNSET(state.config.osc_prefix, DEFAULT_OSC_PREFIX);
+	ASSIGN_IF_UNSET(state.config.osc_host_port, DEFAULT_OSC_HOST_PORT);
+	ASSIGN_IF_UNSET(state.config.osc_listen_port, DEFAULT_OSC_LISTEN_PORT);
+	ASSIGN_IF_UNSET(state.config.cols, DEFAULT_MONOME_COLUMNS);
+	ASSIGN_IF_UNSET(state.config.rows, DEFAULT_MONOME_ROWS);
+
+#undef ASSIGN_IF_UNSET
+
+	if( rove_monome_init() )
 		exit(EXIT_FAILURE);
 
-	if( osc_prefix )
-		free(osc_prefix);
-
-	if( osc_host_port )
-		free(osc_host_port);
-	
-	if( osc_listen_port )
-		free(osc_listen_port);
-	
 	if( rove_jack_activate() )
 		exit(EXIT_FAILURE);
 	
