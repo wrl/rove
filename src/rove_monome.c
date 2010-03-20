@@ -46,14 +46,10 @@ static void group_off_handler(rove_monome_handler_t *self, rove_monome_t *monome
 	rove_group_t *group = self->data;
 	rove_file_t *f;
 
-	if( event_type != MONOME_BUTTON_DOWN )
+	if( event_type != MONOME_BUTTON_DOWN ||
+		!(f = group->active_loop) ||	/* group is already off (nothing set as the active loop) */
+		!rove_file_is_active(f) )		/* group is already off (active file not playing) */
 		return;
-	
-	if( !(f = group->active_loop) )
-		return; /* group is already off (nothing set as the active loop) */
-				
-	if( !rove_file_is_active(f) )
-		return; /* group is already off (active file not playing) */
 
 	rove_file_deactivate(f);
 }
@@ -61,10 +57,7 @@ static void group_off_handler(rove_monome_handler_t *self, rove_monome_t *monome
 static void control_row_handler(rove_monome_handler_t *self, rove_monome_t *monome, const int x, const int y, const int event_type) {
 	rove_monome_handler_t *callback;
 	
-	if( x >= monome->cols )
-		return;
-	
-	if( !(callback = &monome->controls[x]) )
+	if( x >= monome->cols || !(callback = &monome->controls[x]) )
 		return;
 	
 	if( callback->cb )
@@ -106,13 +99,9 @@ static void button_handler(const monome_event_t *e, void *user_data) {
 	event_y    = e->y;
 	event_type = e->event_type;
 
-	if( event_y >= monome->rows )
-		return;
-
-	if( !(callback = &monome->callbacks[event_y]) )
-		return;
-	
-	if( !callback->cb )
+	if( event_y >= monome->rows ||
+		!(callback = &monome->callbacks[event_y]) ||
+		!callback->cb )
 		return;
 	
 	callback->cb(callback, monome, event_x, event_y, event_type);
