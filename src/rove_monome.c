@@ -200,7 +200,7 @@ int rove_monome_init() {
 
 	asprintf(&buf, "osc.udp://127.0.0.1:%s/%s", state.config.osc_host_port, state.config.osc_prefix);
 
-	if( !(monome->dev = monome_open(buf, "osc", state.config.osc_listen_port)) ) {
+	if( !(monome->dev = monome_open(buf, state.config.osc_listen_port)) ) {
 		free(monome);
 		free(buf);
 		return -1;
