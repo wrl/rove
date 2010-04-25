@@ -320,7 +320,7 @@ int rove_monome_init(const char *osc_prefix, const char *osc_host_port, const ch
 
 	asprintf(&buf, "osc.udp://127.0.0.1:%s/%s", osc_host_port, osc_prefix);
 
-	if( !(monome->dev = monome_open(buf, "osc", osc_listen_port)) ) {
+	if( !(monome->dev = monome_open(buf, osc_listen_port)) ) {
 		free(monome);
 		free(buf);
 		return -1;
