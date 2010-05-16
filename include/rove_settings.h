@@ -16,22 +16,4 @@
  * along with rove.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _ROVE_H
-#define _ROVE_H
-
-#define _GNU_SOURCE 1
-
-#include <math.h>
-
-#include "rove_types.h"
-#include "rove_file.h"
-#include "rove_list.h"
-#include "rove_pattern.h"
-
-#define usage_printf_exit(...)		do { usage(); printf(__VA_ARGS__); exit(EXIT_FAILURE); } while(0);
-#define usage_printf_return(...)	do { usage(); printf(__VA_ARGS__); return 1;           } while(0);
-
-void usage();
-int is_numstr(char *str);
-
-#endif
+int rove_settings_load(const char *path);

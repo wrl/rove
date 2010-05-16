@@ -25,13 +25,15 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "config.h"
+
 #include "rove.h"
 #include "rove_file.h"
 #include "rove_jack.h"
 #include "rove_list.h"
-#include "rove_config.h"
 #include "rove_monome.h"
 #include "rove_util.h"
+#include "rove_settings.h"
 
 #define DEFAULT_CONF_FILE_NAME  ".rove.conf"
 
@@ -42,16 +44,11 @@
 #define DEFAULT_OSC_HOST_PORT   "8080"
 #define DEFAULT_OSC_LISTEN_PORT "8000"
 
-#define MAX_LENGTH 1024
-
-#define usage_printf_exit(...)		do { usage(); printf(__VA_ARGS__); exit(EXIT_FAILURE); } while(0);
-#define usage_printf_return(...)	do { usage(); printf(__VA_ARGS__); return 1;           } while(0);
-
 static int session_cols;
 
 rove_state_t state;
 
-static int is_numstr(char *str) {
+int is_numstr(char *str) {
 	/* scan through the string looking for either a NULL (end of string)
 	   or a non-numeric character */
 
@@ -80,7 +77,7 @@ static rove_group_t *initialize_groups(const int group_count) {
 	return groups;
 }
 
-static void usage() {
+void usage() {
 	printf("Usage: rove [OPTION]... session_file.rv\n"
 		   "  -c, --monome-columns=COLUMNS\n"
 		   "  -r, --monome-rows=ROWS\n"
@@ -133,17 +130,7 @@ static void monome_display_loop() {
 	}
 }
 
-static char *user_config_path() {
-	char *home, *path;
-	
-	if( !(home = getenv("HOME")) )
-		return NULL;
-	
-	asprintf(&path, "%s/%s", home, DEFAULT_CONF_FILE_NAME);
-	return path;
-}
-
-static void file_section_callback(const rove_config_section_t *section, void *arg) {
+static void file_section_callback(const conf_section_t *section, void *arg) {
 	static int y = 1;
 
 	unsigned int e, c, r, group, reverse, *v;
@@ -151,7 +138,7 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 	double speed;
 	char *path;
 	
-	rove_config_pair_t *pair = NULL;
+	conf_pair_t *pair = NULL;
 	
 	path    = NULL;
 	group   = 0;
@@ -160,7 +147,7 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 	reverse = 0;
 	speed   = 1.0;
 	
-	while( (e = rove_config_getvar(section, &pair)) ) {
+	while( (e = conf_getvar(section, &pair)) ) {
 		switch( e ) {
 		case 'p': /* file path */
 			path = pair->value;
@@ -223,13 +210,13 @@ static void file_section_callback(const rove_config_section_t *section, void *ar
 	return;
 }
 
-static void session_section_callback(const rove_config_section_t *section, void *arg) {
-	rove_config_default_section_callback(section);
+static void session_section_callback(const conf_section_t *section, void *arg) {
+	conf_default_section_callback(section);
 	state.groups = initialize_groups(state.group_count); /* FIXME: can return null, handle properly */
 }
 
 static int load_session_file(const char *path) {
-	rove_config_var_t file_vars[] = {
+	conf_var_t file_vars[] = {
 		{"path",    NULL, STRING, 'p'},
 		{"groups",  NULL,    INT, 'g'},
 		{"columns", NULL,    INT, 'c'},
@@ -239,7 +226,7 @@ static int load_session_file(const char *path) {
 		{NULL}
 	};
 	
-	rove_config_var_t session_vars[] = {
+	conf_var_t session_vars[] = {
 		{"quantize", &state.beat_multiplier, DOUBLE, 'q'},
 		{"bpm",      &state.bpm,             DOUBLE, 'b'},
 		{"groups",   &state.group_count,        INT, 'g'},
@@ -249,7 +236,7 @@ static int load_session_file(const char *path) {
 		{NULL}
 	};
 	
-	rove_config_section_t config_sections[] = {
+	conf_section_t config_sections[] = {
 		{"session", session_vars, session_section_callback},
 		{"file",    file_vars   , file_section_callback},
 		{NULL}
@@ -257,87 +244,25 @@ static int load_session_file(const char *path) {
 	
 	session_cols = 0;
 
-	if( rove_load_config(path, config_sections, 1) )
+	if( conf_load(path, config_sections, 1) )
 		return 1;
 	
-	return 0;
-}
-
-static int load_user_conf() {
-	char *op, *ohp, *olp, *conf;
-	int c, r;
-
-	rove_config_var_t monome_vars[] = {
-		{"columns", &c, INT, 'c'},
-		{"rows",    &r, INT, 'r'},
-		{NULL}
-	};
-	
-	rove_config_var_t osc_vars[] = {
-		{"prefix",      &op,  STRING, 'p'},
-		{"host-port",   &ohp, STRING, 'h'},
-		{"listen-port", &olp, STRING, 'l'},
-		{NULL}
-	};
-	
-	rove_config_section_t config_sections[] = {
-		{"monome", monome_vars},
-		{"osc",    osc_vars},
-		{NULL}
-	};
-	
-	c   = 0;
-	r   = 0;
-	op  = NULL;
-	ohp = NULL;
-	olp = NULL;
-
-	if( !(conf = user_config_path()) )
-		return 0;
-	
-	if( rove_load_config(conf, config_sections, 0) )
-		return 0;
-	
-	free(conf);
-	
-	if( c && !state.config.cols )
-		state.config.cols = ((c - 1) & 0xF) + 1;
-
-	if( r && !state.config.rows )
-		state.config.rows = ((r - 1) & 0xF) + 1;
-	
-	if( op && !state.config.osc_prefix ) {
-		if( *op == '/' ) { /* remove the leading slash if there is one */
-			conf = strdup(op + 1);
-			free(op);
-			op = conf;
-		}
-		
-		state.config.osc_prefix = op;
-	}
-	
-	if( ohp && !state.config.osc_host_port ) {
-		if( !is_numstr(ohp) )
-			usage_printf_return("rove_config: \"%s\" is not a valid host port.\n"
-								"             please check your conf file!\n", ohp);
-
-		state.config.osc_host_port = ohp;
-	}
-	
-	if( olp && !state.config.osc_listen_port ) {
-		if( !is_numstr(olp) )
-			usage_printf_return("rove_config: \"%s\" is not a valid listen port.\n"
-								"             please check your conf file!\n", ohp);
-
-		state.config.osc_listen_port = olp;
-	}
-
 	return 0;
 }
 
 static void rove_recalculate_bpm_variables() {
 	state.frames_per_beat = lrintf((60 / state.bpm) * (double) jack_get_sample_rate(state.client));
 	state.snap_delay = MAX(state.frames_per_beat * state.beat_multiplier, 1);
+}
+
+static char *user_config_path() {
+	char *home, *path;
+	
+	if( !(home = getenv("HOME")) )
+		return NULL;
+	
+	asprintf(&path, "%s/%s", home, DEFAULT_CONF_FILE_NAME);
+	return path;
 }
 
 static void exit_on_signal(int s) {
@@ -410,7 +335,7 @@ int main(int argc, char **argv) {
 	if( optind == argc )
 		usage_printf_exit("error: you did not specify a session file!\n\n");
 	
-	if( load_user_conf() )
+	if( rove_settings_load(user_config_path()) )
 		exit(EXIT_FAILURE);
 		
 	session_file = argv[optind];

@@ -23,7 +23,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 
-#include "rove_config.h"
+#include "config.h"
 #include "rove_list.h"
 
 #define BUFLEN 256
@@ -39,9 +39,9 @@ typedef enum {
 	BLOCK
 } parse_mode_t;
 
-int rove_config_getvar(const rove_config_section_t *section, rove_config_pair_t **current_pair) {
-	const rove_config_var_t *v;
-	rove_config_pair_t *p;
+int conf_getvar(const conf_section_t *section, conf_pair_t **current_pair) {
+	const conf_var_t *v;
+	conf_pair_t *p;
 	int i;
 	
 	/* if we're called incrementally, free the previous key->value pair */
@@ -78,9 +78,9 @@ int rove_config_getvar(const rove_config_section_t *section, rove_config_pair_t 
 	return 0;
 }
 
-void rove_config_default_section_callback(const rove_config_section_t *section) {
-	rove_config_pair_t *p;
-	const rove_config_var_t *v;
+void conf_default_section_callback(const conf_section_t *section) {
+	conf_pair_t *p;
+	const conf_var_t *v;
 	int i;
 	
 	if( !section->vars )
@@ -131,7 +131,7 @@ void rove_config_default_section_callback(const rove_config_section_t *section) 
 	}
 }
 
-static void close_block(rove_config_section_t *s, rove_config_pair_t *p) {
+static void close_block(conf_section_t *s, conf_pair_t *p) {
 	if( p )
 		rove_list_push(s->pairs, HEAD, p);
 
@@ -139,7 +139,7 @@ static void close_block(rove_config_section_t *s, rove_config_pair_t *p) {
 		if( s->section_callback )
 			s->section_callback(s, s->cb_arg);
 		else
-			rove_config_default_section_callback(s);
+			conf_default_section_callback(s);
 		
 		rove_list_free(s->pairs);
 		s->pairs = NULL;
@@ -147,11 +147,11 @@ static void close_block(rove_config_section_t *s, rove_config_pair_t *p) {
 }
 
 
-static int config_parse(const char *path, rove_config_section_t *sections, int cd) {
+static int config_parse(const char *path, conf_section_t *sections, int cd) {
 	char buf[BUFLEN + 1], vbuf[BUFLEN + 1], c;
-	rove_config_section_t *s = NULL;
+	conf_section_t *s = NULL;
 	int fd, len, vlen, i, j, lines;
-	rove_config_pair_t *p = NULL;
+	conf_pair_t *p = NULL;
 	parse_mode_t m = KEY;
 	
 	if( (fd = open(path, O_RDONLY)) < 0 )
@@ -242,7 +242,7 @@ static int config_parse(const char *path, rove_config_section_t *sections, int c
 			case BLOCK:
 				if( c != BLOCK_CLOSE_SYMBOL ) {
 					vbuf[vlen] = 0;
-					printf("rove_config: unterminated block name \"%s\" on line %d of %s\n", vbuf, lines, path);
+					printf("conf: unterminated block name \"%s\" on line %d of %s\n", vbuf, lines, path);
 					return 1;
 				}
 
@@ -271,7 +271,7 @@ static int config_parse(const char *path, rove_config_section_t *sections, int c
 				switch( c ) {
 				case '=':
 					if( !vlen ) {
-						printf("rove_config: missing key on line %d of %s\n", lines, path);
+						printf("conf: missing key on line %d of %s\n", lines, path);
 						return 1;
 					}
 
@@ -294,7 +294,7 @@ static int config_parse(const char *path, rove_config_section_t *sections, int c
 					if( p )
 						rove_list_push(s->pairs, HEAD, p);
 
-					p = calloc(1, sizeof(rove_config_pair_t));
+					p = calloc(1, sizeof(conf_pair_t));
 					p->key  = strndup(vbuf, vlen);
 					p->klen = vlen;
 				}
@@ -329,7 +329,7 @@ static int config_parse(const char *path, rove_config_section_t *sections, int c
 	return 0;
 }
 
-int rove_load_config(const char *path, rove_config_section_t *sections, int cd) {
+int conf_load(const char *path, conf_section_t *sections, int cd) {
 	struct stat buf;
 	int i, ret;
 
