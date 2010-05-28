@@ -125,7 +125,7 @@ static long file_src_callback(void *cb_data, float **data) {
 
 static void file_monome_out(rove_file_t *self, rove_monome_t *monome) {
 	rove_monome_position_t pos;
-	unsigned int row[2] = {0, 0};
+	uint8_t row[2] = {0, 0};
 	uint16_t r;
 
 	calculate_monome_pos(self->file_length * self->channels, rove_file_get_play_pos(self), self->row_span, (self->columns) ? self->columns : monome->cols, &pos);
