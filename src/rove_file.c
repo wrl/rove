@@ -125,8 +125,11 @@ static long file_src_callback(void *cb_data, float **data) {
 
 static void file_monome_out(rove_file_t *self, rove_monome_t *monome) {
 	rove_monome_position_t pos;
-	uint8_t row[2] = {0, 0};
-	uint16_t r;
+	uint16_t r = 0;
+
+	/* a uint16_t is the same thing as an array of two uint8_t's, which
+	   monome_led_row expects. */
+	uint8_t *row = (uint8_t *) &r;
 
 	calculate_monome_pos(self->file_length * self->channels, rove_file_get_play_pos(self), self->row_span, (self->columns) ? self->columns : monome->cols, &pos);
 
@@ -146,11 +149,8 @@ static void file_monome_out(rove_file_t *self, rove_monome_t *monome) {
 
 		MONOME_POS_CPY(&self->monome_pos_old, &pos);
 
-		if( rove_file_is_active(self) ) {
-			r      = 1 << pos.x;
-			row[0] = r & 0x00FF;
-			row[1] = r >> 8;
-		}
+		if( rove_file_is_active(self) )
+			r = 1 << pos.x;
 
 		monome_led_row_16(monome->dev, self->y + pos.y, row);
 	}
