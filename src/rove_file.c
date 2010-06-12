@@ -145,14 +145,14 @@ static void file_monome_out(rove_file_t *self, rove_monome_t *monome) {
 		}
 
 		if( pos.y != self->monome_pos_old.y ) 
-			monome_led_row_16(monome->dev, self->y + self->monome_pos_old.y, row);
+			monome_led_row(monome->dev, self->y + self->monome_pos_old.y, 2, row);
 
 		MONOME_POS_CPY(&self->monome_pos_old, &pos);
 
 		if( rove_file_is_active(self) )
 			r = 1 << pos.x;
 
-		monome_led_row_16(monome->dev, self->y + pos.y, row);
+		monome_led_row(monome->dev, self->y + pos.y, 2, row);
 	}
 
 	MONOME_POS_CPY(&self->monome_pos, &pos);
