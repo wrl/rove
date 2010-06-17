@@ -3,13 +3,14 @@ LDFLAGS += -rdynamic $(MONOME_LIBS) $(JACK_LIBS) $(SNDFILE_LIBS) $(SRC_LIBS)
 TARGETS = rove
 
 OBJS  = rove.o
-OBJS += rove_file.o
-OBJS += rove_jack.o
-OBJS += rove_list.o
-OBJS += rove_group.o
-OBJS += rove_config.o
-OBJS += rove_monome.o
-OBJS += rove_pattern.o
+OBJS += list.o
+OBJS += jack.o
+OBJS += group.o
+OBJS += monome.o
+OBJS += pattern.o
+OBJS += settings.o
+OBJS += config_parser.o
+OBJS += file_loop.o
 
 all: $(TARGETS)
 

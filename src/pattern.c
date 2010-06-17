@@ -1,6 +1,6 @@
 /**
  * This file is part of rove.
- * rove is copyright 2007, 2008 william light <visinin@gmail.com>
+ * rove is copyright 2007-2009 william light <visinin@gmail.com>
  *
  * rove is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,20 +16,21 @@
  * along with rove.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _ROVE_MONOME_H
-#define _ROVE_MONOME_H
+#include <assert.h>
+#include <stdlib.h>
 
-#include "rove.h"
 #include "rove_file.h"
+#include "rove_list.h"
+#include "rove_pattern.h"
 
-#define MONOME_POS_CMP(a, b) (memcmp(a, b, sizeof(rove_monome_position_t)))
-#define MONOME_POS_CPY(a, b) (memcpy(a, b, sizeof(rove_monome_position_t)))
+extern rove_state_t state;
 
-void rove_monome_run_thread(rove_monome_t *monome);
-void rove_monome_stop_thread(rove_monome_t *monome);
+rove_pattern_t *rove_pattern_new() {
+	rove_pattern_t *self = calloc(sizeof(rove_pattern_t), 1);
+	return self;
+}
 
-void rove_monome_display_file(rove_file_t *f);
-void rove_monome_free(rove_monome_t *monome);
-int  rove_monome_init();
-
-#endif
+void rove_pattern_free(rove_pattern_t *self) {
+	assert(self);
+	free(self); /* so liberating */
+}

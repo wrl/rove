@@ -28,4 +28,10 @@
 #include "rove_list.h"
 #include "rove_pattern.h"
 
+#define usage_printf_exit(...)		do { usage(); printf(__VA_ARGS__); exit(EXIT_FAILURE); } while(0);
+#define usage_printf_return(...)	do { usage(); printf(__VA_ARGS__); return 1;           } while(0);
+
+void usage();
+int is_numstr(char *str);
+
 #endif

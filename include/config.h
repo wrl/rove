@@ -24,40 +24,40 @@ typedef enum {
 	STRING,
 	DOUBLE,
 	BOOL
-} rove_config_var_type_t;
+} conf_var_type_t;
 
-typedef struct rove_config_pair rove_config_pair_t;
-typedef struct rove_config_section rove_config_section_t;
-typedef struct rove_config_var rove_config_var_t;
+typedef struct conf_pair conf_pair_t;
+typedef struct conf_section conf_section_t;
+typedef struct conf_var conf_var_t;
 
-typedef void (*rove_config_section_callback_t)(const rove_config_section_t *, void *arg);
+typedef void (*conf_section_callback_t)(const conf_section_t *, void *arg);
 
-struct rove_config_var {
+struct conf_var {
 	const char *key;
 	void *dest;
-	rove_config_var_type_t type;
+	conf_var_type_t type;
 	int val;
 };
 
-struct rove_config_pair {
+struct conf_pair {
 	char *key;
 	char *value;
 	
-	const rove_config_var_t *var;
+	const conf_var_t *var;
 	int klen;
 	int vlen;
 };
 
-struct rove_config_section {
+struct conf_section {
 	char *block;
-	const rove_config_var_t *vars;
-	rove_config_section_callback_t section_callback;
+	const conf_var_t *vars;
+	conf_section_callback_t section_callback;
 	void *cb_arg;
 
 	int start_line;
 	rove_list_t *pairs;
 };
 
-int rove_load_config(const char *path, rove_config_section_t *sections, int cd);
-void rove_config_default_section_callback(const rove_config_section_t *section);
-int rove_config_getvar(const rove_config_section_t *section, rove_config_pair_t **current_pair);
+int conf_load(const char *path, conf_section_t *sections, int cd);
+void conf_default_section_callback(const conf_section_t *section);
+int conf_getvar(const conf_section_t *section, conf_pair_t **current_pair);
