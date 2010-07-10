@@ -38,12 +38,12 @@
 
 extern rove_state_t state;
 
-static void pattern_handler(rove_monome_handler_t *self, rove_monome_t *monome, const int x, const int y, const int event_type) {
+static void pattern_handler(void *handler, rove_monome_t *monome, const int x, const int y, const int event_type) {
 	return;
 }
 
-static void group_off_handler(rove_monome_handler_t *self, rove_monome_t *monome, const int x, const int y, const int event_type) {
-	rove_group_t *group = self->data;
+static void group_off_handler(void *handler, rove_monome_t *monome, const int x, const int y, const int event_type) {
+	rove_group_t *group = HANDLER(handler)->data;
 	rove_file_t *f;
 
 	if( event_type != MONOME_BUTTON_DOWN ||
@@ -54,7 +54,7 @@ static void group_off_handler(rove_monome_handler_t *self, rove_monome_t *monome
 	rove_file_deactivate(f);
 }
 
-static void control_row_handler(rove_monome_handler_t *self, rove_monome_t *monome, const int x, const int y, const int event_type) {
+static void control_row_handler(void *handler, rove_monome_t *monome, const int x, const int y, const int event_type) {
 	rove_monome_handler_t *callback;
 	
 	if( x >= monome->cols || !(callback = &monome->controls[x]) )
@@ -82,8 +82,8 @@ static void control_row_handler(rove_monome_handler_t *self, rove_monome_t *mono
 	}
 }
 
-void file_row_handler(rove_monome_handler_t *self, rove_monome_t *monome, const int x, const int y, const int event_type) {
-	rove_file_t *f = self->data;
+void file_row_handler(void *handler, rove_monome_t *monome, const int x, const int y, const int event_type) {
+	rove_file_t *f = HANDLER(handler)->data;
 
 	if( f->monome_in_cb )
 		f->monome_in_cb(f, monome, x, y, event_type); 
