@@ -158,7 +158,8 @@ static void file_monome_out(rove_file_t *self, rove_monome_t *monome) {
 	MONOME_POS_CPY(&self->monome_pos, &pos);
 }
 
-static void file_monome_in(rove_file_t *self, rove_monome_t *monome, const int x, const int y, const int type) {
+static void file_monome_in(void *handler, rove_monome_t *monome, const int x, const int y, const int type) {
+	rove_file_t *self = (rove_file_t *) handler;
 	unsigned int cols;
 
 	rove_monome_position_t pos = {x, y - self->y};

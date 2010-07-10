@@ -32,7 +32,7 @@
 
 #include "rove_list.h"
 
-#define HANDLER(x) ((rove_monome_handler_t *) x)
+#define HANDLER_T(x) ((rove_monome_handler_t *) x)
 
 /**
  * types
@@ -75,7 +75,6 @@ typedef void (*rove_monome_callback_t)(void *handler, rove_monome_t *, const int
 
 typedef void (*rove_process_callback_t)(rove_file_t *self, jack_default_audio_sample_t **buffers, int channels, jack_nframes_t nframes, jack_nframes_t sample_rate);
 typedef void (*rove_quantize_callback_t)(rove_file_t *self);
-typedef void (*rove_monome_input_callback_t)(rove_file_t *self, rove_monome_t *, const int x, const int y, const int event_type);
 typedef void (*rove_monome_output_callback_t)(rove_file_t *self, rove_monome_t *);
 
 /**
@@ -153,7 +152,7 @@ struct rove_file {
 	rove_process_callback_t process_cb;
 	rove_quantize_callback_t quantize_cb;
 	rove_monome_output_callback_t monome_out_cb;
-	rove_monome_input_callback_t monome_in_cb;
+	rove_monome_callback_t monome_in_cb;
 };
 
 /**

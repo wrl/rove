@@ -43,7 +43,7 @@ static void pattern_handler(void *handler, rove_monome_t *monome, const int x, c
 }
 
 static void group_off_handler(void *handler, rove_monome_t *monome, const int x, const int y, const int event_type) {
-	rove_group_t *group = HANDLER(handler)->data;
+	rove_group_t *group = HANDLER_T(handler)->data;
 	rove_file_t *f;
 
 	if( event_type != MONOME_BUTTON_DOWN ||
@@ -83,7 +83,7 @@ static void control_row_handler(void *handler, rove_monome_t *monome, const int 
 }
 
 void file_row_handler(void *handler, rove_monome_t *monome, const int x, const int y, const int event_type) {
-	rove_file_t *f = HANDLER(handler)->data;
+	rove_file_t *f = HANDLER_T(handler)->data;
 
 	if( f->monome_in_cb )
 		f->monome_in_cb(f, monome, x, y, event_type); 
