@@ -32,6 +32,8 @@
 #include "rove_monome.h"
 #include "rove_file.h"
 
+#define FILE_T(x) ((rove_file_t *) x)
+
 extern rove_state_t state;
 
 static sf_count_t calculate_play_pos(sf_count_t length, int x, int y, const int reverse, const int rows, const int cols) {
@@ -158,8 +160,8 @@ static void file_monome_out(rove_file_t *self, rove_monome_t *monome) {
 	MONOME_POS_CPY(&self->monome_pos, &pos);
 }
 
-static void file_monome_in(void *handler, rove_monome_t *monome, const int x, const int y, const int type) {
-	rove_file_t *self = (rove_file_t *) handler;
+static void file_monome_in(rove_monome_t *monome, const int x, const int y, const int type, void *user_arg) {
+	rove_file_t *self = FILE_T(user_arg);
 	unsigned int cols;
 
 	rove_monome_position_t pos = {x, y - self->y};

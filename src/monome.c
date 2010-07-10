@@ -38,12 +38,12 @@
 
 extern rove_state_t state;
 
-static void pattern_handler(void *handler, rove_monome_t *monome, const int x, const int y, const int event_type) {
+static void pattern_handler(rove_monome_t *monome, const int x, const int y, const int event_type, void *user_arg) {
 	return;
 }
 
-static void group_off_handler(void *handler, rove_monome_t *monome, const int x, const int y, const int event_type) {
-	rove_group_t *group = HANDLER_T(handler)->data;
+static void group_off_handler(rove_monome_t *monome, const int x, const int y, const int event_type, void *user_arg) {
+	rove_group_t *group = HANDLER_T(user_arg)->data;
 	rove_file_t *f;
 
 	if( event_type != MONOME_BUTTON_DOWN ||
@@ -54,14 +54,14 @@ static void group_off_handler(void *handler, rove_monome_t *monome, const int x,
 	rove_file_deactivate(f);
 }
 
-static void control_row_handler(void *handler, rove_monome_t *monome, const int x, const int y, const int event_type) {
+static void control_row_handler(rove_monome_t *monome, const int x, const int y, const int event_type, void *user_arg) {
 	rove_monome_handler_t *callback;
 	
 	if( x >= monome->cols || !(callback = &monome->controls[x]) )
 		return;
 	
 	if( callback->cb )
-		return callback->cb(callback, monome, x, y, event_type);
+		return callback->cb(monome, x, y, event_type, callback);
 	
 	switch( event_type ) {
 	case MONOME_BUTTON_DOWN:
@@ -82,11 +82,11 @@ static void control_row_handler(void *handler, rove_monome_t *monome, const int 
 	}
 }
 
-void file_row_handler(void *handler, rove_monome_t *monome, const int x, const int y, const int event_type) {
-	rove_file_t *f = HANDLER_T(handler)->data;
+void file_row_handler(rove_monome_t *monome, const int x, const int y, const int event_type, void *user_arg) {
+	rove_file_t *f = HANDLER_T(user_arg)->data;
 
 	if( f->monome_in_cb )
-		f->monome_in_cb(f, monome, x, y, event_type); 
+		f->monome_in_cb(monome, x, y, event_type, f); 
 }
 
 static void button_handler(const monome_event_t *e, void *user_data) {
@@ -104,7 +104,7 @@ static void button_handler(const monome_event_t *e, void *user_data) {
 		!callback->cb )
 		return;
 	
-	callback->cb(callback, monome, event_x, event_y, event_type);
+	callback->cb(monome, event_x, event_y, event_type, callback);
 }
 
 static void initialize_callbacks(rove_monome_t *monome) {
