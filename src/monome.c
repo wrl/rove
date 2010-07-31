@@ -163,7 +163,7 @@ static void initialize_callbacks(rove_monome_t *monome) {
 
 void *rove_monome_loop_thread(void *user_data) {
 	monome_t *monome = user_data;
-	monome_main_loop(monome);
+	monome_event_loop(monome);
 
 	return NULL;
 }
