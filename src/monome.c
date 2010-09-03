@@ -151,10 +151,10 @@ static void initialize_callbacks(rove_monome_t *monome) {
 				continue;
 
 			row = &monome->callbacks[i];
-			
+
 			row->pos.x = 0;
 			row->pos.y = i;
-			
+
 			row->cb    = file_row_handler;
 			row->data  = f;
 		}

@@ -386,7 +386,7 @@ else
 
 	echo "";
 	echo "  I couldn't find libmonome on your system!  you will need it to compile rove.";
-	echo_n "  The latest version of libmonome can be found at "; style_link -n "http://github.com/visinin/libmonome/archives/master"; echo ".";
+	echo_n "  The latest version of libmonome can be found at "; style_link -n "http://github.com/wrl/libmonome/archives/master"; echo ".";
 	echo "";
 fi
 
