@@ -33,7 +33,9 @@
 #include "list.h"
 #include "rmonome.h"
 #include "util.h"
+#include "session.h"
 #include "settings.h"
+
 
 #define DEFAULT_CONF_FILE_NAME  ".rove.conf"
 
@@ -44,7 +46,6 @@
 #define DEFAULT_OSC_HOST_PORT   "8080"
 #define DEFAULT_OSC_LISTEN_PORT "8000"
 
-static int session_cols;
 
 rove_state_t state;
 
@@ -62,19 +63,6 @@ int is_numstr(char *str) {
 		return 0;
 
 	return 1;
-}
-
-static rove_group_t *initialize_groups(uint_t group_count) {
-	rove_group_t *groups;
-	int i;
-	
-	if( !(groups = calloc(sizeof(rove_group_t), group_count)) )
-		return NULL;
-
-	for( i = 0; i < group_count; i++ )
-		groups[i].idx = i;
-	
-	return groups;
 }
 
 void usage() {
@@ -128,126 +116,6 @@ static void monome_display_loop() {
 
 		nanosleep(&req, NULL);
 	}
-}
-
-static void file_section_callback(const conf_section_t *section, void *arg) {
-	static int y = 1;
-
-	unsigned int e, c, r, group, reverse, *v;
-	rove_file_t *f;
-	double speed;
-	char *path;
-	
-	conf_pair_t *pair = NULL;
-	
-	path    = NULL;
-	group   = 0;
-	r       = 1;
-	c       = 0;
-	reverse = 0;
-	speed   = 1.0;
-	
-	while( (e = conf_getvar(section, &pair)) ) {
-		switch( e ) {
-		case 'p': /* file path */
-			path = pair->value;
-			continue;
-
-		case 'v': /* reverse */
-			reverse = 1;
-			continue;
-
-		case 's': /* speed */
-			speed = strtod(pair->value, NULL);
-			continue;
-
-		case 'g': /* group */
-			v = &group;
-			break;
-			
-		case 'c': /* columns */
-			v = &c;
-			break;
-
-		case 'r': /* rows */
-			v = &r;
-			break;
-		}
-		
-		*v = (unsigned int) strtol(pair->value, NULL, 10);
-	}
-	
-	if( !path ) {
-		printf("no file path specified in file section starting at line %d\n", section->start_line);
-		return;
-	}
-	
-	if( !group ) {
-		printf("no group specified in file section starting at line %d\n", section->start_line);
-		goto out;
-	}
-	
-	if( !(f = rove_file_new_from_path(path)) )
-		goto out;
-	
-	if( group > state.group_count )
-		group = state.group_count;
-	
-	f->y = y;
-	f->speed = speed;
-	f->row_span = r;
-	f->columns  = (c) ? ((c - 1) & 0xF) + 1 : session_cols;
-	f->group = &state.groups[group - 1];
-	f->play_direction = ( reverse ) ? FILE_PLAY_DIRECTION_REVERSE : FILE_PLAY_DIRECTION_FORWARD;
-	
-	rove_list_push(state.files, TAIL, f);
-	printf("\t%d - %d\t%s\n", y, y + r - 1, path);
-	
-	y += r;
-	
- out:
-	free(path);
-	return;
-}
-
-static void session_section_callback(const conf_section_t *section, void *arg) {
-	conf_default_section_callback(section);
-	state.groups = initialize_groups(state.group_count); /* FIXME: can return null, handle properly */
-}
-
-static int load_session_file(const char *path) {
-	conf_var_t file_vars[] = {
-		{"path",    NULL, STRING, 'p'},
-		{"groups",  NULL,    INT, 'g'},
-		{"columns", NULL,    INT, 'c'},
-		{"rows",    NULL,    INT, 'r'},
-		{"reverse", NULL,   BOOL, 'v'},
-		{"speed",   NULL, DOUBLE, 's'},
-		{NULL}
-	};
-	
-	conf_var_t session_vars[] = {
-		{"quantize", &state.beat_multiplier, DOUBLE, 'q'},
-		{"bpm",      &state.bpm,             DOUBLE, 'b'},
-		{"groups",   &state.group_count,        INT, 'g'},
-		{"pattern1", &state.pattern_lengths[0], INT, '1'},
-		{"pattern2", &state.pattern_lengths[1], INT, '2'},
-		{"columns",  &session_cols,             INT, 'c'},
-		{NULL}
-	};
-	
-	conf_section_t config_sections[] = {
-		{"session", session_vars, session_section_callback},
-		{"file",    file_vars   , file_section_callback},
-		{NULL}
-	};
-	
-	session_cols = 0;
-
-	if( conf_load(path, config_sections, 1) )
-		return 1;
-	
-	return 0;
 }
 
 static void rove_recalculate_bpm_variables() {
@@ -350,7 +218,7 @@ int main(int argc, char **argv) {
 		   "you've got the following loops loaded:\n"
 		   "\t[rows]\t[file]\n");
 	
-	if( load_session_file(session_file) ) {
+	if( session_load(session_file) ) {
 		printf("error parsing session file :(\n");
 		exit(EXIT_FAILURE);
 	}

@@ -8,6 +8,7 @@ OBJS += jack.o
 OBJS += group.o
 OBJS += monome.o
 OBJS += pattern.o
+OBJS += session.o
 OBJS += settings.o
 OBJS += config_parser.o
 OBJS += file_loop.o
