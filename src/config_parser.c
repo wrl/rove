@@ -25,8 +25,8 @@
 #include <fcntl.h>
 #include <stdio.h>
 
-#include "config.h"
-#include "rove_list.h"
+#include "config_parser.h"
+#include "list.h"
 
 #define BUFLEN 256
 

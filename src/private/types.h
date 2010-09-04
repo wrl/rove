@@ -30,13 +30,15 @@
 #include <samplerate.h>
 #endif
 
-#include "rove_list.h"
+#include "list.h"
 
 #define HANDLER_T(x) ((rove_monome_handler_t *) x)
 
 /**
  * types
  */
+
+typedef unsigned int uint_t;
 
 typedef enum {
 	FILE_STATUS_ACTIVE,

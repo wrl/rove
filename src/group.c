@@ -16,8 +16,8 @@
  * along with rove.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "rove_types.h"
-#include "rove_file.h"
+#include "types.h"
+#include "file.h"
 
 void rove_group_activate_file(rove_file_t *file) {
 	if( file->group->active_loop )

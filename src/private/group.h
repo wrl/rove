@@ -1,6 +1,6 @@
 /**
  * This file is part of rove.
- * rove is copyright 2007, 2008 william light <visinin@gmail.com>
+ * rove is copyright 2007-2009 william light <visinin@gmail.com>
  *
  * rove is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,12 +16,6 @@
  * along with rove.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _ROVE_PATTERN_H
-#define _ROVE_PATTERN_H
+#include "types.h"
 
-#include "rove_types.h"
-
-rove_pattern_t *rove_pattern_new();
-void rove_pattern_free(rove_pattern_t *);
-
-#endif
+void rove_group_activate_file(rove_file_t *file);

@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "config.h"
+#include "config_parser.h"
 #include "rove.h"
 
 extern rove_state_t state;

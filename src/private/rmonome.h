@@ -20,7 +20,7 @@
 #define _ROVE_MONOME_H
 
 #include "rove.h"
-#include "rove_file.h"
+#include "file.h"
 
 #define MONOME_POS_CMP(a, b) (memcmp(a, b, sizeof(rove_monome_position_t)))
 #define MONOME_POS_CPY(a, b) (memcpy(a, b, sizeof(rove_monome_position_t)))

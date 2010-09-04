@@ -25,15 +25,15 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "config.h"
+#include "config_parser.h"
 
 #include "rove.h"
-#include "rove_file.h"
-#include "rove_jack.h"
-#include "rove_list.h"
-#include "rove_monome.h"
-#include "rove_util.h"
-#include "rove_settings.h"
+#include "file.h"
+#include "jack.h"
+#include "list.h"
+#include "rmonome.h"
+#include "util.h"
+#include "settings.h"
 
 #define DEFAULT_CONF_FILE_NAME  ".rove.conf"
 

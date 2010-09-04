@@ -26,12 +26,12 @@
 #include <sndfile.h>
 
 #include "rove.h"
-#include "rove_file.h"
-#include "rove_jack.h"
-#include "rove_list.h"
-#include "rove_util.h"
-#include "rove_monome.h"
-#include "rove_pattern.h"
+#include "file.h"
+#include "jack.h"
+#include "list.h"
+#include "util.h"
+#include "rmonome.h"
+#include "pattern.h"
 
 #define SHIFT 0x01
 #define META  0x02

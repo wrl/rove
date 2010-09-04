@@ -19,9 +19,9 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "rove_file.h"
-#include "rove_list.h"
-#include "rove_pattern.h"
+#include "file.h"
+#include "list.h"
+#include "pattern.h"
 
 extern rove_state_t state;
 

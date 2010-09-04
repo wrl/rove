@@ -19,7 +19,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "rove_list.h"
+#include "list.h"
 
 rove_list_t *rove_list_new() {
 	rove_list_t *self;

@@ -16,7 +16,7 @@
  * along with rove.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "rove_list.h"
+#include "list.h"
 
 typedef enum {
 	INT,

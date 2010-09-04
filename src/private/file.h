@@ -22,7 +22,7 @@
 #include <sndfile.h>
 #include <stdint.h>
 
-#include "rove_types.h"
+#include "types.h"
 
 #define rove_file_is_active(f) (f->status == FILE_STATUS_ACTIVE)
 #define rove_file_get_play_pos(f) (f->play_offset * f->channels)

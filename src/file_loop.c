@@ -27,10 +27,10 @@
 #include <samplerate.h>
 #endif
 
-#include "rove_types.h"
-#include "rove_group.h"
-#include "rove_monome.h"
-#include "rove_file.h"
+#include "types.h"
+#include "group.h"
+#include "rmonome.h"
+#include "file.h"
 
 #define FILE_T(x) ((rove_file_t *) x)
 
