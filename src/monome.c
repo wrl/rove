@@ -38,11 +38,11 @@
 
 extern rove_state_t state;
 
-static void pattern_handler(rove_monome_t *monome, const int x, const int y, const int event_type, void *user_arg) {
+static void pattern_handler(rove_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
 	return;
 }
 
-static void group_off_handler(rove_monome_t *monome, const int x, const int y, const int event_type, void *user_arg) {
+static void group_off_handler(rove_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
 	rove_group_t *group = HANDLER_T(user_arg)->data;
 	rove_file_t *f;
 
@@ -54,7 +54,7 @@ static void group_off_handler(rove_monome_t *monome, const int x, const int y, c
 	rove_file_deactivate(f);
 }
 
-static void control_row_handler(rove_monome_t *monome, const int x, const int y, const int event_type, void *user_arg) {
+static void control_row_handler(rove_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
 	rove_monome_handler_t *callback;
 	
 	if( x >= monome->cols || !(callback = &monome->controls[x]) )
@@ -82,7 +82,7 @@ static void control_row_handler(rove_monome_t *monome, const int x, const int y,
 	}
 }
 
-void file_row_handler(rove_monome_t *monome, const int x, const int y, const int event_type, void *user_arg) {
+void file_row_handler(rove_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
 	rove_file_t *f = HANDLER_T(user_arg)->data;
 
 	if( f->monome_in_cb )

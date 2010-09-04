@@ -36,7 +36,7 @@
 
 extern rove_state_t state;
 
-static sf_count_t calculate_play_pos(sf_count_t length, int x, int y, const int reverse, const int rows, const int cols) {
+static sf_count_t calculate_play_pos(sf_count_t length, int x, int y, uint_t reverse, uint_t rows, uint_t cols) {
 	double elapsed;
 	
 	x &= 0x0F;
@@ -53,7 +53,7 @@ static sf_count_t calculate_play_pos(sf_count_t length, int x, int y, const int 
 		return lrint(ceil(elapsed * length));
 }
 
-static void calculate_monome_pos(sf_count_t length, sf_count_t position, const int rows, const int cols, rove_monome_position_t *pos) {
+static void calculate_monome_pos(sf_count_t length, sf_count_t position, uint_t rows, uint_t cols, rove_monome_position_t *pos) {
 	double elapsed;
 	int x, y;
 	
@@ -160,7 +160,7 @@ static void file_monome_out(rove_file_t *self, rove_monome_t *monome) {
 	MONOME_POS_CPY(&self->monome_pos, &pos);
 }
 
-static void file_monome_in(rove_monome_t *monome, const int x, const int y, const int type, void *user_arg) {
+static void file_monome_in(rove_monome_t *monome, uint_t x, uint_t y, uint_t type, void *user_arg) {
 	rove_file_t *self = FILE_T(user_arg);
 	unsigned int cols;
 

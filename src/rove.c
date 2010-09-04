@@ -64,7 +64,7 @@ int is_numstr(char *str) {
 	return 1;
 }
 
-static rove_group_t *initialize_groups(const int group_count) {
+static rove_group_t *initialize_groups(uint_t group_count) {
 	rove_group_t *groups;
 	int i;
 	
