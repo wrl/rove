@@ -166,11 +166,11 @@ void rove_transport_stop() {
 	jack_transport_locate(state.client, 0);
 }
 
-void rove_jack_deactivate() {
+void r_jack_deactivate() {
 	jack_deactivate(state.client);
 }
 
-int rove_jack_activate() {
+int r_jack_activate() {
 	jack_client_t *client = state.client;
 	int i, group_count;
 	rove_group_t *g;
@@ -193,7 +193,7 @@ int rove_jack_activate() {
 	return 0;
 }
 
-int rove_jack_init() {
+int r_jack_init() {
 	const char *client_name = "rove";
 	const char *server_name = NULL;
 	jack_options_t options  = JackNoStartServer;

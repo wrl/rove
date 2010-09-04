@@ -141,7 +141,7 @@ static void cleanup() {
 	r_monome_stop_thread(state.monome);
 	r_monome_free(state.monome);
 
-	rove_jack_deactivate();
+	r_jack_deactivate();
 }
 
 int main(int argc, char **argv) {
@@ -228,7 +228,7 @@ int main(int argc, char **argv) {
 		exit(EXIT_FAILURE);
 	}
 
-	if( rove_jack_init() ) {
+	if( r_jack_init() ) {
 		fprintf(stderr, "error initializing JACK :(\n");
 		exit(EXIT_FAILURE);
 	}
@@ -251,7 +251,7 @@ int main(int argc, char **argv) {
 	if( r_monome_init() )
 		exit(EXIT_FAILURE);
 
-	if( rove_jack_activate() )
+	if( r_jack_activate() )
 		exit(EXIT_FAILURE);
 
 	signal(SIGINT, exit_on_signal);
