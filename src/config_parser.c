@@ -45,24 +45,24 @@ int conf_getvar(const conf_section_t *section, conf_pair_t **current_pair) {
 	const conf_var_t *v;
 	conf_pair_t *p;
 	int i;
-	
+
 	/* if we're called incrementally, free the previous key->value pair */
 	if( *current_pair ) {
 		p = *current_pair;
-		
+
 		/* assume that other code holds reference to the value */
 		if( p->var->type != STRING )
 			free(p->value);
-		
+
 		free(p->key);
 		free(p);
 	}
-	
+
 	while( (p = rove_list_pop(section->pairs, HEAD)) ) {
 		/* search for a matching var structure */
 		for( i = 0; section->vars[i].key; i++ ) {
 			v = &section->vars[i];
-			
+
 			if( !strncmp(p->key, v->key, p->klen) ) {
 				p->var = v;
 				*current_pair = p;
@@ -70,13 +70,13 @@ int conf_getvar(const conf_section_t *section, conf_pair_t **current_pair) {
 				return v->val;
 			}
 		}
-		
+
 		/* variable in conf file that was not in the array of expected vars */
 		free(p->value);
 		free(p->key);
 		free(p);
 	}
-	
+
 	return 0;
 }
 
@@ -93,41 +93,41 @@ void conf_default_section_callback(const conf_section_t *section) {
 		for( i = 0; section->vars[i].key; i++ ) {
 			v = &section->vars[i];
 			p->var = v;
-			
+
 			if( !strncmp(p->key, v->key, p->klen) ) {
 				switch( v->type ) {
 				case STRING:
 					if( p->value )
 						*((char **) v->dest) = p->value;
 					goto assigned;
-					
+
 				case INT:
 					if( p->value )
 						*((int *) v->dest) = (int) strtol(p->value, NULL, 10);
 					break;
-					
+
 				case LONG:
 					if( p->value )
 						*((long int *) v->dest) = strtol(p->value, NULL, 10);
 					break;
-					
+
 				case DOUBLE:
 					if( p->value )
 						*((double *) v->dest) = strtod(p->value, NULL);
 					break;
-					
+
 				case BOOL:
 					*((int *) v->dest) = (p->vlen) ? 1 : 0;
 					break;
 				}
-				
+
 				break;
 			}
 		}
-		
+
 		/* if the variable is a string, assume that other code holds reference to the value */
 		free(p->value);
-	assigned:
+assigned:
 		free(p->key);
 		free(p);
 	}

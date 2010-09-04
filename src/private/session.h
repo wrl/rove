@@ -16,4 +16,9 @@
  * along with rove.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "types.h"
+
+rove_session_t *session_new();
+void session_free(rove_session_t *session);
+
 int session_load(const char *path);

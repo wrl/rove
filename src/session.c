@@ -16,14 +16,19 @@
  * along with rove.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "config_parser.h"
+#include "session.h"
 #include "rove.h"
 
 
+#define SESSION_T(x) ((rove_session_t *) x)
+
+
 extern rove_state_t state;
-static int session_cols;
 
 static rove_group_t *initialize_groups(uint_t group_count) {
 	rove_group_t *groups;
@@ -39,6 +44,7 @@ static rove_group_t *initialize_groups(uint_t group_count) {
 }
 
 static void file_section_callback(const conf_section_t *section, void *arg) {
+	rove_session_t *session = *((rove_session_t **) arg);
 	static int y = 1;
 
 	unsigned int e, c, r, group, reverse, *v;
@@ -47,6 +53,11 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 	char *path;
 
 	conf_pair_t *pair = NULL;
+
+	if( !session ) {
+		fprintf(stderr, "file block specified before session block, aieee!\n");
+		assert(session);
+	}
 
 	path    = NULL;
 	group   = 0;
@@ -104,7 +115,7 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 	f->y = y;
 	f->speed = speed;
 	f->row_span = r;
-	f->columns  = (c) ? ((c - 1) & 0xF) + 1 : session_cols;
+	f->columns  = (c) ? ((c - 1) & 0xF) + 1 : session->cols;
 	f->group = &state.groups[group - 1];
 	f->play_direction = ( reverse ) ? FILE_PLAY_DIRECTION_REVERSE : FILE_PLAY_DIRECTION_FORWARD;
 
@@ -119,13 +130,64 @@ out:
 }
 
 static void session_section_callback(const conf_section_t *section, void *arg) {
-	conf_default_section_callback(section);
+	rove_session_t *session, **sptr = arg;
+	conf_pair_t *pair = NULL;
+	char v;
+
+	if( !*sptr ) {
+		if( !(*sptr = session_new()) ) {
+			fprintf(stderr, "couldn't allocate sptr_t, aieee!\n");
+			assert(*sptr);
+		}
+	}
+
+	session = *sptr;
+	session->cols = 0;
+
+	while( (v = conf_getvar(section, &pair)) ) {
+		switch( v ) {
+		case 'q': /* quantize */
+			state.beat_multiplier = strtod(pair->value, NULL);
+			break;
+
+		case 'b': /* bpm */
+			state.bpm = strtod(pair->value, NULL);
+			break;
+
+		case 'g': /* groups */
+			state.group_count = (int) strtol(pair->value, NULL, 10);
+			break;
+
+		case '1': /* pattern1 */
+			state.pattern_lengths[0] = (int) strtol(pair->value, NULL, 10);
+			break;
+
+		case '2': /* pattern2 */
+			state.pattern_lengths[1] = (int) strtol(pair->value, NULL, 10);
+			break;
+
+		case 'c': /* columns */
+			session->cols = (uint_t) strtoul(pair->value, NULL, 10);
+		}
+
+		printf("%s\n", pair->key);
+	}
 
 	if( !state.groups )
-		state.groups = initialize_groups(state.group_count); /* FIXME: can return null, handle properly */
+		state.groups = initialize_groups(state.group_count);
+}
+
+rove_session_t *session_new() {
+	return calloc(1, sizeof(rove_session_t));
+}
+
+void session_free(rove_session_t *session) {
+	free(session);
 }
 
 int session_load(const char *path) {
+	rove_session_t *session = NULL;
+
 	conf_var_t file_vars[] = {
 		{"path",    NULL, STRING, 'p'},
 		{"groups",  NULL,    INT, 'g'},
@@ -137,22 +199,20 @@ int session_load(const char *path) {
 	};
 
 	conf_var_t session_vars[] = {
-		{"quantize", &state.beat_multiplier, DOUBLE, 'q'},
-		{"bpm",      &state.bpm,             DOUBLE, 'b'},
-		{"groups",   &state.group_count,        INT, 'g'},
-		{"pattern1", &state.pattern_lengths[0], INT, '1'},
-		{"pattern2", &state.pattern_lengths[1], INT, '2'},
-		{"columns",  &session_cols,             INT, 'c'},
+		{"quantize", NULL, DOUBLE, 'q'},
+		{"bpm",      NULL, DOUBLE, 'b'},
+		{"groups",   NULL,    INT, 'g'},
+		{"pattern1", NULL,    INT, '1'},
+		{"pattern2", NULL,    INT, '2'},
+		{"columns",  NULL,    INT, 'c'},
 		{NULL}
 	};
 
 	conf_section_t config_sections[] = {
-		{"session", session_vars, session_section_callback},
-		{"file",    file_vars   , file_section_callback},
+		{"session", session_vars, session_section_callback, &session},
+		{"file",    file_vars   , file_section_callback, &session},
 		{NULL}
 	};
-
-	session_cols = 0;
 
 	if( conf_load(path, config_sections, 1) )
 		return 1;

@@ -71,6 +71,7 @@ typedef struct rove_monome_handler rove_monome_handler_t;
 typedef struct rove_monome_position rove_monome_position_t;
 typedef struct rove_monome rove_monome_t;
 
+typedef struct rove_session rove_session_t;
 typedef struct rove_state rove_state_t;
 
 typedef void (*rove_monome_callback_t)(rove_monome_t *, uint_t x, uint_t y, uint_t event_type, void *user_arg);
@@ -181,6 +182,14 @@ struct rove_group {
  */
 
 struct rove_pattern {
+};
+
+/**
+ * session
+ */
+
+struct rove_session {
+	uint_t cols;
 };
 
 /**
