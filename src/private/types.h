@@ -33,6 +33,7 @@
 #include "list.h"
 
 #define HANDLER_T(x) ((rove_monome_handler_t *) x)
+#define PATTERN_T(x) ((rove_pattern_t *) x)
 
 /**
  * types
@@ -66,6 +67,7 @@ typedef struct rove_group rove_group_t;
 typedef struct rove_file rove_file_t;
 
 typedef struct rove_pattern rove_pattern_t;
+typedef struct rove_pattern rove_pattern_step_t;
 
 typedef struct rove_monome_handler rove_monome_handler_t;
 typedef struct rove_monome_position rove_monome_position_t;
@@ -182,6 +184,19 @@ struct rove_group {
  */
 
 struct rove_pattern {
+	rove_list_t l;
+};
+
+struct rove_pattern_step {
+	rove_list_member_t m;
+
+	rove_file_t *victim;
+
+	uint_t x;
+	uint_t y;
+	uint_t state;
+
+	double delay_from_previous;
 };
 
 /**

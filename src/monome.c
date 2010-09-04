@@ -18,6 +18,7 @@
 
 #include <assert.h>
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -39,6 +40,9 @@
 extern rove_state_t state;
 
 static void pattern_handler(rove_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
+	rove_pattern_t **p = ((rove_pattern_t **) &HANDLER_T(user_arg)->data);
+
+	printf("%d %d %ld\n", x, y, (long int) *p);
 	return;
 }
 
