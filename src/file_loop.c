@@ -38,15 +38,15 @@ extern rove_state_t state;
 
 static sf_count_t calculate_play_pos(sf_count_t length, int x, int y, uint_t reverse, uint_t rows, uint_t cols) {
 	double elapsed;
-	
+
 	x &= 0x0F;
 
 	if( reverse )
 		x += 1;
-	
+
 	x += y * cols;
 	elapsed = x / (double) (cols * rows);
-	
+
 	if( reverse )
 		return lrint(floor(elapsed * length));
 	else
@@ -56,7 +56,7 @@ static sf_count_t calculate_play_pos(sf_count_t length, int x, int y, uint_t rev
 static void calculate_monome_pos(sf_count_t length, sf_count_t position, uint_t rows, uint_t cols, rove_monome_position_t *pos) {
 	double elapsed;
 	int x, y;
-	
+
 	elapsed = position / (double) length;
 	x  = lrint(floor(elapsed * (((double) cols) * rows)));
 	y  = (x / cols) & 0x0F;
@@ -68,13 +68,13 @@ static void calculate_monome_pos(sf_count_t length, sf_count_t position, uint_t 
 
 static void file_process(rove_file_t *self, jack_default_audio_sample_t **buffers, int channels, jack_nframes_t nframes, jack_nframes_t sample_rate) {
 	sf_count_t i, o;
-	
+
 #ifdef HAVE_SRC
 	float b[2];
 	double speed;
 
 	speed = (sample_rate / (double) self->sample_rate) * (1 / self->speed);
-	
+
 	if( self->speed != 1 || self->sample_rate != sample_rate ) {
 		if( self->channels == 1 ) {
 			for( i = 0; i < nframes; i++ ) {
@@ -114,14 +114,14 @@ static void file_process(rove_file_t *self, jack_default_audio_sample_t **buffer
 static long file_src_callback(void *cb_data, float **data) {
 	rove_file_t *self = cb_data;
 	sf_count_t o;
-	
+
 	if( !data )
 		return 0;
-	
+
 	o = self->play_offset;
 	*data = self->file_data + (o * self->channels);
 	rove_file_inc_play_pos(self, 1);
-	
+
 	return 1;
 }
 
@@ -165,12 +165,12 @@ static void file_monome_in(rove_monome_t *monome, uint_t x, uint_t y, uint_t typ
 	unsigned int cols;
 
 	rove_monome_position_t pos = {x, y - self->y};
-	
+
 	switch( type ) {
 	case MONOME_BUTTON_DOWN:
 		if( y < self->y || y > ( self->y + self->row_span - 1) )
 			return;
-		
+
 		cols = (self->columns) ? self->columns : monome->cols;
 		if( x > cols - 1 )
 			return;
@@ -179,7 +179,7 @@ static void file_monome_in(rove_monome_t *monome, uint_t x, uint_t y, uint_t typ
 			calculate_play_pos(self->file_length, pos.x, pos.y,
 		                       (self->play_direction == FILE_PLAY_DIRECTION_REVERSE),
 		                       self->row_span, cols);
-		
+
 		rove_file_on_quantize(self, rove_file_seek);
 		break;
 
@@ -202,7 +202,7 @@ void rove_file_free(rove_file_t *self) {
 	free(self->file_data);
 	free(self);
 }
-		 
+
 rove_file_t *rove_file_new_from_path(const char *path) {
 #ifdef HAVE_SRC
 	int err;
@@ -210,45 +210,45 @@ rove_file_t *rove_file_new_from_path(const char *path) {
 	rove_file_t *self;
 	SF_INFO info;
 	SNDFILE *snd;
-	
+
 	if( !(self = calloc(sizeof(rove_file_t), 1)) )
 		return NULL;
-	
+
 	file_init(self);
-	
+
 	if( !(snd = sf_open(path, SFM_READ, &info)) ) {
 		printf("file: couldn't load \"%s\".  sorry about your luck.\n%s\n\n", path, sf_strerror(snd));
-		
+
 		free(self);
 		return NULL;
 	}
-	
+
 	self->length      = self->file_length = info.frames;
 	self->channels    = info.channels;
 	self->sample_rate = info.samplerate;
 	self->file_data   = calloc(sizeof(float), info.frames * info.channels);
-	
+
 #ifdef HAVE_SRC
 	self->src         = src_callback_new(file_src_callback, SRC_SINC_FASTEST, info.channels, &err, self);
 #endif
-	
+
 	if( sf_readf_float(snd, self->file_data, info.frames) != info.frames ) {
 		rove_file_free(self);
 		self = NULL;
 	}
-	
+
 	sf_close(snd);
-	
+
 	return self;
 }
 
 void rove_file_set_play_pos(rove_file_t *self, sf_count_t p) {
 	if( p >= self->file_length )
 		p %= self->file_length;
-	
+
 	if( p < 0 )
 		p = self->file_length - (abs(p) % self->file_length);
-	
+
 	self->play_offset = p;
 }
 
@@ -269,7 +269,7 @@ void rove_file_change_status(rove_file_t *self, rove_file_status_t nstatus) {
 		case FILE_STATUS_INACTIVE:
 			if( self->group->active_loop == self )
 				self->group->active_loop = NULL;
-	
+
 			break;
 		}
 		break;

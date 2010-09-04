@@ -84,7 +84,7 @@ att() {
 			bold)      C=1;;
 			underline) C=4;;
 			hidden)    C=8;;
-			
+
 			black)     C=30;;
 			red)       C=31;;
 			green)     C=32;;
@@ -93,18 +93,18 @@ att() {
 			magenta)   C=35;;
 			cyan)      C=36;;
 			white)     C=37;;
-			
+
 			reset)
 				echo -ne "0m";
 				return 0;
 		esac
-		
+
 		echo -ne "$C"
-		
+
 		if [ $# -ge 2 ]; then
 			echo -ne ";";
 		fi
-		
+
 		shift;
 	done;
 	echo -ne "m";
@@ -133,33 +133,33 @@ try_command () {
 compile_and_run() {
 	FILE=$1
 	shift;
-	
+
 	CMD="$CC $* .conftests/$FILE.c -o .conftests/$FILE"
 	try_command $CMD;
-	
+
 	if [ $? -ne 0 ]; then
 		rm -f .conftests/$FILE.c;
 		rm -f .conftests/$FILE;
-	
+
 		return 1;
 	fi
-	
+
 	CMD="./.conftests/$1";
 	try_command $CMD;
-	
+
 	rm -f .conftests/$FILE.c;
 	rm -f .conftests/$FILE;
-	
+
 	if [ $? -ne 0 ]; then
 		return 2;
 	fi
-	
+
 	return 0;
 }
 
 check_pkgconfig () {
 	CMD="pkg-config --version";
-	
+
 	if try_command $CMD; then
 		PKGCONFIG_VERSION=`$CMD`;
 	fi
@@ -168,7 +168,7 @@ check_pkgconfig () {
 check_gcc () {
 	CMD="$CC -dumpversion";
 	try_command $CMD;
-	
+
 	if [ $? -eq 0 ]; then
 		CC_VERSION=`$CMD`;
 		return 0;
@@ -189,21 +189,21 @@ int main(int argc, char **argv) {
 		return 1;
 }
 EOF
-	
+
 	compile_and_run jack $JACK_CFLAGS $JACK_LIBS;
 	RET=$?;
-	
+
 	if [ $RET -ne 0 ]; then
 		return $RET;
 	fi
 
 	HAVE_JACK=1;
 	JACK_VERSION="`jackd -V | awk '{print $3}' 2> /dev/null`";
-	
+
 	if [ $? -ne 0 ]; then
 		JACK_VERSION=;
 	fi
-	
+
 	return 0;
 }
 
@@ -216,30 +216,30 @@ int main(int argc, char **argv) {
 
 	if( !(monome = monome_open("osc.udp://127.0.0.1:42424/monome", "osc", "56565")) )
 		return 1;
-	
+
 	monome_close(monome);
-	
+
 	return 0;
 }
 EOF
 
 	compile_and_run monome $MONOME_CFLAGS $MONOME_LIBS;
 	RET=$?;
-	
+
 	if [ $RET -ne 0 ]; then
 		return $RET;
 	fi
-	
+
 	HAVE_MONOME=1;
-	
+
 	if [ $PKGCONFIG_VERSION ]; then
 		CMD="pkg-config --modversion libmonome"
 		try_command $CMD;
-		
+
 		if [ $? -ne 0 ]; then
 			return 0;
 		fi
-		
+
 		MONOME_VERSION=`$CMD`;
 	fi
 
@@ -252,36 +252,36 @@ check_sndfile () {
 
 int main(int argc, char **argv) {
 	SF_INFO info;
-	
+
 	info.samplerate = 44100;
 	info.format     = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
 	info.channels   = 1;
 	info.frames     = 0;
-	
+
 	if( sf_format_check(&info) )
 		return 0;
 	else
 		return 1;
 }
 EOF
-	
+
 	compile_and_run sndfile $SNDFILE_CFLAGS $SNDFILE_LIBS;
 	RET=$?;
-	
+
 	if [ $RET -ne 0 ]; then
 		return $RET;
 	fi
-	
+
 	HAVE_SNDFILE=1;
-	
+
 	if [ $PKGCONFIG_VERSION ]; then
 		CMD="pkg-config --modversion sndfile"
 		try_command $CMD;
-		
+
 		if [ $? -ne 0 ]; then
 			return 0;
 		fi
-		
+
 		SNDFILE_VERSION=`$CMD`;
 	fi
 
@@ -295,10 +295,10 @@ check_src () {
 int main(int argc, char **argv) {
 	SRC_STATE *s;
 	int i;
-	
+
 	if( !(s = src_new(SRC_SINC_FASTEST, 1, &i)) )
 		return 1;
-	
+
 	src_delete(s);
 	return 0;
 }
@@ -306,24 +306,24 @@ EOF
 
 	compile_and_run src $SRC_CFLAGS $SRC_LIBS;
 	RET=$?
-	
+
 	if [ $RET -ne 0 ]; then
 		SNDFILE_CFLAGS=;
 		SNDFILE_LIBS=;
-		
+
 		return $RET;
 	fi
-	
+
 	HAVE_SNDFILE=1;
-	
+
 	if [ $PKGCONFIG_VERSION ]; then
 		CMD="pkg-config --modversion samplerate"
 		try_command $CMD;
-		
+
 		if [ $? -ne 0 ]; then
 			return 0;
 		fi
-		
+
 		SNDFILE_VERSION=`$CMD`;
 	fi
 
@@ -364,7 +364,7 @@ if check_jack; then
 	style_success "found JACK $JACK_VERSION";
 else
 	style_error "no jack :(";
-	
+
 	echo   "";
 	echo   "  I couldn't find JACK on your system!  you will need it to compile rove.";
 	echo_n "  if you're on "; style_distro -n "ubuntu"; echo_n ", make sure you have the "; style_package -n "libjack-dev"; echo_n " and "; style_package -n "jackd"; echo " packages.";
@@ -373,7 +373,7 @@ else
 	echo   "";
 	echo_n "  "; style_distro -n "mac os X"; echo_n " users should head to "; style_link -n "http://jackosx.com/"; echo ".";
 	echo   "";
-	
+
 	cleanup;
 	exit 1;
 fi

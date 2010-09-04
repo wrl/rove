@@ -42,7 +42,7 @@ struct conf_var {
 struct conf_pair {
 	char *key;
 	char *value;
-	
+
 	const conf_var_t *var;
 	int klen;
 	int vlen;

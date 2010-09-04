@@ -91,7 +91,7 @@ struct rove_monome_position {
 
 struct rove_monome_handler {
 	rove_monome_position_t pos;
-	
+
 	rove_monome_callback_t cb;
 	void *data;
 };
@@ -103,10 +103,10 @@ struct rove_monome {
 
 	uint16_t quantize_field;
 	uint16_t dirty_field;
-	
+
 	rove_monome_handler_t *callbacks;
 	rove_monome_handler_t *controls;
-	
+
 	int mod_keys;
 	int rows;
 	int cols;
@@ -119,39 +119,39 @@ struct rove_monome {
 struct rove_file {
 	rove_file_play_direction_t play_direction;
 	rove_file_status_t status;
-	
+
 	double volume;
-	
+
 	sf_count_t length;
 	sf_count_t play_offset;
 	sf_count_t new_offset;
-	
+
 	sf_count_t channels;
 	sf_count_t file_length;
 	sf_count_t sample_rate;
-	
+
 #ifdef HAVE_SRC	
 	SRC_STATE *src;
 #endif
 	double speed;
-	
+
 	float *file_data;
-	
+
 	int y;
 	int row_span;
-	
+
 	rove_monome_t *mapped_monome;
 	rove_monome_position_t monome_pos;
 	rove_monome_position_t monome_pos_old;
-	
+
 	/* set to 1 if the next run of rove_monome_display_file should
 	   update the row regardless of whether it has changed. */
 	int force_monome_update;
-	
+
 	unsigned int columns;
-	
+
 	rove_group_t *group;
-	
+
 	rove_process_callback_t process_cb;
 	rove_quantize_callback_t quantize_cb;
 	rove_monome_output_callback_t monome_out_cb;
@@ -165,14 +165,14 @@ struct rove_file {
 struct rove_group {
 	int idx;
 	rove_file_t *active_loop;
-	
+
 	double volume;
-	
+
 	/* eventually this will be an array of ports so that any arbitrary
 	   number of channels can be output (rove cutting 5.1 audio, yeah!) */
 	jack_port_t *outport_l;
 	jack_port_t *outport_r;
-	
+
 	jack_default_audio_sample_t *output_buffer_l;
 	jack_default_audio_sample_t *output_buffer_r;
 };
@@ -208,10 +208,10 @@ struct rove_state {
 
 	rove_monome_t *monome;
 	jack_client_t *client;
-	
+
 	int group_count;
 	rove_group_t *groups;
-	
+
 	rove_list_t *files;
 	rove_list_t *patterns;
 	rove_list_member_t *pattern_rec;
@@ -220,7 +220,7 @@ struct rove_state {
 	int staged_loops;
 	rove_list_t *active;
 	rove_list_t *staging;
-	
+
 	double bpm;
 	double beat_multiplier;
 

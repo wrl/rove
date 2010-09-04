@@ -56,22 +56,22 @@ static void group_off_handler(rove_monome_t *monome, uint_t x, uint_t y, uint_t 
 
 static void control_row_handler(rove_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
 	rove_monome_handler_t *callback;
-	
+
 	if( x >= monome->cols || !(callback = &monome->controls[x]) )
 		return;
-	
+
 	if( callback->cb )
 		return callback->cb(monome, x, y, event_type, callback);
-	
+
 	switch( event_type ) {
 	case MONOME_BUTTON_DOWN:
 		if( x == monome->rows - 2 )
 			monome->mod_keys |= SHIFT;
 		else if( x == monome->rows - 1 )
 			monome->mod_keys |= META;
-		
+
 		break;
-		
+
 	case MONOME_BUTTON_UP:
 		if( x == monome->rows - 2 )
 			monome->mod_keys &= ~SHIFT;
@@ -94,7 +94,7 @@ static void button_handler(const monome_event_t *e, void *user_data) {
 	rove_monome_handler_t *callback;
 
 	int event_x, event_y, event_type;
-	
+
 	event_x    = e->x;
 	event_y    = e->y;
 	event_type = e->event_type;
@@ -103,22 +103,22 @@ static void button_handler(const monome_event_t *e, void *user_data) {
 		!(callback = &monome->callbacks[event_y]) ||
 		!callback->cb )
 		return;
-	
+
 	callback->cb(monome, event_x, event_y, event_type, callback);
 }
 
 static void initialize_callbacks(rove_monome_t *monome) {
 	rove_monome_handler_t *ctrl, *row;
 	int y, row_span, i, group_count;
-	
+
 	rove_list_member_t *m;
 	rove_file_t *f;
-	
+
 	/* leave room for two pattern recorders and the two mod keys */
 	group_count = MIN(state.group_count, monome->cols - 4);
-	
+
 	y = 0;
-	
+
 	for( i = 0; i < group_count; i++ ) {
 		ctrl = &monome->controls[i];
 
@@ -128,7 +128,7 @@ static void initialize_callbacks(rove_monome_t *monome) {
 		ctrl->cb    = group_off_handler;
 		ctrl->data  = (void *) &state.groups[i];
 	}
-	
+
 	for( i = monome->cols - 4; i < monome->cols - 2; i++ ) {
 		ctrl = &monome->controls[i];
 
@@ -138,14 +138,14 @@ static void initialize_callbacks(rove_monome_t *monome) {
 		ctrl->cb    = pattern_handler;
 		ctrl->data  = NULL;
 	}
-	
+
 	monome->callbacks[y].cb = control_row_handler;
 
 	rove_list_foreach(state.files, m, f) {
 		f->mapped_monome = monome;
 		row_span = f->row_span;
 		y = f->y;
-		
+
 		for( i = y; i < y + row_span; i++ ) {
 			if( i >= monome->rows )
 				continue;
@@ -189,7 +189,7 @@ void rove_monome_free(rove_monome_t *monome) {
 int rove_monome_init() {
 	rove_monome_t *monome;
 	char *buf;
-	
+
 	assert(state.config.osc_prefix);
 	assert(state.config.osc_host_port);
 	assert(state.config.osc_listen_port);
@@ -218,7 +218,7 @@ int rove_monome_init() {
 
 	monome->quantize_field = 0;
 	monome->dirty_field    = 0;
-	
+
 	monome->callbacks = calloc(sizeof(rove_monome_handler_t), state.config.rows);
 	monome->controls  = calloc(sizeof(rove_monome_handler_t), state.config.cols);
 	initialize_callbacks(monome);

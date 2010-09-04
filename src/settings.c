@@ -34,14 +34,14 @@ int rove_settings_load(const char *path) {
 		{"rows",    &r, INT, 'r'},
 		{NULL}
 	};
-	
+
 	conf_var_t osc_vars[] = {
 		{"prefix",      &op,  STRING, 'p'},
 		{"host-port",   &ohp, STRING, 'h'},
 		{"listen-port", &olp, STRING, 'l'},
 		{NULL}
 	};
-	
+
 	conf_section_t config_sections[] = {
 		{"monome", monome_vars},
 		{"osc",    osc_vars},
@@ -49,7 +49,7 @@ int rove_settings_load(const char *path) {
 	};
 
 	assert(path);
-	
+
 	c   = 0;
 	r   = 0;
 	op  = NULL;
@@ -58,23 +58,23 @@ int rove_settings_load(const char *path) {
 
 	if( conf_load(path, config_sections, 0) )
 		return 0;
-	
+
 	if( c && !state.config.cols )
 		state.config.cols = ((c - 1) & 0xF) + 1;
 
 	if( r && !state.config.rows )
 		state.config.rows = ((r - 1) & 0xF) + 1;
-	
+
 	if( op && !state.config.osc_prefix ) {
 		if( *op == '/' ) { /* remove the leading slash if there is one */
 			buf = strdup(op + 1);
 			free(op);
 			op = buf;
 		}
-		
+
 		state.config.osc_prefix = op;
 	}
-	
+
 	if( ohp && !state.config.osc_host_port ) {
 		if( !is_numstr(ohp) )
 			usage_printf_return("conf: \"%s\" is not a valid host port.\n"
@@ -82,7 +82,7 @@ int rove_settings_load(const char *path) {
 
 		state.config.osc_host_port = ohp;
 	}
-	
+
 	if( olp && !state.config.osc_listen_port ) {
 		if( !is_numstr(olp) )
 			usage_printf_return("conf: \"%s\" is not a valid listen port.\n"

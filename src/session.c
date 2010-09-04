@@ -216,7 +216,6 @@ int session_load(const char *path) {
 
 	if( conf_load(path, config_sections, 1) )
 		return 1;
-	
+
 	return 0;
 }
-

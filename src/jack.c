@@ -75,10 +75,10 @@ static int process(jack_nframes_t nframes, void *arg) {
 	/* initialize each group's output buffers and zero them */
 	for( i = 0; i < group_count; i++ ) {
 		g = &state.groups[i];
-		
+
 		g->output_buffer_l = out_l = jack_port_get_buffer(g->outport_l, nframes);
 		g->output_buffer_r = out_r = jack_port_get_buffer(g->outport_r, nframes);
-		
+
 		for( j = 0; j < nframes; j++ )
 			out_l[j] = out_r[j] = 0;
 	}
@@ -147,13 +147,13 @@ static void jack_shutdown(void *arg) {
 
 static void connect_to_outports(jack_client_t *client) {
 	const char **ports;
-	
+
 	ports = jack_get_ports(client, NULL, NULL, JackPortIsPhysical | JackPortIsInput);
 	if( ports != NULL ) {
 		jack_connect(client, jack_port_name(outport_l), ports[0]);
 		jack_connect(client, jack_port_name(outport_r), ports[1]);
 	}
-	
+
 	free(ports);
 }
 
@@ -179,17 +179,17 @@ int rove_jack_activate() {
 		fprintf(stderr, "client could not be activated\n");
 		return -1;
 	}
-	
+
 	connect_to_outports(client);
-	
+
 	group_count = state.group_count;
 	for( i = 0; i < group_count; i++ ) {
 		g = &state.groups[i];
-		
+
 		jack_connect(client, jack_port_name(g->outport_l), jack_port_name(group_mix_inport_l));
 		jack_connect(client, jack_port_name(g->outport_r), jack_port_name(group_mix_inport_r));
 	}
-	
+
 	return 0;
 }
 
@@ -198,11 +198,11 @@ int rove_jack_init() {
 	const char *server_name = NULL;
 	jack_options_t options  = JackNoStartServer;
 	jack_status_t status;
-	
+
 	int i, group_count, len;
 	rove_group_t *g;
 	char *buf;
-	
+
 	state.client = jack_client_open(client_name, options, &status, server_name);
 	if( state.client == NULL ) {
 		fprintf(stderr, "failed to open a connection to the JACK server\n");
@@ -214,21 +214,21 @@ int rove_jack_init() {
 
 	outport_l = jack_port_register(state.client, "master_out:l", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
 	outport_r = jack_port_register(state.client, "master_out:r", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
-	
+
 	group_mix_inport_l = jack_port_register(state.client, "group_mix_in:l", JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput, 0);
 	group_mix_inport_r = jack_port_register(state.client, "group_mix_in:r", JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput, 0);
-	
+
 	group_count = state.group_count;
 	for( i = 0; i < group_count; i++ ) {
 		g = &state.groups[i];
-		
+
 		len = asprintf(&buf, "group_%d_out:l", g->idx + 1);
 		g->outport_l = jack_port_register(state.client, buf, JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
-		
+
 		buf[len - 1]  = 'r';
 		g->outport_r = jack_port_register(state.client, buf, JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput, 0);
 		free(buf);
 	}
-	
+
 	return 0;
 }

@@ -38,7 +38,7 @@ typedef struct rove_list rove_list_t;
 
 struct rove_list_member {
 	void *data;
-	
+
 	rove_list_member_t *prev;
 	rove_list_member_t *next;
 };

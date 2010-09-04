@@ -84,7 +84,7 @@ void conf_default_section_callback(const conf_section_t *section) {
 	conf_pair_t *p;
 	const conf_var_t *v;
 	int i;
-	
+
 	if( !section->vars )
 		return;
 
@@ -142,7 +142,7 @@ static void close_block(conf_section_t *s, conf_pair_t *p) {
 			s->section_callback(s, s->cb_arg);
 		else
 			conf_default_section_callback(s);
-		
+
 		rove_list_free(s->pairs);
 		s->pairs = NULL;
 	}
@@ -155,16 +155,16 @@ static int config_parse(const char *path, conf_section_t *sections, int cd) {
 	int fd, len, vlen, i, j, lines;
 	conf_pair_t *p = NULL;
 	parse_mode_t m = KEY;
-	
+
 	if( (fd = open(path, O_RDONLY)) < 0 )
 		return 1;
-	
+
 	if( cd ) 
 		chdir(dirname((char *) path));
-	
+
 	vlen = 0;
 	lines = 1;
-	
+
 	while( (len = read(fd, buf, BUFLEN)) ) {
 		buf[len] = '\0';
 
@@ -185,26 +185,26 @@ static int config_parse(const char *path, conf_section_t *sections, int cd) {
 					goto state_out;
 
 				break;
-				
+
 			case KEY:
 				switch( c ) {
 				case ' ':
 					continue;
-					
+
 				case COMMENT_SYMBOL:
 				case '\n':
 				case '=':
 					goto state_out;
-					
+
 				case BLOCK_OPEN_SYMBOL:
 					m = BLOCK;
 					continue;
 				}
-				
+
 				vbuf[vlen++] = c;
-				
+
 				break;
-				
+
 			case BLOCK:
 				switch( c ) {
 				case BLOCK_CLOSE_SYMBOL:
@@ -212,34 +212,34 @@ static int config_parse(const char *path, conf_section_t *sections, int cd) {
 				case '\n':
 					goto state_out;
 				}
-				
+
 				vbuf[vlen++] = c;
-				
+
 				break;
-				
+
 			case VALUE:
 				switch( c ) {
 				case ' ':
 					if( !vlen )
 						continue;
 					break;
-					
+
 				case COMMENT_SYMBOL:
 				case '\n':
 					goto state_out;
 				}
-				
+
 				vbuf[vlen++] = c;
 			}
-			
+
 			continue;
 
-		state_out:
+state_out:
 			if( c == '\n' )
 				lines++;
-			
+
 			vbuf[vlen] = 0;
-			
+
 			switch( m ) {
 			case BLOCK:
 				if( c != BLOCK_CLOSE_SYMBOL ) {
@@ -320,11 +320,11 @@ static int config_parse(const char *path, conf_section_t *sections, int cd) {
 
 				break;
 			}
-			
+
 			vlen = 0;
 		}
 	}
-	
+
 	close_block(s, p);
 	close(fd);
 
@@ -341,7 +341,7 @@ int conf_load(const char *path, conf_section_t *sections, int cd) {
 
 	if( !S_ISREG(buf.st_mode) )
 		return 1;
-	
+
 	for( i = 0; sections[i].block; i++ )
 		sections[i].pairs = NULL;
 
