@@ -28,13 +28,13 @@ static int session_cols;
 static rove_group_t *initialize_groups(uint_t group_count) {
 	rove_group_t *groups;
 	int i;
-	
+
 	if( !(groups = calloc(sizeof(rove_group_t), group_count)) )
 		return NULL;
 
 	for( i = 0; i < group_count; i++ )
 		groups[i].idx = i;
-	
+
 	return groups;
 }
 
@@ -45,16 +45,16 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 	rove_file_t *f;
 	double speed;
 	char *path;
-	
+
 	conf_pair_t *pair = NULL;
-	
+
 	path    = NULL;
 	group   = 0;
 	r       = 1;
 	c       = 0;
 	reverse = 0;
 	speed   = 1.0;
-	
+
 	while( (e = conf_getvar(section, &pair)) ) {
 		switch( e ) {
 		case 'p': /* file path */
@@ -72,7 +72,7 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 		case 'g': /* group */
 			v = &group;
 			break;
-			
+
 		case 'c': /* columns */
 			v = &c;
 			break;
@@ -81,39 +81,39 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 			v = &r;
 			break;
 		}
-		
+
 		*v = (unsigned int) strtol(pair->value, NULL, 10);
 	}
-	
+
 	if( !path ) {
 		printf("no file path specified in file section starting at line %d\n", section->start_line);
 		return;
 	}
-	
+
 	if( !group ) {
 		printf("no group specified in file section starting at line %d\n", section->start_line);
 		goto out;
 	}
-	
+
 	if( !(f = rove_file_new_from_path(path)) )
 		goto out;
-	
+
 	if( group > state.group_count )
 		group = state.group_count;
-	
+
 	f->y = y;
 	f->speed = speed;
 	f->row_span = r;
 	f->columns  = (c) ? ((c - 1) & 0xF) + 1 : session_cols;
 	f->group = &state.groups[group - 1];
 	f->play_direction = ( reverse ) ? FILE_PLAY_DIRECTION_REVERSE : FILE_PLAY_DIRECTION_FORWARD;
-	
+
 	rove_list_push(state.files, TAIL, f);
 	printf("\t%d - %d\t%s\n", y, y + r - 1, path);
-	
+
 	y += r;
-	
- out:
+
+out:
 	free(path);
 	return;
 }
@@ -135,7 +135,7 @@ int session_load(const char *path) {
 		{"speed",   NULL, DOUBLE, 's'},
 		{NULL}
 	};
-	
+
 	conf_var_t session_vars[] = {
 		{"quantize", &state.beat_multiplier, DOUBLE, 'q'},
 		{"bpm",      &state.bpm,             DOUBLE, 'b'},
@@ -145,13 +145,13 @@ int session_load(const char *path) {
 		{"columns",  &session_cols,             INT, 'c'},
 		{NULL}
 	};
-	
+
 	conf_section_t config_sections[] = {
 		{"session", session_vars, session_section_callback},
 		{"file",    file_vars   , file_section_callback},
 		{NULL}
 	};
-	
+
 	session_cols = 0;
 
 	if( conf_load(path, config_sections, 1) )
