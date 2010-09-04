@@ -47,7 +47,7 @@
 #define DEFAULT_OSC_LISTEN_PORT "8000"
 
 
-rove_state_t state;
+state_t state;
 
 int is_numstr(char *str) {
 	/* scan through the string looking for either a NULL (end of string)
@@ -82,8 +82,8 @@ static void monome_display_loop() {
 	struct timespec req;
 
 	r_monome_t *monome = state.monome;
-	rove_group_t *g;
-	rove_file_t *f;
+	group_t *g;
+	file_t *f;
 
 	req.tv_sec  = 0;
 	req.tv_nsec = 1000000000 / 80; /* 80 fps */
@@ -108,7 +108,7 @@ static void monome_display_loop() {
 			next_bit = ffs(dfield);
 			j += next_bit;
 
-			f = (rove_file_t *) state.monome->callbacks[j].data;
+			f = (file_t *) state.monome->callbacks[j].data;
 
 			if( f->monome_out_cb )
 				f->monome_out_cb(f, state.monome);
@@ -118,7 +118,7 @@ static void monome_display_loop() {
 	}
 }
 
-static void rove_recalculate_bpm_variables() {
+static void recalculate_bpm_variables() {
 	state.frames_per_beat = lrintf((60 / state.bpm) * (double) jack_get_sample_rate(state.client));
 	state.snap_delay = MAX(state.frames_per_beat * state.beat_multiplier, 1);
 }
@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
 		{0, 0, 0, 0}
 	};
 
-	memset(&state, 0, sizeof(rove_state_t));
+	memset(&state, 0, sizeof(state_t));
 
 	session_file = NULL;
 	opterr = 0;
@@ -203,16 +203,16 @@ int main(int argc, char **argv) {
 	if( optind == argc )
 		usage_printf_exit("error: you did not specify a session file!\n\n");
 
-	if( rove_settings_load(user_config_path()) )
+	if( settings_load(user_config_path()) )
 		exit(EXIT_FAILURE);
 
 	session_file = argv[optind];
 
-	state.files    = rove_list_new();
-	state.patterns = rove_list_new();
+	state.files    = list_new();
+	state.patterns = list_new();
 
-	state.active   = rove_list_new();
-	state.staging  = rove_list_new();
+	state.active   = list_new();
+	state.staging  = list_new();
 
 	printf("\nhey, welcome to rove!\n\n"
 		   "you've got the following loops loaded:\n"
@@ -223,7 +223,7 @@ int main(int argc, char **argv) {
 		exit(EXIT_FAILURE);
 	}
 
-	if( rove_list_is_empty(state.files) ) {
+	if( list_is_empty(state.files) ) {
 		fprintf(stderr, "\t(none, evidently.  get some and come play!)\n\n");
 		exit(EXIT_FAILURE);
 	}
@@ -233,7 +233,7 @@ int main(int argc, char **argv) {
 		exit(EXIT_FAILURE);
 	}
 
-	rove_recalculate_bpm_variables();
+	recalculate_bpm_variables();
 
 #define ASSIGN_IF_UNSET(k, v) do { \
 	if( !k ) \

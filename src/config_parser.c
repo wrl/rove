@@ -58,7 +58,7 @@ int conf_getvar(const conf_section_t *section, conf_pair_t **current_pair) {
 		free(p);
 	}
 
-	while( (p = rove_list_pop(section->pairs, HEAD)) ) {
+	while( (p = list_pop(section->pairs, HEAD)) ) {
 		/* search for a matching var structure */
 		for( i = 0; section->vars[i].key; i++ ) {
 			v = &section->vars[i];
@@ -88,7 +88,7 @@ void conf_default_section_callback(const conf_section_t *section) {
 	if( !section->vars )
 		return;
 
-	while( (p = rove_list_pop(section->pairs, HEAD)) ) {
+	while( (p = list_pop(section->pairs, HEAD)) ) {
 		/* search for a matching var structure */
 		for( i = 0; section->vars[i].key; i++ ) {
 			v = &section->vars[i];
@@ -135,7 +135,7 @@ assigned:
 
 static void close_block(conf_section_t *s, conf_pair_t *p) {
 	if( p )
-		rove_list_push(s->pairs, HEAD, p);
+		list_push(s->pairs, HEAD, p);
 
 	if( s ) {
 		if( s->section_callback )
@@ -143,7 +143,7 @@ static void close_block(conf_section_t *s, conf_pair_t *p) {
 		else
 			conf_default_section_callback(s);
 
-		rove_list_free(s->pairs);
+		list_free(s->pairs);
 		s->pairs = NULL;
 	}
 }
@@ -259,7 +259,7 @@ state_out:
 						s->start_line = lines;
 
 						if( !s->pairs )
-							s->pairs = rove_list_new();
+							s->pairs = list_new();
 					}
 
 				m = COMMENT;
@@ -294,7 +294,7 @@ state_out:
 
 				if( s ) {
 					if( p )
-						rove_list_push(s->pairs, HEAD, p);
+						list_push(s->pairs, HEAD, p);
 
 					p = calloc(1, sizeof(conf_pair_t));
 					p->key  = strndup(vbuf, vlen);

@@ -31,7 +31,7 @@
 #include "rmonome.h"
 #include "pattern.h"
 
-extern rove_state_t state;
+extern state_t state;
 
 static jack_port_t *group_mix_inport_l;
 static jack_port_t *group_mix_inport_r;
@@ -39,13 +39,13 @@ static jack_port_t *group_mix_inport_r;
 static jack_port_t *outport_l;
 static jack_port_t *outport_r;
 
-static void process_file(rove_file_t *f) {
+static void process_file(file_t *f) {
 	if( !f )
 		return;
 
 	if( f->quantize_cb ) {
 		f->quantize_cb(f);
-		rove_file_on_quantize(f, NULL);
+		file_on_quantize(f, NULL);
 	}
 }
 
@@ -65,8 +65,8 @@ static int process(jack_nframes_t nframes, void *arg) {
 
 	jack_default_audio_sample_t *buffers[2];
 
-	rove_group_t *g;
-	rove_file_t *f;
+	group_t *g;
+	file_t *f;
 
 	group_count = state.group_count;
 
@@ -98,7 +98,7 @@ static int process(jack_nframes_t nframes, void *arg) {
 				next_bit = ffs(qfield);
 				j += next_bit;
 
-				f = (rove_file_t *) state.monome->callbacks[j].data;
+				f = (file_t *) state.monome->callbacks[j].data;
 				process_file(f);
 			}
 		}
@@ -116,7 +116,7 @@ static int process(jack_nframes_t nframes, void *arg) {
 			if( !(f = g->active_loop) )
 				continue;
 
-			if( !rove_file_is_active(f) )
+			if( !file_is_active(f) )
 				continue;
 
 			/* will eventually become an array of arbitrary size for better multichannel support */
@@ -157,11 +157,11 @@ static void connect_to_outports(jack_client_t *client) {
 	free(ports);
 }
 
-void rove_transport_start() {
+void transport_start() {
 	jack_transport_start(state.client);
 }
 
-void rove_transport_stop() {
+void transport_stop() {
 	jack_transport_stop(state.client);
 	jack_transport_locate(state.client, 0);
 }
@@ -173,7 +173,7 @@ void r_jack_deactivate() {
 int r_jack_activate() {
 	jack_client_t *client = state.client;
 	int i, group_count;
-	rove_group_t *g;
+	group_t *g;
 
 	if( jack_activate(client) ) {
 		fprintf(stderr, "client could not be activated\n");
@@ -200,7 +200,7 @@ int r_jack_init() {
 	jack_status_t status;
 
 	int i, group_count, len;
-	rove_group_t *g;
+	group_t *g;
 	char *buf;
 
 	state.client = jack_client_open(client_name, options, &status, server_name);

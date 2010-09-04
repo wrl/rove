@@ -37,25 +37,25 @@
 #define SHIFT 0x01
 #define META  0x02
 
-extern rove_state_t state;
+extern state_t state;
 
 static void pattern_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
-	rove_pattern_t **p = ((rove_pattern_t **) &HANDLER_T(user_arg)->data);
+	pattern_t **p = ((pattern_t **) &HANDLER_T(user_arg)->data);
 
 	printf("%d %d %ld\n", x, y, (long int) *p);
 	return;
 }
 
 static void group_off_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
-	rove_group_t *group = HANDLER_T(user_arg)->data;
-	rove_file_t *f;
+	group_t *group = HANDLER_T(user_arg)->data;
+	file_t *f;
 
 	if( event_type != MONOME_BUTTON_DOWN ||
 		!(f = group->active_loop) ||	/* group is already off (nothing set as the active loop) */
-		!rove_file_is_active(f) )		/* group is already off (active file not playing) */
+		!file_is_active(f) )		/* group is already off (active file not playing) */
 		return;
 
-	rove_file_deactivate(f);
+	file_deactivate(f);
 }
 
 static void control_row_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
@@ -87,7 +87,7 @@ static void control_row_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t e
 }
 
 void file_row_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
-	rove_file_t *f = HANDLER_T(user_arg)->data;
+	file_t *f = HANDLER_T(user_arg)->data;
 
 	if( f->monome_in_cb )
 		f->monome_in_cb(monome, x, y, event_type, f); 
@@ -115,8 +115,8 @@ static void initialize_callbacks(r_monome_t *monome) {
 	r_monome_handler_t *ctrl, *row;
 	int y, row_span, i, group_count;
 
-	rove_list_member_t *m;
-	rove_file_t *f;
+	list_member_t *m;
+	file_t *f;
 
 	/* leave room for two pattern recorders and the two mod keys */
 	group_count = MIN(state.group_count, monome->cols - 4);
@@ -145,7 +145,7 @@ static void initialize_callbacks(r_monome_t *monome) {
 
 	monome->callbacks[y].cb = control_row_handler;
 
-	rove_list_foreach(state.files, m, f) {
+	list_foreach(state.files, m, f) {
 		f->mapped_monome = monome;
 		row_span = f->row_span;
 		y = f->y;

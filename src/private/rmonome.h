@@ -28,7 +28,7 @@
 void r_monome_run_thread(r_monome_t *monome);
 void r_monome_stop_thread(r_monome_t *monome);
 
-void r_monome_display_file(rove_file_t *f);
+void r_monome_display_file(file_t *f);
 void r_monome_free(r_monome_t *monome);
 int  r_monome_init();
 

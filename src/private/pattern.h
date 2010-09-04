@@ -21,7 +21,7 @@
 
 #include "types.h"
 
-rove_pattern_t *rove_pattern_new();
-void rove_pattern_free(rove_pattern_t *);
+pattern_t *pattern_new();
+void pattern_free(pattern_t *);
 
 #endif

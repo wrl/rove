@@ -25,16 +25,16 @@
 #include "rove.h"
 
 
-#define SESSION_T(x) ((rove_session_t *) x)
+#define SESSION_T(x) ((session_t *) x)
 
 
-extern rove_state_t state;
+extern state_t state;
 
-static rove_group_t *initialize_groups(uint_t group_count) {
-	rove_group_t *groups;
+static group_t *initialize_groups(uint_t group_count) {
+	group_t *groups;
 	int i;
 
-	if( !(groups = calloc(sizeof(rove_group_t), group_count)) )
+	if( !(groups = calloc(sizeof(group_t), group_count)) )
 		return NULL;
 
 	for( i = 0; i < group_count; i++ )
@@ -44,11 +44,11 @@ static rove_group_t *initialize_groups(uint_t group_count) {
 }
 
 static void file_section_callback(const conf_section_t *section, void *arg) {
-	rove_session_t *session = *((rove_session_t **) arg);
+	session_t *session = *((session_t **) arg);
 	static int y = 1;
 
 	unsigned int e, c, r, group, reverse, *v;
-	rove_file_t *f;
+	file_t *f;
 	double speed;
 	char *path;
 
@@ -106,7 +106,7 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 		goto out;
 	}
 
-	if( !(f = rove_file_new_from_path(path)) )
+	if( !(f = file_new_from_path(path)) )
 		goto out;
 
 	if( group > state.group_count )
@@ -119,7 +119,7 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 	f->group = &state.groups[group - 1];
 	f->play_direction = ( reverse ) ? FILE_PLAY_DIRECTION_REVERSE : FILE_PLAY_DIRECTION_FORWARD;
 
-	rove_list_push(state.files, TAIL, f);
+	list_push(state.files, TAIL, f);
 	printf("\t%d - %d\t%s\n", y, y + r - 1, path);
 
 	y += r;
@@ -130,7 +130,7 @@ out:
 }
 
 static void session_section_callback(const conf_section_t *section, void *arg) {
-	rove_session_t *session, **sptr = arg;
+	session_t *session, **sptr = arg;
 	conf_pair_t *pair = NULL;
 	char v;
 
@@ -177,16 +177,16 @@ static void session_section_callback(const conf_section_t *section, void *arg) {
 		state.groups = initialize_groups(state.group_count);
 }
 
-rove_session_t *session_new() {
-	return calloc(1, sizeof(rove_session_t));
+session_t *session_new() {
+	return calloc(1, sizeof(session_t));
 }
 
-void session_free(rove_session_t *session) {
+void session_free(session_t *session) {
 	free(session);
 }
 
 int session_load(const char *path) {
-	rove_session_t *session = NULL;
+	session_t *session = NULL;
 
 	conf_var_t file_vars[] = {
 		{"path",    NULL, STRING, 'p'},

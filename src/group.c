@@ -19,11 +19,11 @@
 #include "types.h"
 #include "file.h"
 
-void rove_group_activate_file(rove_file_t *file) {
+void group_activate_file(file_t *file) {
 	if( file->group->active_loop )
 		if( file->group->active_loop != file )
-			if( rove_file_is_active(file->group->active_loop) )
-				rove_file_deactivate(file->group->active_loop);
+			if( file_is_active(file->group->active_loop) )
+				file_deactivate(file->group->active_loop);
 
 	file->group->active_loop = file;
 }

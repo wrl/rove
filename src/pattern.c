@@ -23,14 +23,14 @@
 #include "list.h"
 #include "pattern.h"
 
-extern rove_state_t state;
+extern state_t state;
 
-rove_pattern_t *rove_pattern_new() {
-	rove_pattern_t *self = calloc(sizeof(rove_pattern_t), 1);
+pattern_t *pattern_new() {
+	pattern_t *self = calloc(sizeof(pattern_t), 1);
 	return self;
 }
 
-void rove_pattern_free(rove_pattern_t *self) {
+void pattern_free(pattern_t *self) {
 	assert(self);
 	free(self); /* so liberating */
 }

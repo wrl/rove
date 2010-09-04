@@ -55,7 +55,7 @@ struct conf_section {
 	void *cb_arg;
 
 	int start_line;
-	rove_list_t *pairs;
+	list_t *pairs;
 };
 
 int conf_load(const char *path, conf_section_t *sections, int cd);

@@ -23,9 +23,9 @@
 #include "config_parser.h"
 #include "rove.h"
 
-extern rove_state_t state;
+extern state_t state;
 
-int rove_settings_load(const char *path) {
+int settings_load(const char *path) {
 	char *op, *ohp, *olp, *buf;
 	int c, r;
 
