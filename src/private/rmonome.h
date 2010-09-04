@@ -22,14 +22,14 @@
 #include "rove.h"
 #include "file.h"
 
-#define MONOME_POS_CMP(a, b) (memcmp(a, b, sizeof(rove_monome_position_t)))
-#define MONOME_POS_CPY(a, b) (memcpy(a, b, sizeof(rove_monome_position_t)))
+#define MONOME_POS_CMP(a, b) (memcmp(a, b, sizeof(r_monome_position_t)))
+#define MONOME_POS_CPY(a, b) (memcpy(a, b, sizeof(r_monome_position_t)))
 
-void rove_monome_run_thread(rove_monome_t *monome);
-void rove_monome_stop_thread(rove_monome_t *monome);
+void r_monome_run_thread(r_monome_t *monome);
+void r_monome_stop_thread(r_monome_t *monome);
 
-void rove_monome_display_file(rove_file_t *f);
-void rove_monome_free(rove_monome_t *monome);
-int  rove_monome_init();
+void r_monome_display_file(rove_file_t *f);
+void r_monome_free(r_monome_t *monome);
+int  r_monome_init();
 
 #endif

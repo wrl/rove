@@ -32,7 +32,7 @@
 
 #include "list.h"
 
-#define HANDLER_T(x) ((rove_monome_handler_t *) x)
+#define HANDLER_T(x) ((r_monome_handler_t *) x)
 #define PATTERN_T(x) ((rove_pattern_t *) x)
 
 /**
@@ -69,36 +69,36 @@ typedef struct rove_file rove_file_t;
 typedef struct rove_pattern rove_pattern_t;
 typedef struct rove_pattern rove_pattern_step_t;
 
-typedef struct rove_monome_handler rove_monome_handler_t;
-typedef struct rove_monome_position rove_monome_position_t;
-typedef struct rove_monome rove_monome_t;
+typedef struct r_monome_handler r_monome_handler_t;
+typedef struct r_monome_position r_monome_position_t;
+typedef struct r_monome r_monome_t;
 
 typedef struct rove_session rove_session_t;
 typedef struct rove_state rove_state_t;
 
-typedef void (*rove_monome_callback_t)(rove_monome_t *, uint_t x, uint_t y, uint_t event_type, void *user_arg);
+typedef void (*r_monome_callback_t)(r_monome_t *, uint_t x, uint_t y, uint_t event_type, void *user_arg);
 
 typedef void (*rove_process_callback_t)(rove_file_t *self, jack_default_audio_sample_t **buffers, int channels, jack_nframes_t nframes, jack_nframes_t sample_rate);
 typedef void (*rove_quantize_callback_t)(rove_file_t *self);
-typedef void (*rove_monome_output_callback_t)(rove_file_t *self, rove_monome_t *);
+typedef void (*r_monome_output_callback_t)(rove_file_t *self, r_monome_t *);
 
 /**
- * rove_monome
+ * r_monome
  */
 
-struct rove_monome_position {
+struct r_monome_position {
 	int x;
 	int y;
 };
 
-struct rove_monome_handler {
-	rove_monome_position_t pos;
+struct r_monome_handler {
+	r_monome_position_t pos;
 
-	rove_monome_callback_t cb;
+	r_monome_callback_t cb;
 	void *data;
 };
 
-struct rove_monome {
+struct r_monome {
 	monome_t *dev;
 
 	pthread_t thread;
@@ -106,8 +106,8 @@ struct rove_monome {
 	uint16_t quantize_field;
 	uint16_t dirty_field;
 
-	rove_monome_handler_t *callbacks;
-	rove_monome_handler_t *controls;
+	r_monome_handler_t *callbacks;
+	r_monome_handler_t *controls;
 
 	int mod_keys;
 	int rows;
@@ -142,11 +142,11 @@ struct rove_file {
 	int y;
 	int row_span;
 
-	rove_monome_t *mapped_monome;
-	rove_monome_position_t monome_pos;
-	rove_monome_position_t monome_pos_old;
+	r_monome_t *mapped_monome;
+	r_monome_position_t monome_pos;
+	r_monome_position_t monome_pos_old;
 
-	/* set to 1 if the next run of rove_monome_display_file should
+	/* set to 1 if the next run of r_monome_display_file should
 	   update the row regardless of whether it has changed. */
 	int force_monome_update;
 
@@ -156,8 +156,8 @@ struct rove_file {
 
 	rove_process_callback_t process_cb;
 	rove_quantize_callback_t quantize_cb;
-	rove_monome_output_callback_t monome_out_cb;
-	rove_monome_callback_t monome_in_cb;
+	r_monome_output_callback_t monome_out_cb;
+	r_monome_callback_t monome_in_cb;
 };
 
 /**
@@ -221,7 +221,7 @@ struct rove_state {
 		int rows;
 	} config;
 
-	rove_monome_t *monome;
+	r_monome_t *monome;
 	jack_client_t *client;
 
 	int group_count;

@@ -53,7 +53,7 @@ static sf_count_t calculate_play_pos(sf_count_t length, int x, int y, uint_t rev
 		return lrint(ceil(elapsed * length));
 }
 
-static void calculate_monome_pos(sf_count_t length, sf_count_t position, uint_t rows, uint_t cols, rove_monome_position_t *pos) {
+static void calculate_monome_pos(sf_count_t length, sf_count_t position, uint_t rows, uint_t cols, r_monome_position_t *pos) {
 	double elapsed;
 	int x, y;
 
@@ -125,8 +125,8 @@ static long file_src_callback(void *cb_data, float **data) {
 	return 1;
 }
 
-static void file_monome_out(rove_file_t *self, rove_monome_t *monome) {
-	rove_monome_position_t pos;
+static void file_monome_out(rove_file_t *self, r_monome_t *monome) {
+	r_monome_position_t pos;
 	uint16_t r = 0;
 
 	/* a uint16_t is the same thing as an array of two uint8_t's, which
@@ -160,11 +160,11 @@ static void file_monome_out(rove_file_t *self, rove_monome_t *monome) {
 	MONOME_POS_CPY(&self->monome_pos, &pos);
 }
 
-static void file_monome_in(rove_monome_t *monome, uint_t x, uint_t y, uint_t type, void *user_arg) {
+static void file_monome_in(r_monome_t *monome, uint_t x, uint_t y, uint_t type, void *user_arg) {
 	rove_file_t *self = FILE_T(user_arg);
 	unsigned int cols;
 
-	rove_monome_position_t pos = {x, y - self->y};
+	r_monome_position_t pos = {x, y - self->y};
 
 	switch( type ) {
 	case MONOME_BUTTON_DOWN:

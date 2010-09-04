@@ -39,14 +39,14 @@
 
 extern rove_state_t state;
 
-static void pattern_handler(rove_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
+static void pattern_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
 	rove_pattern_t **p = ((rove_pattern_t **) &HANDLER_T(user_arg)->data);
 
 	printf("%d %d %ld\n", x, y, (long int) *p);
 	return;
 }
 
-static void group_off_handler(rove_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
+static void group_off_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
 	rove_group_t *group = HANDLER_T(user_arg)->data;
 	rove_file_t *f;
 
@@ -58,8 +58,8 @@ static void group_off_handler(rove_monome_t *monome, uint_t x, uint_t y, uint_t 
 	rove_file_deactivate(f);
 }
 
-static void control_row_handler(rove_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
-	rove_monome_handler_t *callback;
+static void control_row_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
+	r_monome_handler_t *callback;
 
 	if( x >= monome->cols || !(callback = &monome->controls[x]) )
 		return;
@@ -86,7 +86,7 @@ static void control_row_handler(rove_monome_t *monome, uint_t x, uint_t y, uint_
 	}
 }
 
-void file_row_handler(rove_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
+void file_row_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
 	rove_file_t *f = HANDLER_T(user_arg)->data;
 
 	if( f->monome_in_cb )
@@ -94,8 +94,8 @@ void file_row_handler(rove_monome_t *monome, uint_t x, uint_t y, uint_t event_ty
 }
 
 static void button_handler(const monome_event_t *e, void *user_data) {
-	rove_monome_t *monome = user_data;
-	rove_monome_handler_t *callback;
+	r_monome_t *monome = user_data;
+	r_monome_handler_t *callback;
 
 	int event_x, event_y, event_type;
 
@@ -111,8 +111,8 @@ static void button_handler(const monome_event_t *e, void *user_data) {
 	callback->cb(monome, event_x, event_y, event_type, callback);
 }
 
-static void initialize_callbacks(rove_monome_t *monome) {
-	rove_monome_handler_t *ctrl, *row;
+static void initialize_callbacks(r_monome_t *monome) {
+	r_monome_handler_t *ctrl, *row;
 	int y, row_span, i, group_count;
 
 	rove_list_member_t *m;
@@ -165,22 +165,22 @@ static void initialize_callbacks(rove_monome_t *monome) {
 	}
 }
 
-void *rove_monome_loop_thread(void *user_data) {
+void *r_monome_loop_thread(void *user_data) {
 	monome_t *monome = user_data;
 	monome_event_loop(monome);
 
 	return NULL;
 }
 
-void rove_monome_run_thread(rove_monome_t *monome) {
-	pthread_create(&monome->thread, NULL, rove_monome_loop_thread, monome->dev);
+void r_monome_run_thread(r_monome_t *monome) {
+	pthread_create(&monome->thread, NULL, r_monome_loop_thread, monome->dev);
 }
 
-void rove_monome_stop_thread(rove_monome_t *monome) {
+void r_monome_stop_thread(r_monome_t *monome) {
 	pthread_cancel(monome->thread);
 }
 
-void rove_monome_free(rove_monome_t *monome) {
+void r_monome_free(r_monome_t *monome) {
 	monome_clear(monome->dev, MONOME_CLEAR_OFF);
 	monome_close(monome->dev);
 
@@ -190,8 +190,8 @@ void rove_monome_free(rove_monome_t *monome) {
 	free(monome);
 }
 
-int rove_monome_init() {
-	rove_monome_t *monome;
+int r_monome_init() {
+	r_monome_t *monome;
 	char *buf;
 
 	assert(state.config.osc_prefix);
@@ -200,7 +200,7 @@ int rove_monome_init() {
 	assert(state.config.cols > 0);
 	assert(state.config.rows > 0);
 
-	monome = calloc(sizeof(rove_monome_t), 1);
+	monome = calloc(sizeof(r_monome_t), 1);
 
 	asprintf(&buf, "osc.udp://127.0.0.1:%s/%s", state.config.osc_host_port, state.config.osc_prefix);
 
@@ -223,8 +223,8 @@ int rove_monome_init() {
 	monome->quantize_field = 0;
 	monome->dirty_field    = 0;
 
-	monome->callbacks = calloc(sizeof(rove_monome_handler_t), state.config.rows);
-	monome->controls  = calloc(sizeof(rove_monome_handler_t), state.config.cols);
+	monome->callbacks = calloc(sizeof(r_monome_handler_t), state.config.rows);
+	monome->controls  = calloc(sizeof(r_monome_handler_t), state.config.cols);
 	initialize_callbacks(monome);
 
 	monome_clear(monome->dev, MONOME_CLEAR_OFF);

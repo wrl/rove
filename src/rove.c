@@ -81,7 +81,7 @@ static void monome_display_loop() {
 
 	struct timespec req;
 
-	rove_monome_t *monome = state.monome;
+	r_monome_t *monome = state.monome;
 	rove_group_t *g;
 	rove_file_t *f;
 
@@ -138,8 +138,8 @@ static void exit_on_signal(int s) {
 }
 
 static void cleanup() {
-	rove_monome_stop_thread(state.monome);
-	rove_monome_free(state.monome);
+	r_monome_stop_thread(state.monome);
+	r_monome_free(state.monome);
 
 	rove_jack_deactivate();
 }
@@ -248,7 +248,7 @@ int main(int argc, char **argv) {
 
 #undef ASSIGN_IF_UNSET
 
-	if( rove_monome_init() )
+	if( r_monome_init() )
 		exit(EXIT_FAILURE);
 
 	if( rove_jack_activate() )
@@ -257,7 +257,7 @@ int main(int argc, char **argv) {
 	signal(SIGINT, exit_on_signal);
 	atexit(cleanup);
 
-	rove_monome_run_thread(state.monome);
+	r_monome_run_thread(state.monome);
 	monome_display_loop();
 
 	return 0;
