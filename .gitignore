@@ -3,3 +3,6 @@ rove
 
 # ignore the makefile configuration
 config.mk
+
+# ignore tempfiles
+.*swp
