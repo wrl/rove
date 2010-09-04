@@ -21,36 +21,24 @@
 
 #include "list.h"
 
+void list_init(list_t *self) {
+	self->head.prev = NULL;
+	self->head.next = &self->tail;
+	self->tail.prev = &self->head;
+	self->tail.next = NULL;
+}
+
 list_t *list_new() {
 	list_t *self;
 
 	if( !(self = calloc(1, sizeof(list_t))) )
-		goto err_list;
+		return NULL;
 
-	if( !(self->head = calloc(1, sizeof(list_member_t))) )
-		goto err_list_head;
-
-	if( !(self->tail = calloc(1, sizeof(list_member_t))) )
-		goto err_list_tail;
-
-	self->head->prev = NULL;
-	self->head->next = self->tail;
-	self->tail->prev = self->head;
-	self->tail->next = NULL;
-
+	list_init(self);
 	return self;
-
-err_list_tail:
-	free(self->head);
-err_list_head:
-	free(self);
-err_list:
-	return NULL;
 }
 
 void list_free(list_t *self) {
-	free(self->head);
-	free(self->tail);
 	free(self);
 }
 
@@ -60,19 +48,19 @@ void list_push_raw(list_t *self, list_global_location_t l, list_member_t *m) {
 
 	switch( l ) {
 	case HEAD:
-		m->prev = self->head;
-		m->next = self->head->next;
+		m->prev = &self->head;
+		m->next = self->head.next;
 
-		self->head->next->prev = m;
-		self->head->next = m;
+		self->head.next->prev = m;
+		self->head.next = m;
 		break;
 
 	case TAIL:
-		m->prev = self->tail->prev;
-		m->next = self->tail;
+		m->prev = self->tail.prev;
+		m->next = &self->tail;
 
-		self->tail->prev->next = m;
-		self->tail->prev = m;
+		self->tail.prev->next = m;
+		self->tail.prev = m;
 		break;
 	}
 }
@@ -127,19 +115,22 @@ list_member_t *list_pop_raw(list_t *self, list_global_location_t l) {
 
 	assert(self);
 
+	if( list_is_empty(self) )
+		return NULL;
+
 	switch( l ) {
 	case HEAD:
-		m = self->head->next;
+		m = self->head.next;
 
-		m->next->prev    = self->head;
-		self->head->next = m->next;
+		m->next->prev    = &self->head;
+		self->head.next = m->next;
 		break;
 
 	case TAIL:
-		m = self->tail->prev;
+		m = self->tail.prev;
 
-		m->prev->next    = self->tail;
-		self->tail->prev = m->prev;
+		m->prev->next    = &self->tail;
+		self->tail.prev = m->prev;
 		break;
 	}
 
@@ -152,10 +143,9 @@ void *list_pop(list_t *self, list_global_location_t l) {
 
 	assert(self);
 
-	if( list_is_empty(self) )
+	if( !(m = list_pop_raw(self, l)) )
 		return NULL;
 
-	m = list_pop_raw(self, l);
 	data = m->data;
 
 	free(m);

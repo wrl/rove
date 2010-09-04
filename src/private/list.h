@@ -19,9 +19,19 @@
 #ifndef _ROVE_LIST_H
 #define _ROVE_LIST_H
 
-#define list_foreach(list, cursor, datum) for( cursor = list->head->next, datum = cursor->data;\
-													cursor->next; cursor = cursor->next, datum = cursor->data )
-#define list_is_empty(list) (list->head->next == list->tail && list->tail->prev == list->head)
+#define list_foreach(list, cursor, datum) \
+	for( cursor = list->head.next, datum = cursor->data;\
+		 cursor->next; cursor = cursor->next, datum = cursor->data )
+
+#define list_foreach_raw(list, cursor) \
+	for( cursor = list->head.next; cursor->next; cursor = cursor->next )
+
+#define list_is_empty(list) (list->head.next == &list->tail \
+							 && list->tail.prev == &list->head)
+
+#define LIST_T(x) ((list_t *) x)
+#define LIST_MEMBER_T(x) ((list_member_t *) x)
+
 
 typedef enum {
 	HEAD,
@@ -44,10 +54,11 @@ struct list_member {
 };
 
 struct list {
-	list_member_t *head;
-	list_member_t *tail;
+	list_member_t head;
+	list_member_t tail;
 };
 
+void list_init(list_t *self);
 list_t *list_new();
 void  list_free(list_t *list);
 
