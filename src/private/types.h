@@ -67,7 +67,7 @@ typedef struct group group_t;
 typedef struct file file_t;
 
 typedef struct pattern pattern_t;
-typedef struct pattern pattern_step_t;
+typedef struct pattern_step pattern_step_t;
 
 typedef struct r_monome_handler r_monome_handler_t;
 typedef struct r_monome_position r_monome_position_t;
@@ -185,12 +185,13 @@ struct group {
 
 struct pattern {
 	list_member_t m;
+	pattern_status_t status;
+	r_monome_t *monome;
 
 	list_t steps;
-	pattern_status_t status;
+	pattern_step_t *current_step;
 
-	int next_step_delay;
-	int length;
+	int step_delay;
 };
 
 struct pattern_step {
@@ -200,9 +201,9 @@ struct pattern_step {
 
 	uint_t x;
 	uint_t y;
-	uint_t pressed;
+	uint_t type;
 
-	double delay_from_previous;
+	int delay;
 };
 
 /**

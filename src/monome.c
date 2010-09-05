@@ -44,13 +44,22 @@ static void pattern_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event
 			  *pattern = *pptr;
 	int pat_idx = monome->rows - 4 - x;
 
+	/**
+	 * patterns don't work!
+	 */
+
+	return;
+
 	if( event_type != MONOME_BUTTON_DOWN )
 		return;
 
 	if( !pattern ) {
 		pattern = *pptr = pattern_new();
+		pattern->monome = monome;
 		pattern->status = PATTERN_STATUS_RECORDING;
-		pattern->length = state.pattern_lengths[pat_idx];
+
+		pattern->step_delay = rintf(floor(
+				state.pattern_lengths[pat_idx] / state.beat_multiplier));
 
 		if( state.pattern_rec )
 			pattern_status_set(state.pattern_rec, PATTERN_STATUS_ACTIVE);
@@ -62,9 +71,12 @@ static void pattern_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event
 		return;
 	}
 
-	if( state.pattern_rec == pattern )
-		state.pattern_rec = NULL;
+	if( state.pattern_rec == pattern && !stlist_is_empty(pattern->steps) ) {
+		pattern_status_set(pattern, PATTERN_STATUS_ACTIVE);
+		return;
+	}
 
+	pattern_status_set(pattern, PATTERN_STATUS_INACTIVE);
 	list_remove_raw(LIST_MEMBER_T(pattern));
 	pattern_free(pattern);
 	*pptr = NULL;
@@ -118,7 +130,7 @@ void file_row_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type,
 	if( !f->monome_in_cb )
 		return;
 
-	pattern_record(f, x, y, event_type == MONOME_BUTTON_DOWN);
+	pattern_record(f, x, y, event_type);
 	f->monome_in_cb(monome, x, y, event_type, f); 
 }
 

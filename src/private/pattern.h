@@ -21,6 +21,9 @@
 
 #include "types.h"
 
+#define stlist_is_empty(list) (list.head.next == &list.tail \
+							   && list.tail.prev == &list.head)
+
 void pattern_record(file_t *victim, uint_t x, uint_t y, uint_t pressed);
 
 void pattern_status_set(pattern_t *self, pattern_status_t nstatus);
