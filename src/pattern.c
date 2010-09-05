@@ -18,6 +18,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "file.h"
 #include "list.h"
@@ -25,12 +26,45 @@
 
 extern state_t state;
 
-pattern_t *pattern_new() {
-	pattern_t *self = calloc(sizeof(pattern_t), 1);
-	return self;
+void pattern_record(file_t *victim, uint_t x, uint_t y, uint_t pressed) {
+	if( state.pattern_rec )
+		printf("good\n");
+}
+
+void pattern_status_set(pattern_t *self, pattern_status_t nstatus) {
+	printf("%d\n", nstatus);
+	self->status = nstatus;
+}
+
+void pattern_process(pattern_t *self) {
+	switch( self->status ) {
+	case PATTERN_STATUS_INACTIVE:
+		return;
+
+	case PATTERN_STATUS_ACTIVE:
+		return;
+
+	case PATTERN_STATUS_RECORDING:
+		return;
+	}
 }
 
 void pattern_free(pattern_t *self) {
+	pattern_step_t *step;
+
 	assert(self);
+
+	while( (step = PATTERN_STEP_T(list_pop_raw(&self->steps, HEAD))) )
+		free(step);
+
 	free(self); /* so liberating */
+	puts("freed");
+}
+
+pattern_t *pattern_new() {
+	pattern_t *self = calloc(1, sizeof(pattern_t));
+	list_init(&self->steps);
+
+	puts("allocd");
+	return self;
 }

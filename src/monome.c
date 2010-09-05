@@ -40,10 +40,36 @@
 extern state_t state;
 
 static void pattern_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
-	pattern_t **p = ((pattern_t **) &HANDLER_T(user_arg)->data);
+	pattern_t **pptr = ((pattern_t **) &HANDLER_T(user_arg)->data),
+			  *pattern = *pptr;
+	int pat_idx = monome->rows - 4 - x;
 
-	printf("%d %d %ld\n", x, y, (long int) *p);
-	return;
+	if( event_type != MONOME_BUTTON_DOWN )
+		return;
+
+	if( !pattern ) {
+		pattern = *pptr = pattern_new();
+		pattern->status = PATTERN_STATUS_RECORDING;
+		pattern->length = state.pattern_lengths[pat_idx];
+
+		if( state.pattern_rec )
+			pattern_status_set(state.pattern_rec, PATTERN_STATUS_ACTIVE);
+
+		list_push_raw(state.patterns, TAIL, LIST_MEMBER_T(pattern));
+		state.pattern_rec = pattern;
+
+		monome_led_on(monome->dev, x, y);
+		return;
+	}
+
+	if( state.pattern_rec == pattern )
+		state.pattern_rec = NULL;
+
+	list_remove_raw(LIST_MEMBER_T(pattern));
+	pattern_free(pattern);
+	*pptr = NULL;
+
+	monome_led_off(monome->dev, x, y);
 }
 
 static void group_off_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
@@ -89,8 +115,11 @@ static void control_row_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t e
 void file_row_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
 	file_t *f = HANDLER_T(user_arg)->data;
 
-	if( f->monome_in_cb )
-		f->monome_in_cb(monome, x, y, event_type, f); 
+	if( !f->monome_in_cb )
+		return;
+
+	pattern_record(f, x, y, event_type == MONOME_BUTTON_DOWN);
+	f->monome_in_cb(monome, x, y, event_type, f); 
 }
 
 static void button_handler(const monome_event_t *e, void *user_data) {

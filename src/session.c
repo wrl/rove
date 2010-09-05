@@ -169,8 +169,6 @@ static void session_section_callback(const conf_section_t *section, void *arg) {
 		case 'c': /* columns */
 			session->cols = (uint_t) strtoul(pair->value, NULL, 10);
 		}
-
-		printf("%s\n", pair->key);
 	}
 
 	if( !state.groups )

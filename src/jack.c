@@ -49,6 +49,13 @@ static void process_file(file_t *f) {
 	}
 }
 
+static void process_patterns() {
+	list_member_t *m;
+
+	list_foreach_raw(state.patterns, m)
+		pattern_process(PATTERN_T(m));
+}
+
 static int process(jack_nframes_t nframes, void *arg) {
 	static int quantize_frames = 0;
 
@@ -101,6 +108,8 @@ static int process(jack_nframes_t nframes, void *arg) {
 				f = (file_t *) state.monome->callbacks[j].data;
 				process_file(f);
 			}
+
+			process_patterns();
 		}
 
 		until_quantize   = (state.snap_delay - quantize_frames);

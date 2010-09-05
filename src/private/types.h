@@ -34,6 +34,7 @@
 
 #define HANDLER_T(x) ((r_monome_handler_t *) x)
 #define PATTERN_T(x) ((pattern_t *) x)
+#define PATTERN_STEP_T(x) ((pattern_step_t *) x)
 
 /**
  * types
@@ -59,7 +60,6 @@ typedef enum {
 typedef enum {
 	PATTERN_STATUS_RECORDING,
 	PATTERN_STATUS_ACTIVE,
-	PATTERN_STATUS_ACTIVATE,
 	PATTERN_STATUS_INACTIVE
 } pattern_status_t;
 
@@ -184,7 +184,13 @@ struct group {
  */
 
 struct pattern {
-	list_t l;
+	list_member_t m;
+
+	list_t steps;
+	pattern_status_t status;
+
+	int next_step_delay;
+	int length;
 };
 
 struct pattern_step {
@@ -194,7 +200,7 @@ struct pattern_step {
 
 	uint_t x;
 	uint_t y;
-	uint_t state;
+	uint_t pressed;
 
 	double delay_from_previous;
 };
@@ -229,7 +235,7 @@ struct state {
 
 	list_t *files;
 	list_t *patterns;
-	list_member_t *pattern_rec;
+	pattern_t *pattern_rec;
 	int pattern_lengths[2];
 
 	int staged_loops;

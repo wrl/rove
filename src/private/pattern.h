@@ -21,6 +21,11 @@
 
 #include "types.h"
 
+void pattern_record(file_t *victim, uint_t x, uint_t y, uint_t pressed);
+
+void pattern_status_set(pattern_t *self, pattern_status_t nstatus);
+void pattern_process(pattern_t *self);
+
 pattern_t *pattern_new();
 void pattern_free(pattern_t *);
 
