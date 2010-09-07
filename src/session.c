@@ -147,23 +147,25 @@ static void session_section_callback(const conf_section_t *section, void *arg) {
 	while( (v = conf_getvar(section, &pair)) ) {
 		switch( v ) {
 		case 'q': /* quantize */
-			state.beat_multiplier = strtod(pair->value, NULL);
+			session->beat_multiplier = strtod(pair->value, NULL);
 			break;
 
 		case 'b': /* bpm */
-			state.bpm = strtod(pair->value, NULL);
+			session->bpm = strtod(pair->value, NULL);
 			break;
 
 		case 'g': /* groups */
-			state.group_count = (int) strtol(pair->value, NULL, 10);
+			if( !state.group_count )
+				state.group_count = (int) strtol(pair->value, NULL, 10);
+
 			break;
 
 		case '1': /* pattern1 */
-			state.pattern_lengths[0] = (int) strtol(pair->value, NULL, 10);
+			session->pattern_lengths[0] = (int) strtol(pair->value, NULL, 10);
 			break;
 
 		case '2': /* pattern2 */
-			state.pattern_lengths[1] = (int) strtol(pair->value, NULL, 10);
+			session->pattern_lengths[1] = (int) strtol(pair->value, NULL, 10);
 			break;
 
 		case 'c': /* columns */
@@ -175,6 +177,13 @@ static void session_section_callback(const conf_section_t *section, void *arg) {
 		state.groups = initialize_groups(state.group_count);
 }
 
+void session_activate(session_t *self) {
+	state.beat_multiplier = self->beat_multiplier;
+	state.bpm = self->bpm;
+
+	state.pattern_lengths = self->pattern_lengths;
+}
+
 session_t *session_new() {
 	session_t *self = calloc(1, sizeof(session_t));
 
@@ -182,8 +191,9 @@ session_t *session_new() {
 	return self;
 }
 
-void session_free(session_t *session) {
-	free(session);
+void session_free(session_t *self) {
+	list_remove_raw(LIST_MEMBER_T(self));
+	free(self);
 }
 
 int session_load(const char *path) {
@@ -217,6 +227,8 @@ int session_load(const char *path) {
 
 	if( conf_load(path, config_sections, 1) )
 		return 1;
+
+	session_activate(session);
 
 	return 0;
 }

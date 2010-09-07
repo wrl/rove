@@ -216,6 +216,8 @@ struct session {
 	uint_t cols;
 	double bpm;
 	double beat_multiplier;
+
+	int pattern_lengths[2];
 };
 
 /**
@@ -239,11 +241,12 @@ struct state {
 	group_t *groups;
 
 	list_t sessions;
+	session_t *active_session;
 
 	list_t *files;
 	list_t *patterns;
 	pattern_t *pattern_rec;
-	int pattern_lengths[2];
+	int *pattern_lengths;
 
 	int staged_loops;
 

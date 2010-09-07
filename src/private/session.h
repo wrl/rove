@@ -18,7 +18,9 @@
 
 #include "types.h"
 
+void session_activate(session_t *);
+
 session_t *session_new();
-void session_free(session_t *session);
+void session_free(session_t *);
 
 int session_load(const char *path);
