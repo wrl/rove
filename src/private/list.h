@@ -27,7 +27,11 @@
 	for( cursor = list->head.next; cursor->next; cursor = cursor->next )
 
 #define list_is_empty(list) (list->head.next == &list->tail \
-							 && list->tail.prev == &list->head)
+                             && list->tail.prev == &list->head)
+
+/* for static lists */
+#define stlist_is_empty(list) (list.head.next == &list.tail \
+                               && list.tail.prev == &list.head)
 
 #define LIST_T(x) ((list_t *) x)
 #define LIST_MEMBER_T(x) ((list_member_t *) x)

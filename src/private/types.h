@@ -33,6 +33,7 @@
 #include "list.h"
 
 #define HANDLER_T(x) ((r_monome_handler_t *) x)
+#define SESSION_T(x) ((session_t *) x)
 #define PATTERN_T(x) ((pattern_t *) x)
 #define PATTERN_STEP_T(x) ((pattern_step_t *) x)
 

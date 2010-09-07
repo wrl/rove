@@ -251,7 +251,5 @@ int session_load(const char *path) {
 	if( conf_load(path, config_sections, 0) )
 		return 1;
 
-	session_activate(data.session);
-
 	return 0;
 }

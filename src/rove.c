@@ -200,9 +200,6 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	if( optind == argc )
-		usage_printf_exit("error: you did not specify a session file!\n\n");
-
 	if( settings_load(user_config_path()) )
 		exit(EXIT_FAILURE);
 
@@ -216,10 +213,16 @@ int main(int argc, char **argv) {
 		   "you've got the following loops loaded:\n"
 		   "\t[rows]\t[file]\n");
 
-	if( session_load(session_file) ) {
-		printf("error parsing session file :(\n");
+	for( ; optind < argc; session_file = argv[++optind] )
+		if( session_load(session_file) )
+			printf("error loading session file %s\n", session_file);
+
+	if( stlist_is_empty(state.sessions) ) {
+		fprintf(stderr, "\nYOU HAVE NO SESSIONS\nPLEASE TRY AGAIN\n\n");
 		exit(EXIT_FAILURE);
 	}
+
+	session_activate(SESSION_T(state.sessions.head.next));
 
 	if( list_is_empty(state.files) ) {
 		fprintf(stderr, "\t(none, evidently.  get some and come play!)\n\n");
