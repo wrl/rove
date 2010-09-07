@@ -133,14 +133,17 @@ static void file_monome_out(file_t *self, r_monome_t *monome) {
 	   monome_led_row expects. */
 	uint8_t *row = (uint8_t *) &r;
 
-	calculate_monome_pos(self->file_length * self->channels, file_get_play_pos(self), self->row_span, (self->columns) ? self->columns : monome->cols, &pos);
+	calculate_monome_pos(
+		self->file_length * self->channels, file_get_play_pos(self),
+		self->row_span, (self->columns) ? self->columns : monome->cols, &pos);
 
-	if( MONOME_POS_CMP(&pos, &self->monome_pos_old) || self->force_monome_update ) {
+	if( MONOME_POS_CMP(&pos, &self->monome_pos_old)
+		|| self->force_monome_update ) {
 		if( self->force_monome_update ) {
 			if( !self->group->active_loop )
-				monome_led_off(self->mapped_monome->dev, self->group->idx, 0);
+				monome_led_off(monome->dev, self->group->idx, 0);
 			else
-				monome_led_on(self->mapped_monome->dev, self->group->idx, 0);
+				monome_led_on(monome->dev, self->group->idx, 0);
 
 			monome->dirty_field &= ~(1 << self->y);
 			self->force_monome_update = 0;

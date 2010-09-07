@@ -18,6 +18,8 @@
 
 #include "types.h"
 
+int session_next();
+int session_prev();
 void session_activate(session_t *);
 
 session_t *session_new(const char *path);

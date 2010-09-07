@@ -25,7 +25,7 @@
 #include "config_parser.h"
 #include "session.h"
 #include "rove.h"
-
+#include "util.h"
 
 #define SESSION_T(x) ((session_t *) x)
 
@@ -127,6 +127,9 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 	if( group > state.group_count )
 		group = state.group_count;
 
+	if( stlist_is_empty(session->files) )
+		y = 1;
+
 	f->path = buf;
 	f->y = y;
 	f->speed = speed;
@@ -196,6 +199,33 @@ static void session_section_callback(const conf_section_t *section, void *arg) {
 		state.groups = initialize_groups(state.group_count);
 }
 
+int session_next() {
+	list_member_t *current = LIST_MEMBER_T(state.active_session);
+
+	if( !current->next->next )
+		return 1;
+	puts("NEXT");
+
+	session_activate(SESSION_T(current->next));
+	return 0;
+}
+
+int session_prev() {
+	list_member_t *current = LIST_MEMBER_T(state.active_session);
+
+	if( !current->prev->prev )
+		return 1;
+	puts("PREV");
+
+	session_activate(SESSION_T(current->prev));
+	return 0;
+}
+
+static void recalculate_bpm_variables() {
+	state.frames_per_beat = lrintf((60 / state.bpm) * (double) jack_get_sample_rate(state.client));
+	state.snap_delay = MAX(state.frames_per_beat * state.beat_multiplier, 1);
+}
+
 void session_activate(session_t *self) {
 	state.beat_multiplier = self->beat_multiplier;
 	state.bpm = self->bpm;
@@ -203,6 +233,9 @@ void session_activate(session_t *self) {
 	state.files = &self->files;
 
 	state.pattern_lengths = self->pattern_lengths;
+	state.active_session = self;
+
+	recalculate_bpm_variables();
 }
 
 session_t *session_new(const char *path) {

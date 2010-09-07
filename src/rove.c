@@ -118,11 +118,6 @@ static void monome_display_loop() {
 	}
 }
 
-static void recalculate_bpm_variables() {
-	state.frames_per_beat = lrintf((60 / state.bpm) * (double) jack_get_sample_rate(state.client));
-	state.snap_delay = MAX(state.frames_per_beat * state.beat_multiplier, 1);
-}
-
 static char *user_config_path() {
 	char *home, *path;
 
@@ -223,14 +218,10 @@ int main(int argc, char **argv) {
 		exit(EXIT_FAILURE);
 	}
 
-	session_activate(SESSION_T(state.sessions.head.next));
-
 	if( r_jack_init() ) {
 		fprintf(stderr, "error initializing JACK :(\n");
 		exit(EXIT_FAILURE);
 	}
-
-	recalculate_bpm_variables();
 
 #define ASSIGN_IF_UNSET(k, v) do { \
 	if( !k ) \
@@ -244,6 +235,8 @@ int main(int argc, char **argv) {
 	ASSIGN_IF_UNSET(state.config.rows, DEFAULT_MONOME_ROWS);
 
 #undef ASSIGN_IF_UNSET
+
+	session_activate(SESSION_T(state.sessions.head.next));
 
 	if( r_monome_init() )
 		exit(EXIT_FAILURE);
