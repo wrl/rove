@@ -39,6 +39,60 @@
 
 extern state_t state;
 
+static void initialize_callbacks(r_monome_t *monome) {
+	r_monome_handler_t *ctrl, *row;
+	int y, row_span, i, group_count;
+
+	list_member_t *m;
+	file_t *f;
+
+	/* leave room for two pattern recorders and the two mod keys */
+	group_count = MIN(state.group_count, monome->cols - 4);
+
+	y = 0;
+
+	for( i = 0; i < group_count; i++ ) {
+		ctrl = &monome->controls[i];
+
+		ctrl->pos.x = i;
+		ctrl->pos.y = y;
+
+		ctrl->cb    = group_off_handler;
+		ctrl->data  = (void *) &state.groups[i];
+	}
+
+	for( i = monome->cols - 4; i < monome->cols - 2; i++ ) {
+		ctrl = &monome->controls[i];
+
+		ctrl->pos.x = i;
+		ctrl->pos.y = y;
+
+		ctrl->cb    = pattern_handler;
+		ctrl->data  = NULL;
+	}
+
+	monome->callbacks[y].cb = control_row_handler;
+
+	list_foreach(state.files, m, f) {
+		f->mapped_monome = monome;
+		row_span = f->row_span;
+		y = f->y;
+
+		for( i = y; i < y + row_span; i++ ) {
+			if( i >= monome->rows )
+				continue;
+
+			row = &monome->callbacks[i];
+
+			row->pos.x = 0;
+			row->pos.y = i;
+
+			row->cb    = file_row_handler;
+			row->data  = f;
+		}
+	}
+}
+
 static void pattern_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
 	pattern_t **pptr = ((pattern_t **) &HANDLER_T(user_arg)->data),
 			  *pattern = *pptr;
@@ -150,60 +204,6 @@ static void button_handler(const monome_event_t *e, void *user_data) {
 		return;
 
 	callback->cb(monome, event_x, event_y, event_type, callback);
-}
-
-static void initialize_callbacks(r_monome_t *monome) {
-	r_monome_handler_t *ctrl, *row;
-	int y, row_span, i, group_count;
-
-	list_member_t *m;
-	file_t *f;
-
-	/* leave room for two pattern recorders and the two mod keys */
-	group_count = MIN(state.group_count, monome->cols - 4);
-
-	y = 0;
-
-	for( i = 0; i < group_count; i++ ) {
-		ctrl = &monome->controls[i];
-
-		ctrl->pos.x = i;
-		ctrl->pos.y = y;
-
-		ctrl->cb    = group_off_handler;
-		ctrl->data  = (void *) &state.groups[i];
-	}
-
-	for( i = monome->cols - 4; i < monome->cols - 2; i++ ) {
-		ctrl = &monome->controls[i];
-
-		ctrl->pos.x = i;
-		ctrl->pos.y = y;
-
-		ctrl->cb    = pattern_handler;
-		ctrl->data  = NULL;
-	}
-
-	monome->callbacks[y].cb = control_row_handler;
-
-	list_foreach(state.files, m, f) {
-		f->mapped_monome = monome;
-		row_span = f->row_span;
-		y = f->y;
-
-		for( i = y; i < y + row_span; i++ ) {
-			if( i >= monome->rows )
-				continue;
-
-			row = &monome->callbacks[i];
-
-			row->pos.x = 0;
-			row->pos.y = i;
-
-			row->cb    = file_row_handler;
-			row->data  = f;
-		}
-	}
 }
 
 void *r_monome_loop_thread(void *user_data) {

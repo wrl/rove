@@ -120,6 +120,8 @@ struct r_monome {
  */
 
 struct file {
+	char *path;
+
 	file_play_direction_t play_direction;
 	file_status_t status;
 
@@ -213,6 +215,8 @@ struct pattern_step {
 
 struct session {
 	list_member_t m;
+	list_t files;
+
 	char *path;
 	char *dirname;
 

@@ -105,28 +105,29 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 
 	if( !path ) {
 		printf("no file path specified in file section starting at line %d\n", section->start_line);
-		goto out;
+		goto err;
 	}
 
 	if( !group ) {
 		printf("no group specified in file section starting at line %d\n", section->start_line);
-		goto out;
+		goto err;
 	}
 
 	if( asprintf(&buf, "%s/%s", session->dirname, path) < 0 ) {
 		fprintf(stderr, "couldn't allocate string buffer for loop %s, aieee!",
 	            path);
-		return;
+		goto err;
 	}
 
-	if( !(f = file_new_from_path(buf)) )
-		goto out;
+	free(path);
 
-	free(buf);
+	if( !(f = file_new_from_path(buf)) )
+		goto err_load;
 
 	if( group > state.group_count )
 		group = state.group_count;
 
+	f->path = buf;
 	f->y = y;
 	f->speed = speed;
 	f->row_span = r;
@@ -134,12 +135,14 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 	f->group = &state.groups[group - 1];
 	f->play_direction = ( reverse ) ? FILE_PLAY_DIRECTION_REVERSE : FILE_PLAY_DIRECTION_FORWARD;
 
-	list_push(state.files, TAIL, f);
-	printf("\t%d - %d\t%s\n", y, y + r - 1, path);
-
+	list_push(&session->files, TAIL, f);
 	y += r;
 
-out:
+	return;
+
+err_load:
+	free(buf);
+err:
 	free(path);
 	return;
 }
@@ -197,6 +200,8 @@ void session_activate(session_t *self) {
 	state.beat_multiplier = self->beat_multiplier;
 	state.bpm = self->bpm;
 
+	state.files = &self->files;
+
 	state.pattern_lengths = self->pattern_lengths;
 }
 
@@ -204,6 +209,8 @@ session_t *session_new(const char *path) {
 	char *buf;
 
 	session_t *self = calloc(1, sizeof(session_t));
+	list_init(&self->files);
+
 	self->path = strdup(path);
 	buf = strdup(path);
 	self->dirname = strdup(dirname(buf));
