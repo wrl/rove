@@ -176,7 +176,10 @@ static void session_section_callback(const conf_section_t *section, void *arg) {
 }
 
 session_t *session_new() {
-	return calloc(1, sizeof(session_t));
+	session_t *self = calloc(1, sizeof(session_t));
+
+	list_push_raw(&state.sessions, TAIL, LIST_MEMBER_T(self));
+	return self;
 }
 
 void session_free(session_t *session) {

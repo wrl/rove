@@ -210,9 +210,7 @@ int main(int argc, char **argv) {
 
 	state.files    = list_new();
 	state.patterns = list_new();
-
-	state.active   = list_new();
-	state.staging  = list_new();
+	list_init(&state.sessions);
 
 	printf("\nhey, welcome to rove!\n\n"
 		   "you've got the following loops loaded:\n"

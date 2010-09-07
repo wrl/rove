@@ -211,7 +211,11 @@ struct pattern_step {
  */
 
 struct session {
+	list_member_t m;
+
 	uint_t cols;
+	double bpm;
+	double beat_multiplier;
 };
 
 /**
@@ -234,14 +238,14 @@ struct state {
 	int group_count;
 	group_t *groups;
 
+	list_t sessions;
+
 	list_t *files;
 	list_t *patterns;
 	pattern_t *pattern_rec;
 	int pattern_lengths[2];
 
 	int staged_loops;
-	list_t *active;
-	list_t *staging;
 
 	double bpm;
 	double beat_multiplier;
