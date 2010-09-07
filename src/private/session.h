@@ -20,7 +20,7 @@
 
 void session_activate(session_t *);
 
-session_t *session_new();
+session_t *session_new(const char *path);
 void session_free(session_t *);
 
 int session_load(const char *path);

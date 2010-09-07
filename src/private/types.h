@@ -212,6 +212,8 @@ struct pattern_step {
 
 struct session {
 	list_member_t m;
+	char *path;
+	char *dirname;
 
 	uint_t cols;
 	double bpm;

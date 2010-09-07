@@ -19,6 +19,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <libgen.h>
 
 #include "config_parser.h"
 #include "session.h"
@@ -29,6 +31,11 @@
 
 
 extern state_t state;
+
+typedef struct {
+	session_t *session;
+	const char *path;
+} _cb_data_t;
 
 static group_t *initialize_groups(uint_t group_count) {
 	group_t *groups;
@@ -50,7 +57,7 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 	unsigned int e, c, r, group, reverse, *v;
 	file_t *f;
 	double speed;
-	char *path;
+	char *path, *buf;
 
 	conf_pair_t *pair = NULL;
 
@@ -98,7 +105,7 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 
 	if( !path ) {
 		printf("no file path specified in file section starting at line %d\n", section->start_line);
-		return;
+		goto out;
 	}
 
 	if( !group ) {
@@ -106,8 +113,16 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 		goto out;
 	}
 
-	if( !(f = file_new_from_path(path)) )
+	if( asprintf(&buf, "%s/%s", session->dirname, path) < 0 ) {
+		fprintf(stderr, "couldn't allocate string buffer for loop %s, aieee!",
+	            path);
+		return;
+	}
+
+	if( !(f = file_new_from_path(buf)) )
 		goto out;
+
+	free(buf);
 
 	if( group > state.group_count )
 		group = state.group_count;
@@ -130,12 +145,13 @@ out:
 }
 
 static void session_section_callback(const conf_section_t *section, void *arg) {
+	_cb_data_t *data = arg;
 	session_t *session, **sptr = arg;
 	conf_pair_t *pair = NULL;
 	char v;
 
 	if( !*sptr ) {
-		if( !(*sptr = session_new()) ) {
+		if( !(*sptr = session_new(data->path)) ) {
 			fprintf(stderr, "couldn't allocate sptr_t, aieee!\n");
 			assert(*sptr);
 		}
@@ -184,8 +200,14 @@ void session_activate(session_t *self) {
 	state.pattern_lengths = self->pattern_lengths;
 }
 
-session_t *session_new() {
+session_t *session_new(const char *path) {
+	char *buf;
+
 	session_t *self = calloc(1, sizeof(session_t));
+	self->path = strdup(path);
+	buf = strdup(path);
+	self->dirname = strdup(dirname(buf));
+	free(buf);
 
 	list_push_raw(&state.sessions, TAIL, LIST_MEMBER_T(self));
 	return self;
@@ -193,11 +215,12 @@ session_t *session_new() {
 
 void session_free(session_t *self) {
 	list_remove_raw(LIST_MEMBER_T(self));
+	free(self->path);
 	free(self);
 }
 
 int session_load(const char *path) {
-	session_t *session = NULL;
+	_cb_data_t data = { NULL, path };
 
 	conf_var_t file_vars[] = {
 		{"path",    NULL, STRING, 'p'},
@@ -220,15 +243,15 @@ int session_load(const char *path) {
 	};
 
 	conf_section_t config_sections[] = {
-		{"session", session_vars, session_section_callback, &session},
-		{"file",    file_vars   , file_section_callback, &session},
+		{"session", session_vars, session_section_callback, &data},
+		{"file",    file_vars   , file_section_callback, &data},
 		{NULL}
 	};
 
-	if( conf_load(path, config_sections, 1) )
+	if( conf_load(path, config_sections, 0) )
 		return 1;
 
-	session_activate(session);
+	session_activate(data.session);
 
 	return 0;
 }
