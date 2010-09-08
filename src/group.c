@@ -20,10 +20,10 @@
 #include "file.h"
 
 void group_activate_file(file_t *file) {
-	if( file->group->active_loop )
-		if( file->group->active_loop != file )
-			if( file_is_active(file->group->active_loop) )
-				file_deactivate(file->group->active_loop);
+	if( file->group->active_loop
+		&& file->group->active_loop != file
+		&& file_is_active(file->group->active_loop) )
+		file_deactivate(file->group->active_loop);
 
 	file->group->active_loop = file;
 }
