@@ -308,13 +308,14 @@ EOF
 	RET=$?
 
 	if [ $RET -ne 0 ]; then
-		SNDFILE_CFLAGS=;
-		SNDFILE_LIBS=;
+		SRC_CFLAGS=;
+		SRC_LIBS=;
 
+		return 1;
 		return $RET;
 	fi
 
-	HAVE_SNDFILE=1;
+	HAVE_SRC=1;
 
 	if [ $PKGCONFIG_VERSION ]; then
 		CMD="pkg-config --modversion samplerate"
@@ -324,7 +325,7 @@ EOF
 			return 0;
 		fi
 
-		SNDFILE_VERSION=`$CMD`;
+		SRC_VERSION=`$CMD`;
 	fi
 
 	return 0;
