@@ -110,8 +110,10 @@ static void monome_display_loop() {
 
 			f = (file_t *) state.monome->callbacks[j].data;
 
-			if( f->monome_out_cb )
+			if( f && f->monome_out_cb )
 				f->monome_out_cb(f, state.monome);
+			else
+				monome->dirty_field &= ~(1 << j);
 		}
 
 		nanosleep(&req, NULL);
@@ -198,6 +200,7 @@ int main(int argc, char **argv) {
 	if( settings_load(user_config_path()) )
 		exit(EXIT_FAILURE);
 
+	state.group_count = state.config.cols - 5;
 	state.patterns = list_new();
 	list_init(&state.sessions);
 

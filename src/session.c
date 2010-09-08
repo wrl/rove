@@ -204,7 +204,6 @@ int session_next() {
 
 	if( !current->next->next )
 		return 1;
-	puts("NEXT");
 
 	session_activate(SESSION_T(current->next));
 	return 0;
@@ -215,7 +214,6 @@ int session_prev() {
 
 	if( !current->prev->prev )
 		return 1;
-	puts("PREV");
 
 	session_activate(SESSION_T(current->prev));
 	return 0;

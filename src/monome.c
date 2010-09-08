@@ -104,6 +104,7 @@ static void group_off_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t eve
 
 static void control_row_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
 	r_monome_handler_t *callback;
+	int i;
 
 	if( x >= monome->cols || !(callback = &monome->controls[x]) )
 		return;
@@ -128,6 +129,10 @@ static void control_row_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t e
 	}
 
 	initialize_callbacks(monome);
+
+	for( i = 0; i < state.group_count; i++ )
+		if( state.groups[i].active_loop )
+			file_force_monome_update(state.groups[i].active_loop);
 }
 
 void file_row_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {

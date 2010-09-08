@@ -32,6 +32,8 @@
 #include "rmonome.h"
 #include "file.h"
 
+#define file_mapped(x) (x->mapped_monome->callbacks[x->y].data == x)
+
 #define FILE_T(x) ((file_t *) x)
 
 extern state_t state;
@@ -138,7 +140,7 @@ static void file_monome_out(file_t *self, r_monome_t *monome) {
 		self->row_span, (self->columns) ? self->columns : monome->cols, &pos);
 
 	if( MONOME_POS_CMP(&pos, &self->monome_pos_old)
-		|| self->force_monome_update ) {
+		|| self->force_monome_update || !file_mapped(self) ) {
 		if( self->force_monome_update ) {
 			if( !self->group->active_loop )
 				monome_led_off(monome->dev, self->group->idx, 0);
@@ -154,8 +156,13 @@ static void file_monome_out(file_t *self, r_monome_t *monome) {
 
 		MONOME_POS_CPY(&self->monome_pos_old, &pos);
 
-		if( file_is_active(self) )
-			r = 1 << pos.x;
+		if( file_is_active(self) ) {
+			if( !(!file_mapped(self) && random() & 6) ) {
+				r = 1 << pos.x;
+				monome_led_on(monome->dev, self->group - state.groups, 0);
+			} else
+				monome_led_off(monome->dev, self->group - state.groups, 0);
+		}
 
 		monome_led_row(monome->dev, self->y + pos.y, 2, row);
 	}
@@ -295,6 +302,10 @@ void file_change_status(file_t *self, file_status_t nstatus) {
 
 void file_deactivate(file_t *self) {
 	file_change_status(self, FILE_STATUS_INACTIVE);
+
+	/* XXX: HACK */
+	if( !file_mapped(self) )
+		file_monome_out(self, self->mapped_monome);
 }
 
 void file_seek(file_t *self) {
