@@ -210,6 +210,9 @@ static void initialize_callbacks(r_monome_t *monome) {
 			row->data  = f;
 		}
 	}
+
+	for( y++; y < monome->rows; y++ )
+		monome->callbacks[y].cb = NULL;
 }
 
 void *r_monome_loop_thread(void *user_data) {
