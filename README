@@ -30,7 +30,7 @@ rove v0.2:
 		and, optionally:
 			- libsamplerate
 
-		the libmonome code is hosted at http://github.com/wrl/libmonome, and you
+		the libmonome code is hosted at http://github.com/monome/libmonome, and you
 		should build a recent git checkout to make sure you have the OSC protocol.
 
 		if you're on linux, you might already have the latter three installed. if not,
