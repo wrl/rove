@@ -66,7 +66,7 @@ void pattern_status_set(pattern_t *self, pattern_status_t nstatus) {
 			state.pattern_rec = NULL;
 
 		self->current_step = PATTERN_STEP_T(self->steps.head.next);
-		self->step_delay = 0;
+		self->step_delay = 1;
 	}
 
 	self->status = nstatus;
