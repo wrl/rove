@@ -66,7 +66,7 @@ void pattern_status_set(pattern_t *self, pattern_status_t nstatus) {
 			state.pattern_rec = NULL;
 
 		self->current_step = PATTERN_STEP_T(self->steps.head.next);
-		self->step_delay = 1;
+		self->step_delay = 0;
 	}
 
 	self->status = nstatus;
@@ -87,9 +87,8 @@ void pattern_process(pattern_t *self) {
 
 		if( self->step_delay && --self->step_delay <= 0 )
 			pattern_status_set(self, PATTERN_STATUS_ACTIVE);
-			/* also, fall through */
-		else
-			return;
+
+		break;
 
 	case PATTERN_STATUS_ACTIVE:
 		if( self->step_delay ) {
