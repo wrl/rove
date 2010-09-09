@@ -54,7 +54,7 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 	session_t *session = *((session_t **) arg);
 	static int y = 1;
 
-	unsigned int e, c, r, group, reverse, *v;
+	unsigned int e, c, r, group, reverse, *v, this_y;
 	file_t *f;
 	double speed;
 	char *path, *buf;
@@ -66,6 +66,7 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 		assert(session);
 	}
 
+	this_y  = 0;
 	path    = NULL;
 	group   = 0;
 	r       = 1;
@@ -98,6 +99,9 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 		case 'r': /* rows */
 			v = &r;
 			break;
+
+		case 'y':
+			v = &this_y;
 		}
 
 		*v = (unsigned int) strtol(pair->value, NULL, 10);
@@ -131,7 +135,6 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 		y = 1;
 
 	f->path = buf;
-	f->y = y;
 	f->speed = speed;
 	f->row_span = r;
 	f->columns  = (c) ? ((c - 1) & 0xF) + 1 : session->cols;
@@ -139,7 +142,12 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 	f->play_direction = ( reverse ) ? FILE_PLAY_DIRECTION_REVERSE : FILE_PLAY_DIRECTION_FORWARD;
 
 	list_push(&session->files, TAIL, f);
-	y += r;
+
+	if( !this_y ) {
+		f->y = y;
+		y += r;
+	} else
+		f->y = this_y;
 
 	return;
 
@@ -277,6 +285,7 @@ int session_load(const char *path) {
 		{"rows",    NULL,    INT, 'r'},
 		{"reverse", NULL,   BOOL, 'v'},
 		{"speed",   NULL, DOUBLE, 's'},
+		{"y",       NULL,    INT, 'y'},
 		{NULL}
 	};
 
