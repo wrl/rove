@@ -25,6 +25,7 @@
 #include "list.h"
 #include "pattern.h"
 #include "util.h"
+#include "file.h"
 
 extern state_t state;
 
@@ -99,6 +100,12 @@ void pattern_process(pattern_t *self) {
 		do {
 			step->victim->monome_in_cb(
 				self->monome, step->x, step->y, step->type, step->victim);
+
+			if( !file_mapped(step->victim) )
+				if( step->victim->quantize_cb ) {
+					step->victim->quantize_cb(step->victim);
+					file_on_quantize(step->victim, NULL);
+				}
 
 			self->step_delay = step->delay;
 

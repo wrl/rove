@@ -32,8 +32,6 @@
 #include "rmonome.h"
 #include "file.h"
 
-#define file_mapped(x) (x->mapped_monome->callbacks[x->y].data == x)
-
 #define FILE_T(x) ((file_t *) x)
 
 extern state_t state;
@@ -159,7 +157,7 @@ static void file_monome_out(file_t *self, r_monome_t *monome) {
 		MONOME_POS_CPY(&self->monome_pos_old, &pos);
 
 		if( file_is_active(self) ) {
-			if( !(!file_mapped(self) && random() & 6) ) {
+			if( !(!file_mapped(self) && random() & 1) ) {
 				r = 1 << pos.x;
 				monome_led_on(monome->dev, self->group - state.groups, 0);
 			} else

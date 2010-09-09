@@ -45,7 +45,7 @@ static void initialize_file_callbacks(r_monome_t *monome);
 static void pattern_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
 	pattern_t **pptr = ((pattern_t **) &HANDLER_T(user_arg)->data),
 			  *pattern = *pptr;
-	int pat_idx = monome->rows - 4 - x;
+	int pat_idx = 4 - monome->rows + x;
 
 	if( event_type != MONOME_BUTTON_DOWN )
 		return;
