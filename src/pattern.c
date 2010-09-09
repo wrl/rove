@@ -32,7 +32,7 @@ void pattern_record(file_t *victim, uint_t x, uint_t y, uint_t type) {
 	pattern_t *p = state.pattern_rec;
 	pattern_step_t *step;
 
-	if( !p || type != MONOME_BUTTON_DOWN )
+	if( !p )
 		return;
 
 	if( !(step = calloc(1, sizeof(pattern_step_t))) ) {
