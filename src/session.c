@@ -156,13 +156,23 @@ static void session_section_callback(const conf_section_t *section, void *arg) {
 	conf_pair_t *pair = NULL;
 	char v;
 
-	if( !(*sptr = session_new(data->path)) ) {
+	if( !(session = session_new(data->path)) ) {
 		fprintf(stderr, "couldn't allocate sptr_t, aieee!\n");
 		assert(*sptr);
 	}
 
-	session = *sptr;
-	session->cols = 0;
+	if( *sptr ) {
+#define INHERIT_VAR(x) (session->x = (*sptr)->x)
+
+		INHERIT_VAR(beat_multiplier);
+		INHERIT_VAR(bpm);
+		INHERIT_VAR(pattern_lengths[0]);
+		INHERIT_VAR(pattern_lengths[1]);
+		INHERIT_VAR(cols);
+
+#undef INHERIT_VAR
+	} else
+		session->cols = 0;
 
 	while( (v = conf_getvar(section, &pair)) ) {
 		switch( v ) {
@@ -195,6 +205,8 @@ static void session_section_callback(const conf_section_t *section, void *arg) {
 
 	if( !state.groups )
 		state.groups = initialize_groups(state.group_count);
+
+	*sptr = session;
 }
 
 int session_next() {
