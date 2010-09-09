@@ -24,6 +24,7 @@
 #include "file.h"
 #include "list.h"
 #include "pattern.h"
+#include "util.h"
 
 extern state_t state;
 
@@ -31,7 +32,7 @@ void pattern_record(file_t *victim, uint_t x, uint_t y, uint_t type) {
 	pattern_t *p = state.pattern_rec;
 	pattern_step_t *step;
 
-	if( !p )
+	if( !p || type != MONOME_BUTTON_DOWN )
 		return;
 
 	if( !(step = calloc(1, sizeof(pattern_step_t))) ) {
@@ -63,7 +64,7 @@ void pattern_status_set(pattern_t *self, pattern_status_t nstatus) {
 		else
 			state.pattern_rec = NULL;
 
-		self->current_step = PATTERN_STEP_T(self->steps.tail.prev);
+		self->current_step = PATTERN_STEP_T(self->steps.head.next);
 		self->step_delay = 0;
 	}
 
@@ -99,14 +100,18 @@ void pattern_process(pattern_t *self) {
 			step->victim->monome_in_cb(
 				self->monome, step->x, step->y, step->type, step->victim);
 
+			self->step_delay = step->delay;
+
 			if( LIST_MEMBER_T(step)->next == &self->steps.tail )
 				step = PATTERN_STEP_T(self->steps.head.next);
 			else
 				step = PATTERN_STEP_T(LIST_MEMBER_T(step)->next);
-		} while( !step->delay );
+		} while( !self->step_delay );
 
 		self->current_step = step;
-		self->step_delay = step->delay;
+
+		/* i don't know why this works but it does */
+		self->step_delay--;
 
 		break;
 	}

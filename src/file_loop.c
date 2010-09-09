@@ -113,6 +113,7 @@ static void file_process(file_t *self, jack_default_audio_sample_t **buffers, in
 #endif
 }
 
+#ifdef HAVE_SRC
 static long file_src_callback(void *cb_data, float **data) {
 	file_t *self = cb_data;
 	sf_count_t o;
@@ -126,6 +127,7 @@ static long file_src_callback(void *cb_data, float **data) {
 
 	return 1;
 }
+#endif
 
 static void file_monome_out(file_t *self, r_monome_t *monome) {
 	r_monome_position_t pos;

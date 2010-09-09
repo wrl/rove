@@ -92,6 +92,8 @@ static int process(jack_nframes_t nframes, void *arg) {
 
 	for( nframes_offset = 0; nframes > 0; nframes -= nframes_left ) {
 		if( on_quantize_boundary() ) {
+			process_patterns();
+
 			for( j = 0; j < group_count; j++ ) {
 				g = &state.groups[j];
 				f = g->active_loop;
@@ -108,8 +110,6 @@ static int process(jack_nframes_t nframes, void *arg) {
 				f = (file_t *) state.monome->callbacks[j].data;
 				process_file(f);
 			}
-
-			process_patterns();
 		}
 
 		until_quantize   = ( quantize_frames > state.snap_delay )
