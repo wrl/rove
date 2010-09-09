@@ -101,6 +101,18 @@ static void group_off_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t eve
 		f->monome_out_cb(f, state.monome);
 }
 
+static void session_lights(r_monome_t *monome) {
+	if( LIST_MEMBER_T(state.active_session)->next->next )
+		monome_led_on(monome->dev, monome->cols - 1, 0);
+	else
+		monome_led_off(monome->dev, monome->cols - 1, 0);
+
+	if( LIST_MEMBER_T(state.active_session)->prev->prev )
+		monome_led_on(monome->dev, monome->cols - 2, 0);
+	else
+		monome_led_off(monome->dev, monome->cols - 2, 0);
+}
+
 static void control_row_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
 	r_monome_handler_t *callback;
 	int i;
@@ -134,6 +146,8 @@ static void control_row_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t e
 	for( i = 0; i < state.group_count; i++ )
 		if( state.groups[i].active_loop )
 			file_force_monome_update(state.groups[i].active_loop);
+
+	session_lights(monome);
 }
 
 void file_row_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
@@ -170,6 +184,11 @@ static void initialize_file_callbacks(r_monome_t *monome) {
 	int i, y, row_span;
 	list_member_t *m;
 	file_t *f;
+
+	for( i = 1; i < monome->rows; i++ ) {
+		monome->callbacks[i].cb = NULL;
+		monome->callbacks[i].data = NULL;
+	}
 
 	list_foreach(state.files, m, f) {
 		f->mapped_monome = monome;
@@ -296,5 +315,7 @@ int r_monome_init() {
 	monome_clear(monome->dev, MONOME_CLEAR_OFF);
 
 	state.monome = monome;
+
+	session_lights(monome);
 	return 0;
 }
