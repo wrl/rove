@@ -156,11 +156,9 @@ static void session_section_callback(const conf_section_t *section, void *arg) {
 	conf_pair_t *pair = NULL;
 	char v;
 
-	if( !*sptr ) {
-		if( !(*sptr = session_new(data->path)) ) {
-			fprintf(stderr, "couldn't allocate sptr_t, aieee!\n");
-			assert(*sptr);
-		}
+	if( !(*sptr = session_new(data->path)) ) {
+		fprintf(stderr, "couldn't allocate sptr_t, aieee!\n");
+		assert(*sptr);
 	}
 
 	session = *sptr;
