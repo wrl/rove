@@ -200,7 +200,8 @@ struct pattern {
 struct pattern_step {
 	list_member_t m;
 
-	file_t *victim;
+	r_monome_callback_t cb;
+	void *victim;
 
 	uint_t x;
 	uint_t y;

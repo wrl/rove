@@ -21,7 +21,7 @@
 
 #include "types.h"
 
-void pattern_record(file_t *victim, uint_t x, uint_t y, uint_t pressed);
+void pattern_record(r_monome_callback_t cb, void *victim, uint_t x, uint_t y, uint_t type);
 
 void pattern_status_set(pattern_t *self, pattern_status_t nstatus);
 void pattern_process(pattern_t *self);

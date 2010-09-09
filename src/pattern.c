@@ -29,7 +29,7 @@
 
 extern state_t state;
 
-void pattern_record(file_t *victim, uint_t x, uint_t y, uint_t type) {
+void pattern_record(r_monome_callback_t cb, void *victim, uint_t x, uint_t y, uint_t type) {
 	pattern_t *p = state.pattern_rec;
 	pattern_step_t *step;
 
@@ -42,6 +42,7 @@ void pattern_record(file_t *victim, uint_t x, uint_t y, uint_t type) {
 	}
 
 	step->delay = 0;
+	step->cb = cb;
 	step->victim = victim;
 	step->x = x;
 	step->y = y;
@@ -97,14 +98,7 @@ void pattern_process(pattern_t *self) {
 		}
 
 		do {
-			step->victim->monome_in_cb(
-				self->monome, step->x, step->y, step->type, step->victim);
-
-			if( !file_mapped(step->victim) )
-				if( step->victim->quantize_cb ) {
-					step->victim->quantize_cb(step->victim);
-					file_on_quantize(step->victim, NULL);
-				}
+			step->cb(self->monome, step->x, step->y, step->type, step->victim);
 
 			self->step_delay = step->delay;
 

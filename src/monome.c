@@ -88,6 +88,8 @@ static void group_off_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t eve
 	group_t *group = HANDLER_T(user_arg)->data;
 	file_t *f;
 
+	pattern_record(group_off_handler, user_arg, x, y, event_type);
+
 	if( event_type != MONOME_BUTTON_DOWN ||
 		!(f = group->active_loop) ||	/* group is already off (nothing set as the active loop) */
 		!file_is_active(f) )		/* group is already off (active file not playing) */
@@ -140,7 +142,7 @@ void file_row_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type,
 	if( !f->monome_in_cb )
 		return;
 
-	pattern_record(f, x, y, event_type);
+	pattern_record(f->monome_in_cb, f, x, y, event_type);
 	f->monome_in_cb(monome, x, y, event_type, f); 
 }
 
