@@ -142,13 +142,11 @@ static void file_monome_out(file_t *self, r_monome_t *monome) {
 	if( MONOME_POS_CMP(&pos, &self->monome_pos_old)
 		|| self->force_monome_update || !file_mapped(self) ) {
 		if( self->force_monome_update ) {
-			if( !self->group->active_loop )
-				monome_led_off(monome->dev, self->group->idx, 0);
-			else
-				monome_led_on(monome->dev, self->group->idx, 0);
-
 			monome->dirty_field &= ~(1 << self->y);
 			self->force_monome_update = 0;
+
+			monome_led(monome->dev, self->group->idx, 0,
+			           !!self->group->active_loop);
 		}
 
 		if( pos.y != self->monome_pos_old.y ) 

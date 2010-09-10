@@ -102,15 +102,10 @@ static void group_off_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t eve
 }
 
 static void session_lights(r_monome_t *monome) {
-	if( LIST_MEMBER_T(state.active_session)->next->next )
-		monome_led_on(monome->dev, monome->cols - 1, 0);
-	else
-		monome_led_off(monome->dev, monome->cols - 1, 0);
-
-	if( LIST_MEMBER_T(state.active_session)->prev->prev )
-		monome_led_on(monome->dev, monome->cols - 2, 0);
-	else
-		monome_led_off(monome->dev, monome->cols - 2, 0);
+	monome_led(monome->dev, monome->cols - 1, 0,
+			   !!LIST_MEMBER_T(state.active_session)->next->next);
+	monome_led(monome->dev, monome->cols - 2, 0,
+			   !!LIST_MEMBER_T(state.active_session)->prev->prev);
 }
 
 static void control_row_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
