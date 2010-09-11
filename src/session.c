@@ -153,6 +153,7 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 
 err_load:
 	free(buf);
+	return;
 err:
 	free(path);
 	return;
