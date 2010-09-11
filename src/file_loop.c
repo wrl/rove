@@ -154,15 +154,13 @@ static void file_monome_out(file_t *self, r_monome_t *monome) {
 
 		MONOME_POS_CPY(&self->monome_pos_old, &pos);
 
-		if( file_is_active(self) ) {
-			if( !(!file_mapped(self) && random() & 1) ) {
-				r = 1 << pos.x;
-				monome_led_on(monome->dev, self->group - state.groups, 0);
-			} else
-				monome_led_off(monome->dev, self->group - state.groups, 0);
-		}
+		if( file_is_active(self) )
+			r = 1 << pos.x;
 
 		monome_led_row(monome->dev, self->y + pos.y, 2, row);
+
+		if( !file_mapped(self) )
+			monome_led(monome->dev, self->group - state.groups, 0, random() & 1);
 	}
 
 	MONOME_POS_CPY(&self->monome_pos, &pos);
