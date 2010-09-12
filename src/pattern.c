@@ -86,8 +86,12 @@ void pattern_process(pattern_t *self) {
 
 		step->delay++;
 
-		if( self->step_delay && --self->step_delay <= 0 )
+		if( self->step_delay && --self->step_delay <= 0 ) {
 			pattern_status_set(self, PATTERN_STATUS_ACTIVE);
+
+			/* XXX: hack */
+			monome_led(self->monome->dev, self->monome->cols - 4 + self->idx, 0, 1);
+		}
 
 		break;
 

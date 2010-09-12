@@ -52,6 +52,7 @@ static void pattern_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event
 
 	if( !pattern ) {
 		pattern = *pptr = pattern_new();
+		pattern->idx    = pat_idx;
 		pattern->monome = monome;
 		pattern->status = PATTERN_STATUS_RECORDING;
 

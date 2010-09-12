@@ -190,6 +190,7 @@ struct pattern {
 	list_member_t m;
 	pattern_status_t status;
 	r_monome_t *monome;
+	int idx;
 
 	list_t steps;
 	pattern_step_t *current_step;

@@ -76,10 +76,13 @@ void usage() {
 }
 
 static void monome_display_loop() {
+	static int pblnk = 0;
+
 	int j, group_count, next_bit;
 	uint16_t dfield;
 
 	struct timespec req;
+	pattern_t *p;
 
 	r_monome_t *monome = state.monome;
 	group_t *g;
@@ -90,6 +93,11 @@ static void monome_display_loop() {
 
 	for(;;) {
 		group_count = state.group_count;
+
+		if( (p = state.pattern_rec) && p->step_delay )
+			monome_led(
+				p->monome->dev, p->monome->cols - 4 + p->idx, 0,
+				((pblnk = (pblnk + 1) % p->step_delay) < ((p->step_delay / 2) + 1)));
 
 		for( j = 0; j < group_count; j++ ) {
 			g = &state.groups[j];
