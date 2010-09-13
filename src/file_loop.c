@@ -128,6 +128,7 @@ static long file_src_callback(void *cb_data, float **data) {
 #endif
 
 static void file_monome_out(file_t *self, r_monome_t *monome) {
+	static int blink = 0;
 	r_monome_position_t pos;
 	uint16_t r = 0;
 
@@ -140,7 +141,8 @@ static void file_monome_out(file_t *self, r_monome_t *monome) {
 		self->row_span, (self->columns) ? self->columns : monome->cols, &pos);
 
 	if( MONOME_POS_CMP(&pos, &self->monome_pos_old)
-		|| self->force_monome_update || !file_mapped(self) ) {
+		|| self->force_monome_update
+		|| (!file_mapped(self) && !(blink = (blink + 1) % 7)) ) {
 		if( self->force_monome_update ) {
 			monome->dirty_field &= ~(1 << self->y);
 			self->force_monome_update = 0;
@@ -157,10 +159,16 @@ static void file_monome_out(file_t *self, r_monome_t *monome) {
 		if( file_is_active(self) )
 			r = 1 << pos.x;
 
-		monome_led_row(monome->dev, self->y + pos.y, 2, row);
+		if( !file_mapped(self) ) {
+			if( random() & 1 && file_is_active(self) )
+				monome_led(monome->dev, self->group - state.groups, 0, 1);
+			else {
+				monome_led(monome->dev, self->group - state.groups, 0, 0);
+				r = 0;
+			}
+		}
 
-		if( !file_mapped(self) )
-			monome_led(monome->dev, self->group - state.groups, 0, random() & 1);
+		monome_led_row(monome->dev, self->y + pos.y, 2, row);
 	}
 
 	MONOME_POS_CPY(&self->monome_pos, &pos);
