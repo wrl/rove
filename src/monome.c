@@ -74,6 +74,7 @@ static void pattern_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event
 
 	if( state.pattern_rec == pattern && !stlist_is_empty(pattern->steps) ) {
 		pattern_status_set(pattern, PATTERN_STATUS_ACTIVE);
+		monome_led_on(monome->dev, x, y);
 		return;
 	}
 
@@ -91,9 +92,9 @@ static void group_off_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t eve
 
 	pattern_record(group_off_handler, user_arg, x, y, event_type);
 
-	if( event_type != MONOME_BUTTON_DOWN ||
-		!(f = group->active_loop) ||	/* group is already off (nothing set as the active loop) */
-		!file_is_active(f) )		/* group is already off (active file not playing) */
+	if( event_type != MONOME_BUTTON_DOWN
+		|| !(f = group->active_loop)  /* group is already off (nothing set as the active loop) */
+		|| !file_is_active(f) )       /* group is already off (active file not playing) */
 		return;
 
 	file_deactivate(f);
