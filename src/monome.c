@@ -42,6 +42,25 @@ extern state_t state;
 
 static void initialize_file_callbacks(r_monome_t *monome);
 
+static int remove_pattern(pattern_t *p, r_monome_t *monome, uint_t x, uint_t y) {
+	pattern_status_set(p, PATTERN_STATUS_INACTIVE);
+	list_remove_raw(LIST_MEMBER_T(p));
+	pattern_free(p);
+
+	monome_led_off(monome->dev, x, y);
+	return 1;
+}
+
+static int finalize_pattern(pattern_t *p, r_monome_t *monome, uint_t x, uint_t y) {
+	if( !stlist_is_empty(p->steps) ) {
+		pattern_status_set(p, PATTERN_STATUS_ACTIVE);
+		monome_led_on(monome->dev, x, y);
+		return 0;
+	}
+
+	return remove_pattern(p, monome, x, y);
+}
+
 static void pattern_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
 	pattern_t **pptr = ((pattern_t **) &HANDLER_T(user_arg)->data),
 			  *pattern = *pptr;
@@ -51,6 +70,9 @@ static void pattern_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event
 		return;
 
 	if( !pattern ) {
+		if( state.pattern_rec )
+			finalize_pattern(state.pattern_rec, monome, x, y);
+
 		pattern = *pptr = pattern_new();
 		pattern->idx    = pat_idx;
 		pattern->monome = monome;
@@ -62,9 +84,6 @@ static void pattern_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event
 		else
 			pattern->step_delay = 0;
 
-		if( state.pattern_rec )
-			pattern_status_set(state.pattern_rec, PATTERN_STATUS_ACTIVE);
-
 		list_push_raw(state.patterns, TAIL, LIST_MEMBER_T(pattern));
 		state.pattern_rec = pattern;
 
@@ -72,18 +91,13 @@ static void pattern_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event
 		return;
 	}
 
-	if( state.pattern_rec == pattern && !stlist_is_empty(pattern->steps) ) {
-		pattern_status_set(pattern, PATTERN_STATUS_ACTIVE);
-		monome_led_on(monome->dev, x, y);
-		return;
+	if( pattern->status == PATTERN_STATUS_RECORDING ) {
+		if( finalize_pattern(pattern, monome, x, y) )
+			*pptr = NULL;
+	} else {
+		remove_pattern(pattern, monome, x, y);
+		*pptr = NULL;
 	}
-
-	pattern_status_set(pattern, PATTERN_STATUS_INACTIVE);
-	list_remove_raw(LIST_MEMBER_T(pattern));
-	pattern_free(pattern);
-	*pptr = NULL;
-
-	monome_led_off(monome->dev, x, y);
 }
 
 static void group_off_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
