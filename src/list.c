@@ -21,74 +21,62 @@
 
 #include "list.h"
 
-rove_list_t *rove_list_new() {
-	rove_list_t *self;
-	
-	if( !(self = calloc(1, sizeof(rove_list_t))) )
-		goto err_list;
+void list_init(list_t *self) {
+	self->head.prev = NULL;
+	self->head.next = &self->tail;
+	self->tail.prev = &self->head;
+	self->tail.next = NULL;
+}
 
-	if( !(self->head = calloc(1, sizeof(rove_list_member_t))) )
-		goto err_list_head;
-	
-	if( !(self->tail = calloc(1, sizeof(rove_list_member_t))) )
-		goto err_list_tail;
-	
-	self->head->prev = NULL;
-	self->head->next = self->tail;
-	self->tail->prev = self->head;
-	self->tail->next = NULL;
-	
+list_t *list_new() {
+	list_t *self;
+
+	if( !(self = calloc(1, sizeof(list_t))) )
+		return NULL;
+
+	list_init(self);
 	return self;
-
- err_list_tail:
-	free(self->head);
- err_list_head:
-	free(self);
- err_list:
-	return NULL;
 }
 
-void rove_list_free(rove_list_t *self) {
-	free(self->head);
-	free(self->tail);
+void list_free(list_t *self) {
 	free(self);
 }
 
-void rove_list_push_raw(rove_list_t *self, rove_list_global_location_t l, rove_list_member_t *m) {
+void list_push_raw(list_t *self, list_global_location_t l, list_member_t *m) {
 	assert(self);
 	assert(m);
 
 	switch( l ) {
 	case HEAD:
-		m->prev = self->head;
-		m->next = self->head->next;
-		
-		self->head->next->prev = m;
-		self->head->next = m;
+		m->prev = &self->head;
+		m->next = self->head.next;
+
+		self->head.next->prev = m;
+		self->head.next = m;
 		break;
 
 	case TAIL:
-		m->prev = self->tail->prev;
-		m->next = self->tail;
-		
-		self->tail->prev->next = m;
-		self->tail->prev = m;
+		m->prev = self->tail.prev;
+		m->next = &self->tail;
+
+		self->tail.prev->next = m;
+		self->tail.prev = m;
 		break;
 	}
 }
 
-rove_list_member_t *rove_list_push(rove_list_t *self, rove_list_global_location_t l, void *data) {
-	rove_list_member_t *m = calloc(1, sizeof(rove_list_member_t));
-	
+list_member_t *list_push(list_t *self, list_global_location_t l, void *data) {
+	list_member_t *m = calloc(1, sizeof(list_member_t));
+
 	if( !m )
 		return NULL;
-	
+
 	m->data = data;
-	rove_list_push_raw(self, l, m);
+	list_push_raw(self, l, m);
 	return m;
 }
 
-void rove_list_insert_raw(rove_list_member_t *m, rove_list_local_location_t l, rove_list_member_t *rel) {
+void list_insert_raw(list_member_t *m, list_local_location_t l, list_member_t *rel) {
 	assert(m);
 	assert(rel);
 
@@ -96,7 +84,7 @@ void rove_list_insert_raw(rove_list_member_t *m, rove_list_local_location_t l, r
 	case BEFORE:
 		m->prev = rel;
 		m->next = rel->next;
-		
+
 		rel->next->prev = m;
 		rel->next = m;
 		break;
@@ -104,65 +92,67 @@ void rove_list_insert_raw(rove_list_member_t *m, rove_list_local_location_t l, r
 	case AFTER:
 		m->prev = rel->prev;
 		m->next = rel;
-		
+
 		rel->prev->next = rel;
 		rel->prev = rel;
 		break;
 	}
 }
 
-rove_list_member_t *rove_list_insert(void *data, rove_list_local_location_t l, rove_list_member_t *rel) {
-	rove_list_member_t *m = calloc(1, sizeof(rove_list_member_t));
-	
+list_member_t *list_insert(void *data, list_local_location_t l, list_member_t *rel) {
+	list_member_t *m = calloc(1, sizeof(list_member_t));
+
 	if( !m )
 		return NULL;
-	
+
 	m->data = data;
-	rove_list_insert_raw(m, l, rel);
+	list_insert_raw(m, l, rel);
 	return m;
 }
 
-rove_list_member_t *rove_list_pop_raw(rove_list_t *self, rove_list_global_location_t l) {
-	rove_list_member_t *m;
+list_member_t *list_pop_raw(list_t *self, list_global_location_t l) {
+	list_member_t *m;
 
 	assert(self);
 
+	if( list_is_empty(self) )
+		return NULL;
+
 	switch( l ) {
 	case HEAD:
-		m = self->head->next;
-		
-		m->next->prev    = self->head;
-		self->head->next = m->next;
+		m = self->head.next;
+
+		m->next->prev    = &self->head;
+		self->head.next = m->next;
 		break;
 
 	case TAIL:
-		m = self->tail->prev;
-		
-		m->prev->next    = self->tail;
-		self->tail->prev = m->prev;
+		m = self->tail.prev;
+
+		m->prev->next    = &self->tail;
+		self->tail.prev = m->prev;
 		break;
 	}
 
 	return m;
 }
 
-void *rove_list_pop(rove_list_t *self, rove_list_global_location_t l) {
-	rove_list_member_t *m;
+void *list_pop(list_t *self, list_global_location_t l) {
+	list_member_t *m;
 	void *data;
 
 	assert(self);
-	
-	if( rove_list_is_empty(self) )
+
+	if( !(m = list_pop_raw(self, l)) )
 		return NULL;
 
-	m = rove_list_pop_raw(self, l);
 	data = m->data;
-	
+
 	free(m);
 	return data;
 }
 
-int rove_list_remove_raw(rove_list_member_t *m) {
+int list_remove_raw(list_member_t *m) {
 	assert(m);
 
 	if( !m->next || !m->prev )
@@ -174,15 +164,15 @@ int rove_list_remove_raw(rove_list_member_t *m) {
 	return 0;
 }
 
-void *rove_list_remove(rove_list_member_t *m) {
+void *list_remove(list_member_t *m) {
 	void *data;
 
 	assert(m);
 	data = m->data;
 
-	if( rove_list_remove_raw(m) )
+	if( list_remove_raw(m) )
 		return NULL;
-	
+
 	free(m);
 	return data;
 }

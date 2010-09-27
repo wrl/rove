@@ -21,7 +21,12 @@
 
 #include "types.h"
 
-rove_pattern_t *rove_pattern_new();
-void rove_pattern_free(rove_pattern_t *);
+void pattern_record(r_monome_callback_t cb, void *victim, uint_t x, uint_t y, uint_t type);
+
+void pattern_status_set(pattern_t *self, pattern_status_t nstatus);
+void pattern_process(pattern_t *self);
+
+pattern_t *pattern_new();
+void pattern_free(pattern_t *);
 
 #endif

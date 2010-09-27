@@ -21,10 +21,10 @@
 
 #include "rove.h"
 
-void rove_transport_start();
-void rove_transport_stop();
-void rove_jack_deactivate();
-int  rove_jack_activate();
-int  rove_jack_init();
+void transport_start();
+void transport_stop();
+void r_jack_deactivate();
+int  r_jack_activate();
+int  r_jack_init();
 
 #endif

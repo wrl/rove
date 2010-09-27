@@ -24,19 +24,20 @@
 
 #include "types.h"
 
-#define rove_file_is_active(f) (f->status == FILE_STATUS_ACTIVE)
-#define rove_file_get_play_pos(f) (f->play_offset * f->channels)
+#define file_mapped(x) (x->mapped_monome->callbacks[x->y].data == x)
+#define file_is_active(f) (f->status == FILE_STATUS_ACTIVE)
+#define file_get_play_pos(f) (f->play_offset * f->channels)
 
-rove_file_t *rove_file_new_from_path(const char *path);
-void rove_file_free(rove_file_t *self);
+file_t *file_new_from_path(const char *path);
+void file_free(file_t *self);
 
-void rove_file_set_play_pos(rove_file_t *self, sf_count_t pos);
-void rove_file_inc_play_pos(rove_file_t *self, sf_count_t delta);
+void file_set_play_pos(file_t *self, sf_count_t pos);
+void file_inc_play_pos(file_t *self, sf_count_t delta);
 
-void rove_file_deactivate(rove_file_t *self);
-void rove_file_seek(rove_file_t *self);
+void file_deactivate(file_t *self);
+void file_seek(file_t *self);
 
-void rove_file_on_quantize(rove_file_t *self, rove_quantize_callback_t cb);
-void rove_file_force_monome_update(rove_file_t *self);
+void file_on_quantize(file_t *self, quantize_callback_t cb);
+void file_force_monome_update(file_t *self);
 
 #endif

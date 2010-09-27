@@ -16,4 +16,4 @@
  * along with rove.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-int rove_settings_load(const char *path);
+int settings_load(const char *path);

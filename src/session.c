@@ -19,22 +19,29 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <libgen.h>
 
 #include "config_parser.h"
 #include "session.h"
 #include "rove.h"
+#include "util.h"
+
+#define SESSION_T(x) ((session_t *) x)
 
 
-#define SESSION_T(x) ((rove_session_t *) x)
+extern state_t state;
 
+typedef struct {
+	session_t *session;
+	const char *path;
+} _cb_data_t;
 
-extern rove_state_t state;
-
-static rove_group_t *initialize_groups(uint_t group_count) {
-	rove_group_t *groups;
+static group_t *initialize_groups(uint_t group_count) {
+	group_t *groups;
 	int i;
 
-	if( !(groups = calloc(sizeof(rove_group_t), group_count)) )
+	if( !(groups = calloc(sizeof(group_t), group_count)) )
 		return NULL;
 
 	for( i = 0; i < group_count; i++ )
@@ -44,13 +51,13 @@ static rove_group_t *initialize_groups(uint_t group_count) {
 }
 
 static void file_section_callback(const conf_section_t *section, void *arg) {
-	rove_session_t *session = *((rove_session_t **) arg);
+	session_t *session = *((session_t **) arg);
 	static int y = 1;
 
-	unsigned int e, c, r, group, reverse, *v;
-	rove_file_t *f;
+	unsigned int e, c, r, group, reverse, *v, this_y;
+	file_t *f;
 	double speed;
-	char *path;
+	char *path, *buf;
 
 	conf_pair_t *pair = NULL;
 
@@ -59,6 +66,7 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 		assert(session);
 	}
 
+	this_y  = 0;
 	path    = NULL;
 	group   = 0;
 	r       = 1;
@@ -91,6 +99,9 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 		case 'r': /* rows */
 			v = &r;
 			break;
+
+		case 'y':
+			v = &this_y;
 		}
 
 		*v = (unsigned int) strtol(pair->value, NULL, 10);
@@ -98,95 +109,175 @@ static void file_section_callback(const conf_section_t *section, void *arg) {
 
 	if( !path ) {
 		printf("no file path specified in file section starting at line %d\n", section->start_line);
-		return;
+		goto err;
 	}
 
 	if( !group ) {
 		printf("no group specified in file section starting at line %d\n", section->start_line);
-		goto out;
+		goto err;
 	}
 
-	if( !(f = rove_file_new_from_path(path)) )
-		goto out;
+	if( asprintf(&buf, "%s/%s", session->dirname, path) < 0 ) {
+		fprintf(stderr, "couldn't allocate string buffer for loop %s, aieee!",
+	            path);
+		goto err;
+	}
+
+	free(path);
+
+	if( !(f = file_new_from_path(buf)) )
+		goto err_load;
 
 	if( group > state.group_count )
 		group = state.group_count;
 
-	f->y = y;
+	if( stlist_is_empty(session->files) )
+		y = 1;
+
+	f->path = buf;
 	f->speed = speed;
 	f->row_span = r;
 	f->columns  = (c) ? ((c - 1) & 0xF) + 1 : session->cols;
 	f->group = &state.groups[group - 1];
 	f->play_direction = ( reverse ) ? FILE_PLAY_DIRECTION_REVERSE : FILE_PLAY_DIRECTION_FORWARD;
 
-	rove_list_push(state.files, TAIL, f);
-	printf("\t%d - %d\t%s\n", y, y + r - 1, path);
+	list_push(&session->files, TAIL, f);
 
-	y += r;
+	if( !this_y ) {
+		f->y = y;
+		y += r;
+	} else
+		f->y = this_y;
 
-out:
+	return;
+
+err_load:
+	free(buf);
+	return;
+err:
 	free(path);
 	return;
 }
 
 static void session_section_callback(const conf_section_t *section, void *arg) {
-	rove_session_t *session, **sptr = arg;
+	_cb_data_t *data = arg;
+	session_t *session, **sptr = arg;
 	conf_pair_t *pair = NULL;
 	char v;
 
-	if( !*sptr ) {
-		if( !(*sptr = session_new()) ) {
-			fprintf(stderr, "couldn't allocate sptr_t, aieee!\n");
-			assert(*sptr);
-		}
+	if( !(session = session_new(data->path)) ) {
+		fprintf(stderr, "couldn't allocate sptr_t, aieee!\n");
+		assert(*sptr);
 	}
 
-	session = *sptr;
-	session->cols = 0;
+	if( *sptr ) {
+#define INHERIT_VAR(x) (session->x = (*sptr)->x)
+
+		INHERIT_VAR(beat_multiplier);
+		INHERIT_VAR(bpm);
+		INHERIT_VAR(pattern_lengths[0]);
+		INHERIT_VAR(pattern_lengths[1]);
+		INHERIT_VAR(cols);
+
+#undef INHERIT_VAR
+	} else
+		session->cols = 0;
 
 	while( (v = conf_getvar(section, &pair)) ) {
 		switch( v ) {
 		case 'q': /* quantize */
-			state.beat_multiplier = strtod(pair->value, NULL);
+			session->beat_multiplier = strtod(pair->value, NULL);
 			break;
 
 		case 'b': /* bpm */
-			state.bpm = strtod(pair->value, NULL);
+			session->bpm = strtod(pair->value, NULL);
 			break;
 
 		case 'g': /* groups */
-			state.group_count = (int) strtol(pair->value, NULL, 10);
+			if( !state.group_count )
+				state.group_count = (int) strtol(pair->value, NULL, 10);
+
 			break;
 
 		case '1': /* pattern1 */
-			state.pattern_lengths[0] = (int) strtol(pair->value, NULL, 10);
+			session->pattern_lengths[0] = (int) strtol(pair->value, NULL, 10);
 			break;
 
 		case '2': /* pattern2 */
-			state.pattern_lengths[1] = (int) strtol(pair->value, NULL, 10);
+			session->pattern_lengths[1] = (int) strtol(pair->value, NULL, 10);
 			break;
 
 		case 'c': /* columns */
 			session->cols = (uint_t) strtoul(pair->value, NULL, 10);
 		}
-
-		printf("%s\n", pair->key);
 	}
 
 	if( !state.groups )
 		state.groups = initialize_groups(state.group_count);
+
+	*sptr = session;
 }
 
-rove_session_t *session_new() {
-	return calloc(1, sizeof(rove_session_t));
+int session_next() {
+	list_member_t *current = LIST_MEMBER_T(state.active_session);
+
+	if( !current->next->next )
+		return 1;
+
+	session_activate(SESSION_T(current->next));
+	return 0;
 }
 
-void session_free(rove_session_t *session) {
-	free(session);
+int session_prev() {
+	list_member_t *current = LIST_MEMBER_T(state.active_session);
+
+	if( !current->prev->prev )
+		return 1;
+
+	session_activate(SESSION_T(current->prev));
+	return 0;
+}
+
+static void recalculate_bpm_variables() {
+	state.frames_per_beat = lrintf((60 / state.bpm) * (double) jack_get_sample_rate(state.client));
+	state.snap_delay = MAX(state.frames_per_beat * state.beat_multiplier, 1);
+}
+
+void session_activate(session_t *self) {
+	state.beat_multiplier = self->beat_multiplier;
+	state.bpm = self->bpm;
+
+	state.files = &self->files;
+
+	state.pattern_lengths = self->pattern_lengths;
+	state.active_session = self;
+
+	recalculate_bpm_variables();
+}
+
+session_t *session_new(const char *path) {
+	char *buf;
+
+	session_t *self = calloc(1, sizeof(session_t));
+	list_init(&self->files);
+
+	self->path = strdup(path);
+	buf = strdup(path);
+	self->dirname = strdup(dirname(buf));
+	free(buf);
+
+	list_push_raw(&state.sessions, TAIL, LIST_MEMBER_T(self));
+	return self;
+}
+
+void session_free(session_t *self) {
+	list_remove_raw(LIST_MEMBER_T(self));
+	free(self->path);
+	free(self);
 }
 
 int session_load(const char *path) {
-	rove_session_t *session = NULL;
+	_cb_data_t data = { NULL, path };
 
 	conf_var_t file_vars[] = {
 		{"path",    NULL, STRING, 'p'},
@@ -195,6 +286,7 @@ int session_load(const char *path) {
 		{"rows",    NULL,    INT, 'r'},
 		{"reverse", NULL,   BOOL, 'v'},
 		{"speed",   NULL, DOUBLE, 's'},
+		{"y",       NULL,    INT, 'y'},
 		{NULL}
 	};
 
@@ -209,14 +301,13 @@ int session_load(const char *path) {
 	};
 
 	conf_section_t config_sections[] = {
-		{"session", session_vars, session_section_callback, &session},
-		{"file",    file_vars   , file_section_callback, &session},
+		{"session", session_vars, session_section_callback, &data},
+		{"file",    file_vars   , file_section_callback, &data},
 		{NULL}
 	};
 
-	if( conf_load(path, config_sections, 1) )
+	if( conf_load(path, config_sections, 0) )
 		return 1;
-	
+
 	return 0;
 }
-

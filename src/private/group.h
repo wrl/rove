@@ -18,4 +18,4 @@
 
 #include "types.h"
 
-void rove_group_activate_file(rove_file_t *file);
+void group_activate_file(file_t *file);

@@ -19,51 +19,66 @@
 #ifndef _ROVE_LIST_H
 #define _ROVE_LIST_H
 
-#define rove_list_foreach(list, cursor, datum) for( cursor = list->head->next, datum = cursor->data;\
-													cursor->next; cursor = cursor->next, datum = cursor->data )
-#define rove_list_is_empty(list) (list->head->next == list->tail && list->tail->prev == list->head)
+#define list_foreach(list, cursor, datum) \
+	for( cursor = list->head.next, datum = cursor->data;\
+		 cursor->next; cursor = cursor->next, datum = cursor->data )
+
+#define list_foreach_raw(list, cursor) \
+	for( cursor = list->head.next; cursor->next; cursor = cursor->next )
+
+#define list_is_empty(list) (list->head.next == &list->tail \
+                             && list->tail.prev == &list->head)
+
+/* for static lists */
+#define stlist_is_empty(list) (list.head.next == &list.tail \
+                               && list.tail.prev == &list.head)
+
+#define LIST_T(x) ((list_t *) x)
+#define LIST_MEMBER_T(x) ((list_member_t *) x)
+
 
 typedef enum {
 	HEAD,
 	TAIL
-} rove_list_global_location_t;
+} list_global_location_t;
 
 typedef enum {
 	BEFORE,
 	AFTER
-} rove_list_local_location_t;
+} list_local_location_t;
 
-typedef struct rove_list_member rove_list_member_t;
-typedef struct rove_list rove_list_t;
+typedef struct list_member list_member_t;
+typedef struct list list_t;
 
-struct rove_list_member {
+struct list_member {
 	void *data;
-	
-	rove_list_member_t *prev;
-	rove_list_member_t *next;
+
+	list_member_t *prev;
+	list_member_t *next;
 };
 
-struct rove_list {
-	rove_list_member_t *head;
-	rove_list_member_t *tail;
+struct list {
+	list_member_t head;
+	list_member_t tail;
 };
 
-rove_list_t *rove_list_new();
-void  rove_list_free(rove_list_t *list);
+void list_init(list_t *self);
+list_t *list_new();
+void  list_free(list_t *list);
 
-/* raw functions do not (de)allocate rove_list_member_t structures,
+/* raw functions do not (de)allocate list_member_t structures,
    non-raw variants do. */
 
-void rove_list_push_raw(rove_list_t *list, rove_list_global_location_t l, rove_list_member_t *m);
-rove_list_member_t *rove_list_push(rove_list_t *list, rove_list_global_location_t l, void *data);
+void list_push_raw(list_t *list, list_global_location_t l, list_member_t *m);
+list_member_t *list_push(list_t *list, list_global_location_t l, void *data);
 
-void rove_list_insert_raw(rove_list_member_t *m, rove_list_local_location_t l, rove_list_member_t *rel);
-rove_list_member_t *rove_list_insert(void *data, rove_list_local_location_t l, rove_list_member_t *rel);
+void list_insert_raw(list_member_t *m, list_local_location_t l, list_member_t *rel);
+list_member_t *list_insert(void *data, list_local_location_t l, list_member_t *rel);
 
-rove_list_member_t *rove_list_pop_raw(rove_list_t *list, rove_list_global_location_t l);
-void *rove_list_pop(rove_list_t *list, rove_list_global_location_t l);
+list_member_t *list_pop_raw(list_t *list, list_global_location_t l);
+void *list_pop(list_t *list, list_global_location_t l);
 
-int rove_list_remove_raw(rove_list_member_t *m);
-void *rove_list_remove(rove_list_member_t *m);
+int list_remove_raw(list_member_t *m);
+void *list_remove(list_member_t *m);
 
 #endif

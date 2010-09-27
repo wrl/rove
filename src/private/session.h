@@ -18,7 +18,11 @@
 
 #include "types.h"
 
-rove_session_t *session_new();
-void session_free(rove_session_t *session);
+int session_next();
+int session_prev();
+void session_activate(session_t *);
+
+session_t *session_new(const char *path);
+void session_free(session_t *);
 
 int session_load(const char *path);

@@ -42,7 +42,7 @@ struct conf_var {
 struct conf_pair {
 	char *key;
 	char *value;
-	
+
 	const conf_var_t *var;
 	int klen;
 	int vlen;
@@ -55,7 +55,7 @@ struct conf_section {
 	void *cb_arg;
 
 	int start_line;
-	rove_list_t *pairs;
+	list_t *pairs;
 };
 
 int conf_load(const char *path, conf_section_t *sections, int cd);

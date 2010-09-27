@@ -47,7 +47,7 @@
 #define DEFAULT_OSC_LISTEN_PORT "8000"
 
 
-rove_state_t state;
+state_t state;
 
 int is_numstr(char *str) {
 	/* scan through the string looking for either a NULL (end of string)
@@ -76,20 +76,28 @@ void usage() {
 }
 
 static void monome_display_loop() {
+	static int pblnk = 0;
+
 	int j, group_count, next_bit;
 	uint16_t dfield;
 
 	struct timespec req;
+	pattern_t *p;
 
-	rove_monome_t *monome = state.monome;
-	rove_group_t *g;
-	rove_file_t *f;
+	r_monome_t *monome = state.monome;
+	group_t *g;
+	file_t *f;
 
 	req.tv_sec  = 0;
 	req.tv_nsec = 1000000000 / 80; /* 80 fps */
-	
+
 	for(;;) {
 		group_count = state.group_count;
+
+		if( (p = state.pattern_rec) && p->step_delay )
+			monome_led(
+				p->monome->dev, p->monome->cols - 4 + p->idx, 0,
+				((pblnk = (pblnk + 1) % p->step_delay) < ((p->step_delay / 2) + 1)));
 
 		for( j = 0; j < group_count; j++ ) {
 			g = &state.groups[j];
@@ -108,27 +116,24 @@ static void monome_display_loop() {
 			next_bit = ffs(dfield);
 			j += next_bit;
 
-			f = (rove_file_t *) state.monome->callbacks[j].data;
+			f = (file_t *) state.monome->callbacks[j].data;
 
-			if( f->monome_out_cb )
+			if( f && f->monome_out_cb )
 				f->monome_out_cb(f, state.monome);
+			else
+				monome->dirty_field &= ~(1 << j);
 		}
 
 		nanosleep(&req, NULL);
 	}
 }
 
-static void rove_recalculate_bpm_variables() {
-	state.frames_per_beat = lrintf((60 / state.bpm) * (double) jack_get_sample_rate(state.client));
-	state.snap_delay = MAX(state.frames_per_beat * state.beat_multiplier, 1);
-}
-
 static char *user_config_path() {
 	char *home, *path;
-	
+
 	if( !(home = getenv("HOME")) )
 		return NULL;
-	
+
 	asprintf(&path, "%s/%s", home, DEFAULT_CONF_FILE_NAME);
 	return path;
 }
@@ -138,16 +143,16 @@ static void exit_on_signal(int s) {
 }
 
 static void cleanup() {
-	rove_monome_stop_thread(state.monome);
-	rove_monome_free(state.monome);
-	
-	rove_jack_deactivate();
+	r_monome_stop_thread(state.monome);
+	r_monome_free(state.monome);
+
+	r_jack_deactivate();
 }
 
 int main(int argc, char **argv) {
 	char *session_file, c;
 	int i;
-	
+
 	struct option arguments[] = {
 		{"help",			no_argument,       0, 'u'}, /* for "usage", get it?  hah, hah... */
 		{"monome-columns",	required_argument, 0, 'c'},
@@ -157,12 +162,12 @@ int main(int argc, char **argv) {
 		{"osc-listen-port",	required_argument, 0, 'l'},
 		{0, 0, 0, 0}
 	};
-	
-	memset(&state, 0, sizeof(rove_state_t));
-	
+
+	memset(&state, 0, sizeof(state_t));
+
 	session_file = NULL;
 	opterr = 0;
-	
+
 	while( (c = getopt_long(argc, argv, "uc:r:p:h:l:", arguments, &i)) > 0 ) {
 		switch( c ) {
 		case 'u':
@@ -172,25 +177,25 @@ int main(int argc, char **argv) {
 		case 'c':
 			state.config.cols = ((atoi(optarg) - 1) & 0xF) + 1;
 			break;
-			
+
 		case 'r':
 			state.config.rows = ((atoi(optarg) - 1) & 0xF) + 1;
 			break;
-			
+
 		case 'p':
 			if( *optarg == '/' ) /* remove the leading slash if there is one */
 				optarg++;
-			
+
 			state.config.osc_prefix = strdup(optarg);
 			break;
-			
+
 		case 'h':
 			if( !is_numstr(optarg) )
 				usage_printf_exit("error: \"%s\" is not a valid host port.\n\n", optarg);
 
 			state.config.osc_host_port = strdup(optarg);
 			break;
-			
+
 		case 'l':
 			if( !is_numstr(optarg) )
 				usage_printf_exit("error: \"%s\" is not a valid listen port.\n\n", optarg);
@@ -199,42 +204,36 @@ int main(int argc, char **argv) {
 			break;
 		}
 	}
-	
-	if( optind == argc )
-		usage_printf_exit("error: you did not specify a session file!\n\n");
-	
-	if( rove_settings_load(user_config_path()) )
+
+	if( settings_load(user_config_path()) )
 		exit(EXIT_FAILURE);
-		
-	session_file = argv[optind];
 
-	state.files    = rove_list_new();
-	state.patterns = rove_list_new();
+	state.group_count = state.config.cols - 5;
+	state.patterns = list_new();
+	list_init(&state.sessions);
 
-	state.active   = rove_list_new();
-	state.staging  = rove_list_new();
-	
 	printf("\nhey, welcome to rove!\n\n"
-		   "you've got the following loops loaded:\n"
-		   "\t[rows]\t[file]\n");
-	
-	if( session_load(session_file) ) {
-		printf("error parsing session file :(\n");
+		   "loading yr sessions:\n");
+
+	while( optind < argc ) {
+		session_file = argv[optind++];
+
+		if( session_load(session_file) )
+			printf("    error loading session file %s\n", session_file);
+		else
+			printf("    loaded %s\n", session_file);
+	}
+
+	if( stlist_is_empty(state.sessions) ) {
+		fprintf(stderr, "\nYOU HAVE NO SESSIONS\nPLEASE TRY AGAIN\n\n");
 		exit(EXIT_FAILURE);
 	}
-	
-	if( rove_list_is_empty(state.files) ) {
-		fprintf(stderr, "\t(none, evidently.  get some and come play!)\n\n");
-		exit(EXIT_FAILURE);
-	}
-	
-	if( rove_jack_init() ) {
+
+	if( r_jack_init() ) {
 		fprintf(stderr, "error initializing JACK :(\n");
 		exit(EXIT_FAILURE);
 	}
-	
-	rove_recalculate_bpm_variables();
-	
+
 #define ASSIGN_IF_UNSET(k, v) do { \
 	if( !k ) \
 		k = v; \
@@ -248,16 +247,18 @@ int main(int argc, char **argv) {
 
 #undef ASSIGN_IF_UNSET
 
-	if( rove_monome_init() )
+	session_activate(SESSION_T(state.sessions.head.next));
+
+	if( r_monome_init() )
 		exit(EXIT_FAILURE);
 
-	if( rove_jack_activate() )
+	if( r_jack_activate() )
 		exit(EXIT_FAILURE);
-	
+
 	signal(SIGINT, exit_on_signal);
 	atexit(cleanup);
-	
-	rove_monome_run_thread(state.monome);
+
+	r_monome_run_thread(state.monome);
 	monome_display_loop();
 
 	return 0;

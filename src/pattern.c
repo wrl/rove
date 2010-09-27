@@ -18,19 +18,123 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <stdio.h>
 
+#include "types.h"
 #include "file.h"
 #include "list.h"
 #include "pattern.h"
+#include "util.h"
+#include "file.h"
 
-extern rove_state_t state;
+extern state_t state;
 
-rove_pattern_t *rove_pattern_new() {
-	rove_pattern_t *self = calloc(sizeof(rove_pattern_t), 1);
-	return self;
+void pattern_record(r_monome_callback_t cb, void *victim, uint_t x, uint_t y, uint_t type) {
+	pattern_t *p = state.pattern_rec;
+	pattern_step_t *step;
+
+	if( !p )
+		return;
+
+	if( !(step = calloc(1, sizeof(pattern_step_t))) ) {
+		fprintf(stderr, "WARNING: can't allocate pattern step.\n");
+		return;
+	}
+
+	step->delay = 0;
+	step->cb = cb;
+	step->victim = victim;
+	step->x = x;
+	step->y = y;
+	step->type = type;
+
+	list_push_raw(&p->steps, TAIL, LIST_MEMBER_T(step));
+	p->current_step = step;
 }
 
-void rove_pattern_free(rove_pattern_t *self) {
+void pattern_status_set(pattern_t *self, pattern_status_t nstatus) {
+	switch( self->status ) {
+	case PATTERN_STATUS_INACTIVE:
+		break;
+
+	case PATTERN_STATUS_ACTIVE:
+		break;
+
+	case PATTERN_STATUS_RECORDING:
+		if( state.pattern_rec != self )
+			fprintf(stderr, "state.pattern_rec is fucked, aieee!\n");
+		else
+			state.pattern_rec = NULL;
+
+		self->current_step = PATTERN_STEP_T(self->steps.head.next);
+		self->step_delay = 0;
+	}
+
+	self->status = nstatus;
+}
+
+void pattern_process(pattern_t *self) {
+	pattern_step_t *step = self->current_step;
+
+	switch( self->status ) {
+	case PATTERN_STATUS_INACTIVE:
+		break;
+
+	case PATTERN_STATUS_RECORDING:
+		if( stlist_is_empty(self->steps) )
+			break;
+
+		step->delay++;
+
+		if( self->step_delay && --self->step_delay <= 0 ) {
+			pattern_status_set(self, PATTERN_STATUS_ACTIVE);
+
+			/* XXX: hack */
+			monome_led(self->monome->dev, self->monome->cols - 4 + self->idx, 0, 1);
+		}
+
+		break;
+
+	case PATTERN_STATUS_ACTIVE:
+		if( self->step_delay ) {
+			self->step_delay--;
+			break;
+		}
+
+		do {
+			step->cb(self->monome, step->x, step->y, step->type, step->victim);
+
+			self->step_delay = step->delay;
+
+			if( LIST_MEMBER_T(step)->next == &self->steps.tail )
+				step = PATTERN_STEP_T(self->steps.head.next);
+			else
+				step = PATTERN_STEP_T(LIST_MEMBER_T(step)->next);
+		} while( !self->step_delay );
+
+		self->current_step = step;
+
+		/* i don't know why this works but it does */
+		self->step_delay--;
+
+		break;
+	}
+}
+
+void pattern_free(pattern_t *self) {
+	pattern_step_t *step;
+
 	assert(self);
+
+	while( (step = PATTERN_STEP_T(list_pop_raw(&self->steps, HEAD))) )
+		free(step);
+
 	free(self); /* so liberating */
+}
+
+pattern_t *pattern_new() {
+	pattern_t *self = calloc(1, sizeof(pattern_t));
+	list_init(&self->steps);
+
+	return self;
 }

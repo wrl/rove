@@ -19,8 +19,6 @@
 #ifndef _ROVE_H
 #define _ROVE_H
 
-#define _GNU_SOURCE 1
-
 #include <math.h>
 
 #include "types.h"

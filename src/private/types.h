@@ -32,7 +32,10 @@
 
 #include "list.h"
 
-#define HANDLER_T(x) ((rove_monome_handler_t *) x)
+#define HANDLER_T(x) ((r_monome_handler_t *) x)
+#define SESSION_T(x) ((session_t *) x)
+#define PATTERN_T(x) ((pattern_t *) x)
+#define PATTERN_STEP_T(x) ((pattern_step_t *) x)
 
 /**
  * types
@@ -43,160 +46,194 @@ typedef unsigned int uint_t;
 typedef enum {
 	FILE_STATUS_ACTIVE,
 	FILE_STATUS_INACTIVE
-} rove_file_status_t;
+} file_status_t;
 
 typedef enum {
 	FILE_PLAY_DIRECTION_FORWARD,
 	FILE_PLAY_DIRECTION_REVERSE
-} rove_file_play_direction_t;
+} file_play_direction_t;
 
 typedef enum {
 	CMD_GROUP_DEACTIVATE,
 	CMD_LOOP_SEEK
-} rove_pattern_cmd_t;
+} pattern_cmd_t;
 
 typedef enum {
 	PATTERN_STATUS_RECORDING,
 	PATTERN_STATUS_ACTIVE,
-	PATTERN_STATUS_ACTIVATE,
 	PATTERN_STATUS_INACTIVE
-} rove_pattern_status_t;
+} pattern_status_t;
 
-typedef struct rove_group rove_group_t;
-typedef struct rove_file rove_file_t;
+typedef struct group group_t;
+typedef struct file file_t;
 
-typedef struct rove_pattern rove_pattern_t;
+typedef struct pattern pattern_t;
+typedef struct pattern_step pattern_step_t;
 
-typedef struct rove_monome_handler rove_monome_handler_t;
-typedef struct rove_monome_position rove_monome_position_t;
-typedef struct rove_monome rove_monome_t;
+typedef struct r_monome_handler r_monome_handler_t;
+typedef struct r_monome_position r_monome_position_t;
+typedef struct r_monome r_monome_t;
 
-typedef struct rove_session rove_session_t;
-typedef struct rove_state rove_state_t;
+typedef struct session session_t;
+typedef struct state state_t;
 
-typedef void (*rove_monome_callback_t)(rove_monome_t *, uint_t x, uint_t y, uint_t event_type, void *user_arg);
+typedef void (*r_monome_callback_t)(r_monome_t *, uint_t x, uint_t y, uint_t event_type, void *user_arg);
 
-typedef void (*rove_process_callback_t)(rove_file_t *self, jack_default_audio_sample_t **buffers, int channels, jack_nframes_t nframes, jack_nframes_t sample_rate);
-typedef void (*rove_quantize_callback_t)(rove_file_t *self);
-typedef void (*rove_monome_output_callback_t)(rove_file_t *self, rove_monome_t *);
+typedef void (*process_callback_t)(file_t *self, jack_default_audio_sample_t **buffers, int channels, jack_nframes_t nframes, jack_nframes_t sample_rate);
+typedef void (*quantize_callback_t)(file_t *self);
+typedef void (*r_monome_output_callback_t)(file_t *self, r_monome_t *);
 
 /**
- * rove_monome
+ * r_monome
  */
 
-struct rove_monome_position {
+struct r_monome_position {
 	int x;
 	int y;
 };
 
-struct rove_monome_handler {
-	rove_monome_position_t pos;
-	
-	rove_monome_callback_t cb;
+struct r_monome_handler {
+	r_monome_position_t pos;
+
+	r_monome_callback_t cb;
 	void *data;
 };
 
-struct rove_monome {
+struct r_monome {
 	monome_t *dev;
 
 	pthread_t thread;
 
 	uint16_t quantize_field;
 	uint16_t dirty_field;
-	
-	rove_monome_handler_t *callbacks;
-	rove_monome_handler_t *controls;
-	
+
+	r_monome_handler_t *callbacks;
+	r_monome_handler_t *controls;
+
 	int mod_keys;
 	int rows;
 	int cols;
 };
 
 /**
- * rove_file
+ * file
  */
 
-struct rove_file {
-	rove_file_play_direction_t play_direction;
-	rove_file_status_t status;
-	
+struct file {
+	char *path;
+
+	file_play_direction_t play_direction;
+	file_status_t status;
+
 	double volume;
-	
+
 	sf_count_t length;
 	sf_count_t play_offset;
 	sf_count_t new_offset;
-	
+
 	sf_count_t channels;
 	sf_count_t file_length;
 	sf_count_t sample_rate;
-	
+
 #ifdef HAVE_SRC	
 	SRC_STATE *src;
 #endif
 	double speed;
-	
+
 	float *file_data;
-	
+
 	int y;
 	int row_span;
-	
-	rove_monome_t *mapped_monome;
-	rove_monome_position_t monome_pos;
-	rove_monome_position_t monome_pos_old;
-	
-	/* set to 1 if the next run of rove_monome_display_file should
+
+	r_monome_t *mapped_monome;
+	r_monome_position_t monome_pos;
+	r_monome_position_t monome_pos_old;
+
+	/* set to 1 if the next run of r_monome_display_file should
 	   update the row regardless of whether it has changed. */
 	int force_monome_update;
-	
+
 	unsigned int columns;
-	
-	rove_group_t *group;
-	
-	rove_process_callback_t process_cb;
-	rove_quantize_callback_t quantize_cb;
-	rove_monome_output_callback_t monome_out_cb;
-	rove_monome_callback_t monome_in_cb;
+
+	group_t *group;
+
+	process_callback_t process_cb;
+	quantize_callback_t quantize_cb;
+	r_monome_output_callback_t monome_out_cb;
+	r_monome_callback_t monome_in_cb;
 };
 
 /**
- * rove_group
+ * group
  */
 
-struct rove_group {
+struct group {
 	int idx;
-	rove_file_t *active_loop;
-	
+	file_t *active_loop;
+
 	double volume;
-	
+
 	/* eventually this will be an array of ports so that any arbitrary
 	   number of channels can be output (rove cutting 5.1 audio, yeah!) */
 	jack_port_t *outport_l;
 	jack_port_t *outport_r;
-	
+
 	jack_default_audio_sample_t *output_buffer_l;
 	jack_default_audio_sample_t *output_buffer_r;
 };
 
 /**
- * rove_pattern
+ * pattern
  */
 
-struct rove_pattern {
+struct pattern {
+	list_member_t m;
+	pattern_status_t status;
+	r_monome_t *monome;
+	int idx;
+
+	list_t steps;
+	pattern_step_t *current_step;
+
+	int step_delay;
+};
+
+struct pattern_step {
+	list_member_t m;
+
+	r_monome_callback_t cb;
+	void *victim;
+
+	uint_t x;
+	uint_t y;
+	uint_t type;
+
+	int delay;
 };
 
 /**
  * session
  */
 
-struct rove_session {
+struct session {
+	list_member_t m;
+	list_t files;
+
+	char *path;
+	char *dirname;
+
 	uint_t cols;
+	double bpm;
+	double beat_multiplier;
+
+	int pattern_lengths[2];
 };
 
 /**
  * rove
  */
 
-struct rove_state {
+struct state {
 	struct {
 		char *osc_prefix;
 		char *osc_host_port;
@@ -206,21 +243,22 @@ struct rove_state {
 		int rows;
 	} config;
 
-	rove_monome_t *monome;
+	r_monome_t *monome;
 	jack_client_t *client;
-	
+
 	int group_count;
-	rove_group_t *groups;
-	
-	rove_list_t *files;
-	rove_list_t *patterns;
-	rove_list_member_t *pattern_rec;
-	int pattern_lengths[2];
+	group_t *groups;
+
+	list_t sessions;
+	session_t *active_session;
+
+	list_t *files;
+	list_t *patterns;
+	pattern_t *pattern_rec;
+	int *pattern_lengths;
 
 	int staged_loops;
-	rove_list_t *active;
-	rove_list_t *staging;
-	
+
 	double bpm;
 	double beat_multiplier;
 
