@@ -147,8 +147,8 @@ static void file_monome_out(file_t *self, r_monome_t *monome) {
 			monome->dirty_field &= ~(1 << self->y);
 			self->force_monome_update = 0;
 
-			monome_led(monome->dev, self->group->idx, 0,
-			           !!self->group->active_loop);
+			monome_led_set(monome->dev, self->group->idx, 0,
+			               !!self->group->active_loop);
 		}
 
 		if( pos.y != self->monome_pos_old.y ) 
@@ -161,9 +161,9 @@ static void file_monome_out(file_t *self, r_monome_t *monome) {
 
 		if( !file_mapped(self) ) {
 			if( random() & 1 && file_is_active(self) )
-				monome_led(monome->dev, self->group - state.groups, 0, 1);
+				monome_led_set(monome->dev, self->group - state.groups, 0, 1);
 			else {
-				monome_led(monome->dev, self->group - state.groups, 0, 0);
+				monome_led_set(monome->dev, self->group - state.groups, 0, 0);
 				r = 0;
 			}
 		}

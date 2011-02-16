@@ -118,10 +118,10 @@ static void group_off_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t eve
 }
 
 static void session_lights(r_monome_t *monome) {
-	monome_led(monome->dev, monome->cols - 1, 0,
-			   !!LIST_MEMBER_T(state.active_session)->next->next);
-	monome_led(monome->dev, monome->cols - 2, 0,
-			   !!LIST_MEMBER_T(state.active_session)->prev->prev);
+	monome_led_set(monome->dev, monome->cols - 1, 0,
+	               !!LIST_MEMBER_T(state.active_session)->next->next);
+	monome_led_set(monome->dev, monome->cols - 2, 0,
+	               !!LIST_MEMBER_T(state.active_session)->prev->prev);
 }
 
 static void control_row_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
@@ -277,7 +277,7 @@ void r_monome_stop_thread(r_monome_t *monome) {
 }
 
 void r_monome_free(r_monome_t *monome) {
-	monome_clear(monome->dev, MONOME_CLEAR_OFF);
+	monome_led_all(monome->dev, 0);
 	monome_close(monome->dev);
 
 	free(monome->callbacks);
@@ -323,7 +323,7 @@ int r_monome_init() {
 	monome->controls  = calloc(sizeof(r_monome_handler_t), state.config.cols);
 	initialize_callbacks(monome);
 
-	monome_clear(monome->dev, MONOME_CLEAR_OFF);
+	monome_led_all(monome->dev, 0);
 
 	state.monome = monome;
 

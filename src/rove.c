@@ -95,7 +95,7 @@ static void monome_display_loop() {
 		group_count = state.group_count;
 
 		if( (p = state.pattern_rec) && p->step_delay )
-			monome_led(
+			monome_led_set(
 				p->monome->dev, p->monome->cols - 4 + p->idx, 0,
 				((pblnk = (pblnk + 1) % p->step_delay) < ((p->step_delay / 2) + 1)));
 
