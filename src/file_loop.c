@@ -152,7 +152,7 @@ static void file_monome_out(file_t *self, r_monome_t *monome) {
 		}
 
 		if( pos.y != self->monome_pos_old.y ) 
-			monome_led_row(monome->dev, self->y + self->monome_pos_old.y, 0, 2, row);
+			monome_led_row(monome->dev, 0, self->y + self->monome_pos_old.y, 2, row);
 
 		MONOME_POS_CPY(&self->monome_pos_old, &pos);
 
@@ -168,7 +168,7 @@ static void file_monome_out(file_t *self, r_monome_t *monome) {
 			}
 		}
 
-		monome_led_row(monome->dev, self->y + pos.y, 0, 2, row);
+		monome_led_row(monome->dev, 0, self->y + pos.y, 2, row);
 	}
 
 	MONOME_POS_CPY(&self->monome_pos, &pos);
