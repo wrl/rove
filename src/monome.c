@@ -177,8 +177,8 @@ static void button_handler(const monome_event_t *e, void *user_data) {
 
 	int event_x, event_y, event_type;
 
-	event_x    = e->x;
-	event_y    = e->y;
+	event_x    = e->grid.x;
+	event_y    = e->grid.y;
 	event_type = e->event_type;
 
 	if( event_y >= monome->rows ||
