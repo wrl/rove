@@ -189,7 +189,6 @@ static int config_parse(const char *path, conf_section_t *sections, int cd) {
 			case KEY:
 				switch( c ) {
 				case ' ':
-					continue;
 				case '\t':
 					continue;
 
