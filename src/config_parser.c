@@ -189,6 +189,7 @@ static int config_parse(const char *path, conf_section_t *sections, int cd) {
 			case KEY:
 				switch( c ) {
 				case ' ':
+				case '\t':
 					continue;
 
 				case COMMENT_SYMBOL:
