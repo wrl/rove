@@ -107,8 +107,8 @@ rove v0.2:
 
 	what do i press?
 		       +-----------+ - - - - - +-----------+-----------+-----------+-----------+
-		  left |   group   |  many of  | pattern 1 | pattern 2 |   shift   |    meta   | right
-		  side |    mute   |   those   | rec / tog | rec / tog |           |           | side
+		  left |   group   |  many of  | pattern 1 | pattern 2 |   prev    |   next    | right
+		  side |    mute   |   those   | rec / tog | rec / tog |  session  |  session  | side
 		       +-----------+ - - - - - +-----------+-----------+-----------+-----------+
 
 		at the moment, it's designed to mimic mlr.  the top row is the control row, with the
@@ -119,13 +119,49 @@ rove v0.2:
 		the two buttons after the group controls are pattern recorders, and these act a bit
 		differently.  pressing the button without anything recorded waits until you cut
 		somewhere in a loop to start recording, then will record a pattern as long as you've
-		specified, or, if the pattern length is 0, it will record until you press the record
-		button again.
+		specified in your config file. you can press it again any time before the end of the
+		specified length to play the pattern you've created. or, if the pattern length is 0,
+		it will record until you press the record button again.
 
-		pressing that button again toggles the pattern on and off, keeping what you've recorded.
-		if you hold shift (the button to the right of pattern 2) and press the pattern button,
-		it erases what is recorded, and you can record again by pressing said pattern button
-		and playing another sequence.
+		pressing that button again turns the pattern off, resuming normal playback
+		immediately. turning off recorded patterns deletes them, so that you can record
+		again by pressing the pattern button and playing another sequence.
+
+		the two buttons after the pattern recorders are session controls. rove can load
+		more than one session. pressing these buttons moves forward and backward through the
+		loaded sessions. this is good for seamless set changes, so that you can advance from
+		song to	song without having to stop and restart rove.
+
+		you can load multiple sessions from the command line:
+
+		$ rove session1.rv session2.rv
+
+		you can also place multiple sessions in a single session file:
+
+		$ rove big_setlist.rv
+
+		a multi-session file looks just like a single session, except that you can add
+		several sequential blocks:
+
+		[session]
+		...
+		[file]
+		...
+		[file]
+		...
+
+		[session]
+		...
+		[file]
+		...
+
+		and so on. rove loads sessions in order, from the top down.
+
+		when performing with multiple sessions, bpm is determined by the currently loaded
+		session. you can leave a group playing from one session, advance to the next session,
+		and the old session's group will still play at the old bpm. once you press the group
+		mute button for that old session, then that sample ends and is cleared, making the
+		group available for the current session, at the current session's bpm.
 
 		at the moment, this is pretty much the extent of rove's functionality.
 		don't worry, more is coming soon!
