@@ -21,7 +21,8 @@ clean:
 
 install: all
 	echo -e "    \033[1mINSTALL\033[0m $(BINDIR)/rove"
-	install rove $(BINDIR)
+	$(INSTALL) -d $(BINDIR)
+	$(INSTALL) rove $(BINDIR)
 
 rove: $(OBJS)
 	echo -e "    \033[1mLD\033[0m      src/rove"
