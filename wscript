@@ -33,7 +33,7 @@ def build(bld):
 	    'src/settings.c',
         ],
         target      = 'rove',
-        uselib      = 'JACK MONOME SNDFILE SAMPLERATE',
+        uselib      = 'JACK MONOME SNDFILE SRC',
         includes    = '#src/private',
     )
 
