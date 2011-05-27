@@ -37,4 +37,4 @@ def build(bld):
         includes    = '#src/private',
     )
 
-    bld.install_files(bld.env['DOCDIR'], 'README')
+    bld.install_files('${PREFIX}/share/doc/rove', 'README')
