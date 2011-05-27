@@ -35,6 +35,4 @@ def build(bld):
         target      = 'rove',
         uselib      = 'JACK MONOME SNDFILE SRC',
         includes    = '#src/private',
-    )
-
-    bld.install_files('${PREFIX}/share/doc/rove', 'README')
+    ) 
