@@ -16,7 +16,7 @@ def configure(conf):
     conf.check_cfg(package='libmonome', mandatory=1, uselib_store='MONOME', args='--cflags --libs')
     conf.check_cfg(package='sndfile', mandatory=1, uselib_store='SNDFILE', args='--cflags --libs')
     conf.check_cfg(package='jack', mandatory=1, uselib_store='JACK', args='--cflags --libs')
-    conf.check_cfg(package='samplerate', mandatory=0, uselib_store='SAMPLERATE', args='--cflags --libs')
+    conf.check_cfg(package='samplerate', mandatory=0, uselib_store='SRC', args='--cflags --libs')
 
 def build(bld):
     bld.program(
