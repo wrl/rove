@@ -1,0 +1,12 @@
+prefix=@PREFIX@
+exec_prefix=${prefix}
+libdir=@LIBDIR@
+includedir=${prefix}/include
+
+Name: rove
+Description: music performance software for monomes.
+Version: @VERSION@
+
+Requires:
+Libs: -L${libdir} @LIBS@
+Cflags: -I${includedir}
