@@ -13,8 +13,6 @@ def options(opt):
 
 def configure(conf):
     conf.load('compiler_c')
-    conf.check_tool('gnu_dirs')
-    conf.check_cc(lib='dl', uselib_store='DL', mandatory=True)
     conf.check_cfg(package='libmonome', mandatory=1, uselib_store='MONOME', args='--cflags --libs')
     conf.check_cfg(package='sndfile', mandatory=1, uselib_store='SNDFILE', args='--cflags --libs')
     conf.check_cfg(package='jack', mandatory=1, uselib_store='JACK', args='--cflags --libs')
@@ -35,7 +33,7 @@ def build(bld):
 	    'src/settings.c',
         ],
         target      = 'rove',
-        uselib      = 'DL JACK MONOME SNDFILE SAMPLERATE',
+        uselib      = 'JACK MONOME SNDFILE SAMPLERATE',
         includes    = '#public #src/private',
     )
 
