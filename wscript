@@ -34,7 +34,7 @@ def build(bld):
         ],
         target      = 'rove',
         uselib      = 'JACK MONOME SNDFILE SAMPLERATE',
-        includes    = '#public #src/private',
+        includes    = '#src/private',
     )
 
     bld.install_files(bld.env['DOCDIR'], 'README')
