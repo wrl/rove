@@ -49,10 +49,16 @@ rove v0.2:
 		but i haven't the faintest idea where to start.
 		additionally, i don't have any mac computers on which i can test.
 
+		all platforms need a python interpreter solely for the build
+		process. try http://www.python.org/getit/. linux users will likely already 
+		have python installed; possibly mac os x users, too.
+
 	okay, i've got that stuff installed, now what?
-		just run "make" from the top-level rove directory.  rove should build quickly
-		and uneventfully.  after that, do a "make install" as root to install the rove
-		executable system-wide.
+		just run "./waf configure" followed by "./waf" from the top-level rove 
+		directory. rove should build quickly and uneventfully. after that, do a 
+		"./waf install" as root to install the rove executable system-wide. 
+		also, "waf configure" can use the "--prefix=" argument if you want to change
+		its install location.
 
 		if there are any errors in the build process, let me know either via email
 		or on the monome forums.  i'll see what i can do.
