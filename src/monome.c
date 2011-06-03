@@ -64,7 +64,7 @@ static int finalize_pattern(pattern_t *p, r_monome_t *monome, uint_t x, uint_t y
 static void pattern_handler(r_monome_t *monome, uint_t x, uint_t y, uint_t event_type, void *user_arg) {
 	pattern_t **pptr = ((pattern_t **) &HANDLER_T(user_arg)->data),
 			  *pattern = *pptr;
-	int pat_idx = 4 - monome->rows + x;
+	int pat_idx = 4 - monome->cols + x;
 
 	if( event_type != MONOME_BUTTON_DOWN )
 		return;
