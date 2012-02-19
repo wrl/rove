@@ -1,5 +1,5 @@
 CFLAGS  += -rdynamic -I./private $(MONOME_CFLAGS) $(JACK_CFLAGS) $(SNDFILE_CFLAGS) $(SRC_CFLAGS)
-LDFLAGS += -rdynamic $(MONOME_LIBS) $(JACK_LIBS) $(SNDFILE_LIBS) $(SRC_LIBS)
+LDFLAGS += -rdynamic $(MONOME_LIBS) $(JACK_LIBS) $(SNDFILE_LIBS) $(SRC_LIBS) -lm
 TARGETS = rove
 
 OBJS  = rove.o
