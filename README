@@ -1,179 +1,185 @@
 rove v0.2:
 
-	what is it?
-		rove is a sample-cutter in the spirit of (and blatantly imitating) mlr.
-		it is written in C and designed primarily to run on the linux platform,
-		though, due to similarities between the platforms, it has been compiled
-		and run successfully on mac os X.
+    what is it?
+        rove is a sample-cutter in the spirit of (and blatantly imitating) mlr.
+        it is written in C and designed primarily to run on the linux platform,
+        though, due to similarities between the platforms, it has been compiled
+        and run successfully on mac os X.
 
-		please keep in mind that rove is alpha-quality software at best!
-		there's still much to be done to make it useful even in a basic setting,
-		and it's a far cry from being production-worthy.  i can't guarantee that
-		it will work for you, though i've yet to have a problem.
+        please keep in mind that rove is alpha-quality software at best!
+        there's still much to be done to make it useful even in a basic setting,
+        and it's a far cry from being production-worthy.  i can't guarantee that
+        it will work for you, though i've yet to have a problem.
 
-		rove has, thus far, been tested on a 32-bit linux system, a 64-bit linux
-		system, and a mac os x system.	after installing the dependencies,
-		it required no modification to function correctly.
+        rove has, thus far, been tested on a 32-bit linux system, a 64-bit linux
+        system, and a mac os x system.    after installing the dependencies,
+        it required no modification to function correctly.
 
-		so, basically, i can't guarantee it'll work for you.  but it probably will.
-		if it doesn't, holler at me.
+        so, basically, i can't guarantee it'll work for you.  but it probably will.
+        if it doesn't, holler at me.
 
-	how do i install it?
-		the dependency list is short, but, depending on your architecture,
-		installation may prove to be a bit different than what you're used to.
+    how do i install it?
+        the dependency list is short, but, depending on your architecture,
+        installation may prove to be a bit different than what you're used to.
 
-		regardless of the platform, you'll need:
-			- libmonome
-			- JACK (http://www.jackaudio.org/)
-			- libsndfile
+        regardless of the platform, you'll need:
+            - libmonome
+            - JACK (http://www.jackaudio.org/)
+            - libsndfile
 
-		and, optionally:
-			- libsamplerate
+        and, optionally:
+            - libsamplerate
 
-		the libmonome code is hosted at http://github.com/monome/libmonome, and you
-		should build a recent git checkout to make sure you have the OSC protocol.
+        the libmonome code is hosted at http://github.com/monome/libmonome, and you
+        should build a recent git checkout to make sure you have the OSC protocol.
 
-		if you're on linux, you might already have the latter three installed. if not,
-		use your system's package manager to install both the main packages and the
-		"-dev" packages for them.
+        if you're on linux, you might already have the latter three installed. if not,
+        use your system's package manager to install both the main packages and the
+        "-dev" packages for them.
 
-		if you're a mac user, this may be a bit trickier.  you can grab JACK from
-		http://jackosx.com/ and libsndfile from http://mega-nerd.com/libsndfile/.
-		read the README and INSTALL files that come along with those projects.
+        if you're a mac user, this may be a bit trickier.  you can grab JACK from
+        http://jackosx.com/ and libsndfile from http://mega-nerd.com/libsndfile/.
+        read the README and INSTALL files that come along with those projects.
 
-		you'll need libsamplerate if you want to be able to change the playback speed
-		of loops.  libsamplerate can be downloaded from http://www.mega-nerd.com/SRC/.
+        you'll need libsamplerate if you want to be able to change the playback speed
+        of loops.  libsamplerate can be downloaded from http://www.mega-nerd.com/SRC/.
 
-		if you're familiar with maintaining software on os X, please get in contact
-		with me!  i'd love to be able to distribute a proper package of rove,
-		but i haven't the faintest idea where to start.
-		additionally, i don't have any mac computers on which i can test.
+        if you're familiar with maintaining software on os X, please get in contact
+        with me!  i'd love to be able to distribute a proper package of rove,
+        but i haven't the faintest idea where to start.
+        additionally, i don't have any mac computers on which i can test.
 
-	okay, i've got that stuff installed, now what?
-		just run "make" from the top-level rove directory.  rove should build quickly
-		and uneventfully.  after that, do a "make install" as root to install the rove
-		executable system-wide.
+    okay, i've got that stuff installed, now what?
+        run the following from the top-level directory (i.e. the one you got from git):
 
-		if there are any errors in the build process, let me know either via email
-		or on the monome forums.  i'll see what i can do.
+            $ ./waf configure
+            $ ./waf
 
-	how do i use it?
-		currently, rove has no GUI of any sort.	 all of the configuration is done
-		through text files in a fairly standard-looking configuration file format
-		that's basically a windows INI file.  a session file looks like this:
+        then, you can install it to your system-wide bin directory if you want:
 
-			[session]           # comments start with a pound symbol and span a line!
-			bpm      = 87.68    # beats per minute
-			quantize = .25      # fraction of a quarter note to quantize to
-			groups   = 2        # number of groups
-			pattern1 = 8        # pattern 1 length (in beats)
-			pattern2 = 8        # pattern 2 length
-			columns  = 12       # columns to span
+            $ sudo ./waf install
 
-			[file]
-			path    = drums.wav # path to the loop relative to the session file
-			rows    = 2         # number of rows to span across
-			group   = 1         # group to which the file is assigned
-			columns = 14        # columns to span (overrides session columns)
-			speed   = 0.5       # playback speed
+        or just run it from where it built:
 
-			[file]              # loops are mapped on the monome from top to bottom
-			path    = piano.wav # in order of where they appear in the session file
-			group   = 2
+            $ ./build/src/rove
 
-			[file]
-			path    = piano.wav # "path" and "group" are required parameters
-			group   = 2         # but "reverse" and "rows" are optional
-			reverse             # and are assumed to be "false" and "1" respectively
+    how do i use it?
+        currently, rove has no GUI of any sort.  all of the configuration is done
+        through text files in a fairly standard-looking configuration file format
+        that's basically a windows INI file.  a session file looks like this:
 
-		the row spanning lets you spread a loop out across several rows for added precision.
-		after you've created your session file, run rove with "rove <sessionfile.rv>".
+            [session]           # comments start with a pound symbol and span a line!
+            bpm      = 87.68    # beats per minute
+            quantize = .25      # fraction of a quarter note to quantize to
+            groups   = 2        # number of groups
+            pattern1 = 8        # pattern 1 length (in beats)
+            pattern2 = 8        # pattern 2 length
+            columns  = 12       # columns to span
 
-		there is also an additional, global configuration file.  this file looks similar to
-		the session file but has different expected sections and variables.  here is an
-		example file, with the variables set to their defaults.
-		all variables here are optional.
+            [file]
+            path    = drums.wav # path to the loop relative to the session file
+            rows    = 2         # number of rows to span across
+            group   = 1         # group to which the file is assigned
+            columns = 14        # columns to span (overrides session columns)
+            speed   = 0.5       # playback speed
 
-			[monome]
-			columns     = 8
+            [file]              # loops are mapped on the monome from top to bottom
+            path    = piano.wav # in order of where they appear in the session file
+            group   = 2
 
-			[osc]
-			prefix      = /rove
-			host-port   = 8080
-			listen-port = 8000
+            [file]
+            path    = piano.wav # "path" and "group" are required parameters
+            group   = 2         # but "reverse" and "rows" are optional
+            reverse             # and are assumed to be "false" and "1" respectively
 
-		save your configuration file as ".rove.conf" in your home directory and rove will
-		load it at startup!
+        the row spanning lets you spread a loop out across several rows for added precision.
+        after you've created your session file, run rove with "rove <sessionfile.rv>".
 
-	what do i press?
-		       +-----------+ - - - - - +-----------+-----------+-----------+-----------+
-		  left |   group   |  many of  | pattern 1 | pattern 2 |   prev    |   next    | right
-		  side |    mute   |   those   | rec / tog | rec / tog |  session  |  session  | side
-		       +-----------+ - - - - - +-----------+-----------+-----------+-----------+
+        there is also an additional, global configuration file.  this file looks similar to
+        the session file but has different expected sections and variables.  here is an
+        example file, with the variables set to their defaults.
+        all variables here are optional.
 
-		at the moment, it's designed to mimic mlr.  the top row is the control row, with the
-		first [number of groups in session] buttons turning off their respective group.
-		activate a group by pressing a button associated with one of the loops, which means
-		anything below the first row starting with the second.
+            [monome]
+            columns     = 8
 
-		the two buttons after the group controls are pattern recorders, and these act a bit
-		differently.  pressing the button without anything recorded waits until you cut
-		somewhere in a loop to start recording, then will record a pattern as long as you've
-		specified in your config file. you can press it again any time before the end of the
-		specified length to play the pattern you've created. or, if the pattern length is 0,
-		it will record until you press the record button again.
+            [osc]
+            prefix      = /rove
+            host-port   = 8080
+            listen-port = 8000
 
-		pressing that button again turns the pattern off, resuming normal playback
-		immediately. turning off recorded patterns deletes them, so that you can record
-		again by pressing the pattern button and playing another sequence.
+        save your configuration file as ".rove.conf" in your home directory and rove will
+        load it at startup!
 
-		the two buttons after the pattern recorders are session controls. rove can load
-		more than one session. pressing these buttons moves forward and backward through the
-		loaded sessions. this is good for seamless set changes, so that you can advance from
-		song to	song without having to stop and restart rove.
+    what do i press?
+               +-----------+ - - - - - +-----------+-----------+-----------+-----------+
+          left |   group   |  many of  | pattern 1 | pattern 2 |   prev    |   next    | right
+          side |    mute   |   those   | rec / tog | rec / tog |  session  |  session  | side
+               +-----------+ - - - - - +-----------+-----------+-----------+-----------+
 
-		you can load multiple sessions from the command line:
+        at the moment, it's designed to mimic mlr.  the top row is the control row, with the
+        first [number of groups in session] buttons turning off their respective group.
+        activate a group by pressing a button associated with one of the loops, which means
+        anything below the first row starting with the second.
 
-		$ rove session1.rv session2.rv
+        the two buttons after the group controls are pattern recorders, and these act a bit
+        differently.  pressing the button without anything recorded waits until you cut
+        somewhere in a loop to start recording, then will record a pattern as long as you've
+        specified in your config file. you can press it again any time before the end of the
+        specified length to play the pattern you've created. or, if the pattern length is 0,
+        it will record until you press the record button again.
 
-		you can also place multiple sessions in a single session file:
+        pressing that button again turns the pattern off, resuming normal playback
+        immediately. turning off recorded patterns deletes them, so that you can record
+        again by pressing the pattern button and playing another sequence.
 
-		$ rove big_setlist.rv
+        the two buttons after the pattern recorders are session controls. rove can load
+        more than one session. pressing these buttons moves forward and backward through the
+        loaded sessions. this is good for seamless set changes, so that you can advance from
+        song to song without having to stop and restart rove.
 
-		a multi-session file looks just like a single session, except that you can add
-		several sequential blocks:
+        you can load multiple sessions from the command line:
 
-		[session]
-		...
-		[file]
-		...
-		[file]
-		...
+        $ rove session1.rv session2.rv
 
-		[session]
-		...
-		[file]
-		...
+        you can also place multiple sessions in a single session file:
 
-		and so on. rove loads sessions in order, from the top down.
+        $ rove big_setlist.rv
 
-		when performing with multiple sessions, bpm is determined by the currently loaded
-		session. you can leave a group playing from one session, advance to the next session,
-		and the old session's group will still play at the old bpm. once you press the group
-		mute button for that old session, then that sample ends and is cleared, making the
-		group available for the current session, at the current session's bpm.
+        a multi-session file looks just like a single session, except that you can add
+        several sequential blocks:
 
-		at the moment, this is pretty much the extent of rove's functionality.
-		don't worry, more is coming soon!
+        [session]
+        ...
+        [file]
+        ...
+        [file]
+        ...
 
-	how do i get in contact with you?
-		my email address is visinin@gmail.com, and i'd love to hear from you.  questions,
-		comments, encouragement, anything.  it's a great feeling hearing from people.
+        [session]
+        ...
+        [file]
+        ...
 
-		please don't mind the messiness of the code or the general lack of polish presently.
-		i figure that getting software into peoples' hands is the best way to find rough edges
-		that i would otherwise miss, and it's the best way to get alternate perspectives
-		on how an interface feels.
+        and so on. rove loads sessions in order, from the top down.
 
-		thanks so much.
-		-will
+        when performing with multiple sessions, bpm is determined by the currently loaded
+        session. you can leave a group playing from one session, advance to the next session,
+        and the old session's group will still play at the old bpm. once you press the group
+        mute button for that old session, then that sample ends and is cleared, making the
+        group available for the current session, at the current session's bpm.
+
+        at the moment, this is pretty much the extent of rove's functionality.
+        don't worry, more is coming soon!
+
+    how do i get in contact with you?
+        my email address is wrl@illest.net, and i'd love to hear from you.  questions,
+        comments, encouragement, anything.  it's a great feeling hearing from people.
+
+        please don't mind the messiness of the code or the general lack of polish presently.
+        i figure that getting software into peoples' hands is the best way to find rough edges
+        that i would otherwise miss, and it's the best way to get alternate perspectives
+        on how an interface feels.
+
+        thanks so much.
+        -w

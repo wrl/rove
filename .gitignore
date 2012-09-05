@@ -1,8 +1,10 @@
-# ignore the compiled executable
-rove
+# waf stuff
+.lock-waf*
+.waf*
 
-# ignore the makefile configuration
-config.mk
+# build stuff
+build/
 
-# ignore tempfiles
-.*swp
+# temporary stuff
+*.swp
+*~
